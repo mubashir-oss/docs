@@ -1,0 +1,371 @@
+---
+title: "Batch Cite"
+api: "POST /batch/cite"
+description: "Process multiple PDF documents with structured data extraction using JSON schema"
+---
+
+## Overview
+
+The Batch Cite endpoint processes multiple PDF files simultaneously, extracting structured data according to a provided JSON schema. This endpoint is designed for high-throughput document processing with citations and structured output.
+
+<Note>
+This endpoint processes files in batches and returns a batch job ID for tracking progress. Use the batch status endpoint to monitor processing and retrieve results.
+</Note>
+
+## Request
+
+<ParamField body="pdf_files" type="file[]" required>
+  Array of PDF files to process. Each file should be a valid PDF document.
+</ParamField>
+
+<ParamField body="schema_data" type="string" required>
+  JSON schema defining the structure of data to extract from the PDFs. Must be a valid JSON string.
+</ParamField>
+
+<ParamField body="batch_size" type="integer" default="10">
+  Number of PDFs to process in each batch. Must be a positive integer.
+</ParamField>
+
+<ParamField header="api-key" type="string" required>
+  API key for authentication
+</ParamField>
+
+## Response
+
+<ResponseField name="batch_id" type="string">
+  Unique identifier for the batch processing job
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Initial batch job status (typically "QUEUED")
+</ResponseField>
+
+<ResponseField name="total_files" type="number">
+  Total number of files submitted for processing
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Status message about the batch job creation
+</ResponseField>
+
+## Request Examples
+
+<RequestExample>
+
+```bash cURL
+curl -X POST "https://visionapi.unsiloed.ai/batch/cite" \
+  -H "accept: application/json" \
+  -H "api-key: your-api-key" \
+  -H "Content-Type: multipart/form-data" \
+  -F "pdf_files=@document1.pdf" \
+  -F "pdf_files=@document2.pdf" \
+  -F "pdf_files=@document3.pdf" \
+  -F 'schema_data={"type":"object","properties":{"company_name":{"type":"string","description":"Name of the company"},"board_members":{"type":"array","items":{"type":"string"},"description":"List of board members"}},"required":["company_name"],"additionalProperties":false}' \
+  -F "batch_size=10"
+```
+
+```python Python
+import requests
+import json
+
+url = "https://visionapi.unsiloed.ai/batch/cite"
+headers = {
+    "accept": "application/json",
+    "api-key": "your-api-key"
+}
+
+# Define the extraction schema
+schema = {
+    "type": "object",
+    "properties": {
+        "company_name": {
+            "type": "string",
+            "description": "Name of the company"
+        },
+        "board_members": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "List of board members"
+        },
+        "revenue": {
+            "type": "number",
+            "description": "Annual revenue"
+        }
+    },
+    "required": ["company_name"],
+    "additionalProperties": False
+}
+
+# Prepare files
+files = [
+    ("pdf_files", ("document1.pdf", open("document1.pdf", "rb"), "application/pdf")),
+    ("pdf_files", ("document2.pdf", open("document2.pdf", "rb"), "application/pdf")),
+    ("pdf_files", ("document3.pdf", open("document3.pdf", "rb"), "application/pdf"))
+]
+
+# Prepare form data
+data = {
+    "schema_data": json.dumps(schema),
+    "batch_size": 10
+}
+
+response = requests.post(url, headers=headers, files=files, data=data)
+
+if response.status_code == 200:
+    result = response.json()
+    print(f"Batch job created: {result['batch_id']}")
+    print(f"Status: {result['status']}")
+    print(f"Total files: {result['total_files']}")
+else:
+    print("Error:", response.status_code, response.text)
+
+# Close files
+for _, (_, file_obj, _) in files:
+    file_obj.close()
+```
+
+```javascript JavaScript
+const formData = new FormData();
+
+// Add PDF files
+const fileInputs = document.querySelectorAll('input[type="file"]');
+fileInputs.forEach((input) => {
+  if (input.files[0]) {
+    formData.append('pdf_files', input.files[0]);
+  }
+});
+
+// Define extraction schema
+const schema = {
+  type: "object",
+  properties: {
+    company_name: {
+      type: "string",
+      description: "Name of the company"
+    },
+    board_members: {
+      type: "array",
+      items: { type: "string" },
+      description: "List of board members"
+    },
+    revenue: {
+      type: "number",
+      description: "Annual revenue"
+    }
+  },
+  required: ["company_name"],
+  additionalProperties: false
+};
+
+// Add schema and batch size
+formData.append('schema_data', JSON.stringify(schema));
+formData.append('batch_size', '10');
+
+const response = await fetch('https://visionapi.unsiloed.ai/batch/cite', {
+  method: 'POST',
+  headers: {
+    'accept': 'application/json',
+    'api-key': 'your-api-key'
+  },
+  body: formData
+});
+
+if (response.ok) {
+  const result = await response.json();
+  console.log(`Batch job created: ${result.batch_id}`);
+  console.log(`Status: ${result.status}`);
+  console.log(`Total files: ${result.total_files}`);
+} else {
+  console.error('Batch processing failed:', response.status, await response.text());
+}
+```
+
+</RequestExample>
+
+## Response Examples
+
+<ResponseExample>
+
+```json Success Response
+{
+  "batch_id": "batch_f7e8d9c2-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
+  "status": "QUEUED",
+  "total_files": 3,
+  "message": "Batch job created successfully. Processing will begin shortly."
+}
+```
+
+```json Error Response - Invalid Files
+{
+  "detail": [
+    {
+      "type": "value_error",
+      "loc": ["body", "pdf_files", 0],
+      "msg": "Value error, Expected UploadFile, received: <class 'str'>",
+      "input": "string",
+      "ctx": {
+        "error": {}
+      }
+    }
+  ]
+}
+```
+
+```json Error Response - Invalid Schema
+{
+  "detail": "Invalid schema data: Not a valid JSON"
+}
+```
+
+```json Error Response - Invalid Batch Size
+{
+  "detail": "Batch size must be a positive integer"
+}
+```
+
+</ResponseExample>
+
+## Schema Format
+
+The `schema_data` parameter must be a valid JSON schema that defines the structure of data to extract from your PDFs.
+
+### Basic Schema Example
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "company_name": {
+      "type": "string",
+      "description": "Name of the company from the document"
+    },
+    "date": {
+      "type": "string",
+      "description": "Document date in YYYY-MM-DD format"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Total amount or value mentioned"
+    }
+  },
+  "required": ["company_name"],
+  "additionalProperties": false
+}
+```
+
+### Complex Schema Example
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "board_of_directors": {
+      "type": "array",
+      "description": "List of board members",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Full name of board member"
+          },
+          "title": {
+            "type": "string",
+            "description": "Title or position"
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      }
+    },
+    "financial_data": {
+      "type": "object",
+      "properties": {
+        "revenue": {
+          "type": "number",
+          "description": "Annual revenue"
+        },
+        "profit": {
+          "type": "number",
+          "description": "Net profit"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["board_of_directors"],
+  "additionalProperties": false
+}
+```
+
+## Monitoring Batch Progress
+
+After creating a batch job, use the batch status endpoint to monitor progress:
+
+```python
+import requests
+import time
+
+def monitor_batch_progress(batch_id, api_key):
+    """Monitor batch processing progress"""
+    
+    headers = {"api-key": api_key}
+    status_url = f"https://visionapi.unsiloed.ai/batch/status/{batch_id}"
+    
+    while True:
+        response = requests.get(status_url, headers=headers)
+        
+        if response.status_code == 200:
+            status_data = response.json()
+            
+            print(f"Batch Status: {status_data['status']}")
+            
+            if 'statistics' in status_data:
+                stats = status_data['statistics']
+                print(f"Progress: {stats['completed_jobs']}/{stats['total_jobs']} completed")
+                print(f"Failed: {stats['failed_jobs']}")
+                print(f"Processing: {stats['processing_jobs']}")
+            
+            if status_data['status'] in ['COMPLETED', 'COMPLETED_WITH_FAILURES']:
+                print("Batch processing finished!")
+                return status_data
+                
+            elif status_data['status'] == 'FAILED':
+                print("Batch processing failed!")
+                return status_data
+                
+        else:
+            print(f"Error checking status: {response.status_code}")
+            
+        time.sleep(10)  # Check every 10 seconds
+
+# Usage
+batch_id = "your-batch-id"
+final_status = monitor_batch_progress(batch_id, "your-api-key")
+```
+
+## Error Handling
+
+### Common Error Scenarios
+
+1. **Invalid File Format**: Only PDF files are supported
+2. **Invalid Schema**: Schema must be valid JSON with proper structure
+3. **Invalid Batch Size**: Must be a positive integer
+4. **Authentication Error**: Invalid or missing API key
+5. **File Size Limits**: Individual files may have size restrictions
+
+### Best Practices
+
+- **Validate Schema**: Test your JSON schema with a small batch first
+- **File Quality**: Use high-quality, text-based PDFs for better extraction
+- **Batch Size**: Start with smaller batch sizes (5-10 files) for testing
+- **Monitor Progress**: Regularly check batch status for large jobs
+- **Error Recovery**: Handle partial failures gracefully
+
+## Rate Limits
+
+- **Concurrent Batches**: Limited number of active batch jobs per API key
+- **File Limits**: Maximum number of files per batch may apply
+- **Processing Time**: Large batches may take significant time to complete
+
+Check your API plan for specific limits and quotas.

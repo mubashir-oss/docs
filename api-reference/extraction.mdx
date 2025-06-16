@@ -1,0 +1,1158 @@
+---
+title: "Extract Data"
+api: "POST /cite"
+description: "Extract structured data from PDF documents using custom schemas for citation and data extraction"
+---
+
+## Overview
+
+The Extract Data endpoint processes PDF documents and extracts structured information based on custom schemas. This is ideal for extracting specific data points, citations, references, and structured content from documents using AI-powered analysis.
+
+<Note>
+The endpoint returns a job ID for asynchronous processing. Use the job management endpoints to check status and retrieve results.
+</Note>
+
+## Request
+
+<ParamField body="pdf_file" type="file" required>
+  The PDF file to process for data extraction. Maximum file size: 100MB
+</ParamField>
+
+<ParamField body="schema_data" type="string" required>
+  JSON schema defining the structure and fields to extract from the document. Must be a valid JSON Schema format with type definitions, properties, and required fields.
+</ParamField>
+
+<ParamField header="api-key" type="string" required>
+  API key for authentication
+</ParamField>
+
+## Response
+
+<ResponseField name="job_id" type="string">
+  Unique identifier for the extraction job
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Initial job status (typically "queued")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Descriptive message about the job creation
+</ResponseField>
+
+<ResponseField name="quota_remaining" type="number">
+  Number of API calls remaining in your quota
+</ResponseField>
+
+## Extraction Results Format
+
+Once the job is completed, the results will contain the extracted data with additional metadata:
+
+<ResponseField name="[field_name]" type="object">
+  Each extracted field returns an object with the following structure:
+</ResponseField>
+
+<ResponseField name="[field_name].value" type="string|number|array|object">
+  The extracted value matching the schema type
+</ResponseField>
+
+<ResponseField name="[field_name].score" type="number">
+  Confidence score between 0 and 1 indicating extraction accuracy
+</ResponseField>
+
+<ResponseField name="[field_name].bboxes" type="array">
+  Array of bounding box coordinates where the data was found in the document
+</ResponseField>
+
+<ResponseField name="[field_name].bboxes[].bbox" type="array">
+  Bounding box coordinates [x1, y1, x2, y2] in pixels
+</ResponseField>
+
+<ResponseField name="[field_name].page_no" type="number">
+  Page number where the data was extracted (1-indexed)
+</ResponseField>
+
+<ResponseField name="min_confidence_score" type="number">
+  Minimum confidence score across all extracted fields
+</ResponseField>
+
+### Example Extraction Results
+
+For a simple financial document schema:
+
+```json Schema
+{
+  "type": "object",
+  "properties": {
+    "Individuals": {
+      "type": "string",
+      "description": "Percentage Holding"
+    },
+    "LIC of India": {
+      "type": "string",
+      "description": "No of Shares Held"
+    },
+    "United bank of india": {
+      "type": "string",
+      "description": "No of shares held by United bank of india"
+    }
+  },
+  "required": [
+    "Individuals",
+    "LIC of India",
+    "United bank of india"
+  ],
+  "additionalProperties": false
+}
+```
+
+```json Extraction Results
+{
+  "Individuals": {
+    "score": 0.9998314521743098,
+    "value": "10.57",
+    "bboxes": [
+      {
+        "bbox": [
+          79,
+          381,
+          524,
+          565
+        ]
+      }
+    ],
+    "page_no": 2
+  },
+  "LIC of India": {
+    "score": 0.9999889986487799,
+    "value": "1515000",
+    "bboxes": [
+      {
+        "bbox": [
+          79,
+          381,
+          524,
+          565
+        ]
+      }
+    ],
+    "page_no": 2
+  },
+  "United bank of india": {
+    "score": 0.999984548437705,
+    "value": "500000",
+    "bboxes": [
+      {
+        "bbox": [
+          79,
+          381,
+          524,
+          565
+        ]
+      }
+    ],
+    "page_no": 2
+  },
+  "min_confidence_score": 0.9998314521743098
+}
+```
+
+<RequestExample>
+
+```bash cURL
+curl -X POST "https://visionapi.unsiloed.ai/cite" \
+  -H "accept: application/json" \
+  -H "api-key: your-api-key" \
+  -H "Content-Type: multipart/form-data" \
+  -F "pdf_file=@document.pdf;type=application/pdf" \
+  -F "schema_data={\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\",\"description\":\"Document title\"},\"authors\":{\"type\":\"array\",\"description\":\"List of authors\",\"items\":{\"type\":\"string\"}}},\"required\":[\"title\",\"authors\"],\"additionalProperties\":false}"
+```
+
+```python Python
+import requests
+import json
+
+url = "https://visionapi.unsiloed.ai/cite"
+headers = {
+    "accept": "application/json",
+    "api-key": "your-api-key"
+}
+
+# Define extraction schema using JSON Schema format
+schema = {
+    "type": "object",
+    "properties": {
+        "title": {
+            "type": "string",
+            "description": "Document title or heading"
+        },
+        "authors": {
+            "type": "array",
+            "description": "List of document authors",
+            "items": {
+                "type": "string"
+            }
+        },
+        "publication_date": {
+            "type": "string",
+            "description": "Publication or creation date"
+        },
+        "citations": {
+            "type": "array",
+            "description": "List of citations or references",
+            "items": {
+                "type": "string"
+            }
+        },
+        "key_findings": {
+            "type": "array",
+            "description": "Main findings or conclusions",
+            "items": {
+                "type": "string"
+            }
+        }
+    },
+    "required": ["title", "authors"],
+    "additionalProperties": false
+}
+
+files = {"pdf_file": ("document.pdf", open("document.pdf", "rb"), "application/pdf")}
+data = {"schema_data": json.dumps(schema)}
+
+response = requests.post(url, headers=headers, files=files, data=data)
+
+if response.status_code == 200:
+    result = response.json()
+    print(f"Extraction job created: {result['job_id']}")
+    print(f"Status: {result['status']}")
+    print(f"Quota remaining: {result['quota_remaining']}")
+    
+    # Poll for job completion
+    job_id = result['job_id']
+    # Use job status endpoint to check progress
+    
+else:
+    print("Error:", response.status_code, response.text)
+```
+
+```javascript JavaScript
+const formData = new FormData();
+formData.append('pdf_file', fileInput.files[0]);
+
+const schema = {
+  type: "object",
+  properties: {
+    title: {
+      type: "string",
+      description: "Document title or heading"
+    },
+    authors: {
+      type: "array", 
+      description: "List of document authors",
+      items: {
+        type: "string"
+      }
+    },
+    publication_date: {
+      type: "string",
+      description: "Publication or creation date"
+    },
+    citations: {
+      type: "array",
+      description: "List of citations or references",
+      items: {
+        type: "string"
+      }
+    }
+  },
+  required: ["title", "authors"],
+  additionalProperties: false
+};
+
+formData.append('schema_data', JSON.stringify(schema));
+
+const response = await fetch('https://visionapi.unsiloed.ai/cite', {
+  method: 'POST',
+  headers: {
+    'accept': 'application/json',
+    'api-key': 'your-api-key'
+  },
+  body: formData
+});
+
+if (response.ok) {
+  const result = await response.json();
+  console.log(`Extraction job created: ${result.job_id}`);
+  console.log(`Status: ${result.status}`);
+  console.log(`Quota remaining: ${result.quota_remaining}`);
+  
+  // Poll for job completion using job management endpoints
+  
+} else {
+  console.error('Extraction failed:', response.status, await response.text());
+}
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json Success Response
+{
+  "job_id": "945b4578-691f-4c74-8184-dde654093b11",
+  "status": "queued",
+  "message": "PDF citation processing started",
+  "quota_remaining": 48988
+}
+```
+
+```json Error Response
+{
+  "detail": [
+    {
+      "type": "value_error",
+      "loc": ["body", "pdf_file"],
+      "msg": "File is required",
+      "input": null
+    }
+  ]
+}
+```
+
+</ResponseExample>
+
+## Batch Extraction
+
+<api>POST /batch/cite</api>
+
+Process multiple PDF files simultaneously for efficient batch data extraction.
+
+### Additional Parameters
+
+<ParamField body="pdf_files" type="array" required>
+  Array of PDF files to process for batch extraction
+</ParamField>
+
+<ParamField body="schema_data" type="string" required>
+  JSON schema defining the structure and fields to extract (applied to all files)
+</ParamField>
+
+<ParamField body="batch_size" type="number" default="10">
+  Number of files to process concurrently in the batch
+</ParamField>
+
+<ParamField header="api-key" type="string" required>
+  API key for authentication
+</ParamField>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST "https://visionapi.unsiloed.ai/batch/cite" \
+  -H "accept: application/json" \
+  -H "api-key: your-api-key" \
+  -H "Content-Type: multipart/form-data" \
+  -F "pdf_files=@document1.pdf;type=application/pdf" \
+  -F "pdf_files=@document2.pdf;type=application/pdf" \
+  -F "pdf_files=@document3.pdf;type=application/pdf" \
+  -F "schema_data={\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\"},\"authors\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}},\"required\":[\"title\",\"authors\"],\"additionalProperties\":false}" \
+  -F "batch_size=5"
+```
+
+```python Python
+import requests
+import json
+
+url = "https://visionapi.unsiloed.ai/batch/cite"
+headers = {
+    "accept": "application/json",
+    "api-key": "your-api-key"
+}
+
+# Define extraction schema using JSON Schema format
+schema = {
+    "type": "object",
+    "properties": {
+        "title": {
+            "type": "string",
+            "description": "Document title"
+        },
+        "authors": {
+            "type": "array",
+            "description": "List of authors",
+            "items": {
+                "type": "string"
+            }
+        },
+        "abstract": {
+            "type": "string",
+            "description": "Document abstract or summary"
+        },
+        "keywords": {
+            "type": "array",
+            "description": "Key terms and keywords",
+            "items": {
+                "type": "string"
+            }
+        }
+    },
+    "required": ["title", "authors"],
+    "additionalProperties": false
+}
+
+# Prepare multiple files
+files = [
+    ("pdf_files", ("doc1.pdf", open("document1.pdf", "rb"), "application/pdf")),
+    ("pdf_files", ("doc2.pdf", open("document2.pdf", "rb"), "application/pdf")),
+    ("pdf_files", ("doc3.pdf", open("document3.pdf", "rb"), "application/pdf"))
+]
+
+data = {
+    "schema_data": json.dumps(schema),
+    "batch_size": 5
+}
+
+response = requests.post(url, headers=headers, files=files, data=data)
+
+if response.status_code == 200:
+    result = response.json()
+    print(f"Batch extraction job created: {result['job_id']}")
+    print(f"Processing {result['total_files']} files")
+    print(f"Quota remaining: {result['quota_remaining']}")
+else:
+    print("Error:", response.status_code, response.text)
+```
+
+```javascript JavaScript
+const formData = new FormData();
+
+// Add multiple files
+const files = document.getElementById('fileInput').files;
+for (let i = 0; i < files.length; i++) {
+  formData.append('pdf_files', files[i]);
+}
+
+const schema = {
+  type: "object",
+  properties: {
+    title: {
+      type: "string",
+      description: "Document title"
+    },
+    authors: {
+      type: "array",
+      description: "List of authors",
+      items: {
+        type: "string"
+      }
+    },
+    publication_year: {
+      type: "string",
+      description: "Year of publication"
+    }
+  },
+  required: ["title", "authors"],
+  additionalProperties: false
+};
+
+formData.append('schema_data', JSON.stringify(schema));
+formData.append('batch_size', '8');
+
+const response = await fetch('https://visionapi.unsiloed.ai/batch/cite', {
+  method: 'POST',
+  headers: {
+    'accept': 'application/json',
+    'api-key': 'your-api-key'
+  },
+  body: formData
+});
+
+if (response.ok) {
+  const result = await response.json();
+  console.log(`Batch job created: ${result.job_id}`);
+  console.log(`Processing ${result.total_files} files`);
+} else {
+  console.error('Batch extraction failed:', response.status, await response.text());
+}
+```
+
+</RequestExample>
+
+## JSON Schema Definition
+
+The `schema_data` parameter must be a valid JSON Schema that defines the structure of data to extract. All schemas must follow the JSON Schema specification with proper type definitions, properties, and constraints.
+
+### Basic Schema Structure
+
+All extraction schemas must include:
+- `type`: "object" (root level)
+- `properties`: Object defining the fields to extract
+- `required`: Array of required field names
+- `additionalProperties`: Set to `false` for strict validation
+
+### Financial Document Schema Example
+
+This example demonstrates extracting shareholding patterns and board information from financial documents:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "Individuals": {
+      "type": "string",
+      "description": "Percentage Holding"
+    },
+    "LIC of India": {
+      "type": "number",
+      "description": "No of Shares Held"
+    },
+    "board of directors": {
+      "type": "array",
+      "description": "list of names of board of directors",
+      "items": {
+        "type": "object",
+        "required": [
+          "names of board of directors"
+        ],
+        "properties": {
+          "names of board of directors": {
+            "type": "string",
+            "description": "names of all the members of board of directors of ACRE"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "shareholding pattern": {
+      "type": "array",
+      "description": "shareholding pattern",
+      "items": {
+        "type": "object",
+        "required": [
+          "name of shareholders",
+          "number of shares held"
+        ],
+        "properties": {
+          "name of shareholders": {
+            "type": "string",
+            "description": "name of the shareholders in ACRE Table"
+          },
+          "number of shares held": {
+            "type": "string",
+            "description": "numbers of shares held by shareholders in ACRE Table"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "Individuals",
+    "LIC of India",
+    "board of directors",
+    "shareholding pattern"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Advanced Financial Schema Example
+
+This example shows a more complex schema for extracting detailed shareholding information:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "shares held by Punjab National bank": {
+      "type": "string",
+      "description": "shares held by Punjab National bank"
+    },
+    "shares held by IFCI": {
+      "type": "string",
+      "description": "shares held by IFCI"
+    },
+    "shareholding pattern": {
+      "type": "object",
+      "description": "shareholding pattern",
+      "properties": {
+        "Percentage holding": {
+          "type": "array",
+          "description": "percentage holding of shareholders in ACRE",
+          "items": {
+            "type": "string",
+            "description": "percentage holding of shareholders in ACRE"
+          }
+        },
+        "Name of shareholders": {
+          "type": "array",
+          "description": "Names of shareholders in ACRE",
+          "items": {
+            "type": "string",
+            "description": "Names of shareholders in ACRE"
+          }
+        }
+      },
+      "required": ["Percentage holding", "Name of shareholders"],
+      "additionalProperties": false
+    },
+    "names of board of directors": {
+      "type": "array",
+      "description": "list of names of members of board of directors in ACRE",
+      "items": {
+        "type": "object",
+        "properties": {
+          "names of board of directors": {
+            "type": "string",
+            "description": "list of names of members of board of directors in ACRE"
+          }
+        },
+        "required": ["names of board of directors"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "shares held by Punjab National bank", 
+    "shares held by IFCI", 
+    "shareholding pattern", 
+    "names of board of directors"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Citation Extraction Schema
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Document title or paper title"
+    },
+    "authors": {
+      "type": "array",
+      "description": "List of author names",
+      "items": {
+        "type": "string"
+      }
+    },
+    "publication_date": {
+      "type": "string",
+      "description": "Publication date in YYYY-MM-DD format"
+    },
+    "journal_name": {
+      "type": "string",
+      "description": "Name of journal or publication venue"
+    },
+    "doi": {
+      "type": "string",
+      "description": "Digital Object Identifier"
+    },
+    "abstract": {
+      "type": "string",
+      "description": "Document abstract or summary"
+    },
+    "keywords": {
+      "type": "array",
+      "description": "Key terms and subject keywords",
+      "items": {
+        "type": "string"
+      }
+    },
+    "references": {
+      "type": "array",
+      "description": "List of cited references",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["title", "authors"],
+  "additionalProperties": false
+}
+```
+
+### Legal Document Schema
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_type": {
+      "type": "string",
+      "description": "Type of legal document (contract, agreement, etc.)"
+    },
+    "parties": {
+      "type": "array",
+      "description": "Names of parties involved",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Party name"
+          },
+          "role": {
+            "type": "string",
+            "description": "Party role (e.g., buyer, seller, contractor)"
+          }
+        },
+        "required": ["name", "role"],
+        "additionalProperties": false
+      }
+    },
+    "effective_date": {
+      "type": "string",
+      "description": "Document effective date"
+    },
+    "key_terms": {
+      "type": "array",
+      "description": "Important terms and conditions",
+      "items": {
+        "type": "string"
+      }
+    },
+    "obligations": {
+      "type": "array",
+      "description": "Key obligations and responsibilities",
+      "items": {
+        "type": "object",
+        "properties": {
+          "party": {
+            "type": "string",
+            "description": "Party responsible for the obligation"
+          },
+          "obligation": {
+            "type": "string",
+            "description": "Description of the obligation"
+          }
+        },
+        "required": ["party", "obligation"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["document_type", "parties", "effective_date"],
+  "additionalProperties": false
+}
+```
+
+## JSON Schema Field Types
+
+<ResponseField name="string" type="string">
+  Text content, single values. Use for names, descriptions, dates as text.
+</ResponseField>
+
+<ResponseField name="number" type="number">
+  Numeric values, amounts, quantities. Use for counts, percentages, monetary values.
+</ResponseField>
+
+<ResponseField name="integer" type="integer">
+  Whole numbers only. Use for counts, IDs, years.
+</ResponseField>
+
+<ResponseField name="boolean" type="boolean">
+  True/false values. Use for yes/no questions, flags.
+</ResponseField>
+
+<ResponseField name="array" type="array">
+  Lists of items. Must include `items` property defining the type of array elements.
+</ResponseField>
+
+<ResponseField name="object" type="object">
+  Structured data with nested fields. Must include `properties` defining nested structure.
+</ResponseField>
+
+<ResponseField name="null" type="null">
+  Null values. Can be combined with other types using array notation: `["string", "null"]`
+</ResponseField>
+
+## Job Management Integration
+
+After creating an extraction job, use the job management endpoints to monitor progress:
+
+```python
+import time
+import requests
+
+def wait_for_extraction_completion(job_id, api_key):
+    """Poll job status until completion"""
+    
+    headers = {"api-key": api_key}
+    status_url = f"https://visionapi.unsiloed.ai/jobs/{job_id}"
+    
+    while True:
+        response = requests.get(status_url, headers=headers)
+        
+        if response.status_code == 200:
+            status_data = response.json()
+            print(f"Job status: {status_data['status']}")
+            
+            if status_data['status'] == 'completed':
+                # Get results
+                results_url = f"https://visionapi.unsiloed.ai/jobs/{job_id}/results"
+                results_response = requests.get(results_url, headers=headers)
+                
+                if results_response.status_code == 200:
+                    return results_response.json()
+                else:
+                    raise Exception(f"Failed to get results: {results_response.text}")
+                    
+            elif status_data['status'] == 'failed':
+                raise Exception(f"Job failed: {status_data.get('error', 'Unknown error')}")
+                
+        time.sleep(5)  # Wait 5 seconds before next check
+
+# Usage
+job_id = "945b4578-691f-4c74-8184-dde654093b11"
+results = wait_for_extraction_completion(job_id, "your-api-key")
+print("Extraction completed:", results)
+```
+
+## Advanced Schema Patterns
+
+### Nested Object Structures
+
+For complex documents with hierarchical data:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "company_info": {
+      "type": "object",
+      "description": "Company identification and basic information",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Full company name"
+        },
+        "ticker": {
+          "type": "string",
+          "description": "Stock ticker symbol"
+        },
+        "sector": {
+          "type": "string",
+          "description": "Business sector"
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": false
+    },
+    "financial_data": {
+      "type": "object",
+      "description": "Financial metrics and performance data",
+      "properties": {
+        "revenue": {
+          "type": "number",
+          "description": "Total revenue"
+        },
+        "profit_margin": {
+          "type": "number",
+          "description": "Profit margin percentage"
+        }
+      },
+      "required": ["revenue"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["company_info", "financial_data"],
+  "additionalProperties": false
+}
+```
+
+### Array of Complex Objects
+
+For extracting lists of structured data:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "transactions": {
+      "type": "array",
+      "description": "List of financial transactions",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Transaction date"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Transaction amount"
+          },
+          "description": {
+            "type": "string",
+            "description": "Transaction description"
+          },
+          "category": {
+            "type": "string",
+            "description": "Transaction category"
+          }
+        },
+        "required": ["date", "amount", "description"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["transactions"],
+  "additionalProperties": false
+}
+```
+
+## Error Handling
+
+<ResponseField name="400" type="Bad Request">
+  Invalid JSON schema format or missing required parameters
+</ResponseField>
+
+<ResponseField name="401" type="Unauthorized">
+  Invalid or missing API key
+</ResponseField>
+
+<ResponseField name="413" type="Payload Too Large">
+  File size exceeds 100MB limit
+</ResponseField>
+
+<ResponseField name="422" type="Unprocessable Entity">
+  Invalid file format, malformed JSON schema, or processing error
+</ResponseField>
+
+<ResponseField name="429" type="Too Many Requests">
+  Rate limit exceeded or quota exhausted
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  Server error during processing
+</ResponseField>
+
+## Best Practices
+
+<Tip>
+**Schema Design**: Use specific, descriptive field names and descriptions. Clear descriptions improve extraction accuracy significantly.
+</Tip>
+
+<Tip>
+**Required Fields**: Only mark fields as required if they are essential. Optional fields allow for more flexible extraction.
+</Tip>
+
+<Tip>
+**Field Types**: Choose appropriate types - use `number` for numeric data, `string` for text, `array` for lists, and `object` for nested structures.
+</Tip>
+
+<Tip>
+**Array Items**: Always define the `items` property for arrays to specify the structure of array elements.
+</Tip>
+
+<Tip>
+**Batch Processing**: Use batch extraction for multiple similar documents to improve efficiency and reduce API calls.
+</Tip>
+
+<Warning>
+**Schema Validation**: Ensure your JSON schema is valid. Invalid schemas will result in 422 errors.
+</Warning>
+
+<Warning>
+**Processing Time**: Complex schemas and large documents take longer to process. Monitor job status regularly.
+</Warning>
+
+<Warning>
+**Quota Management**: Check `quota_remaining` in responses to avoid hitting limits during batch operations.
+</Warning>
+
+## Integration Examples
+
+### Academic Paper Processing
+
+```python
+def extract_academic_citations(pdf_files, api_key):
+    """Extract citations from academic papers using JSON Schema"""
+    
+    schema = {
+        "type": "object",
+        "properties": {
+            "title": {
+                "type": "string",
+                "description": "Paper title"
+            },
+            "authors": {
+                "type": "array",
+                "description": "List of author names with affiliations",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "Author full name"
+                        },
+                        "affiliation": {
+                            "type": "string",
+                            "description": "Author institutional affiliation"
+                        }
+                    },
+                    "required": ["name"],
+                    "additionalProperties": false
+                }
+            },
+            "abstract": {
+                "type": "string",
+                "description": "Paper abstract"
+            },
+            "keywords": {
+                "type": "array",
+                "description": "Research keywords and terms",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "methodology": {
+                "type": "string",
+                "description": "Research methodology description"
+            },
+            "key_findings": {
+                "type": "array",
+                "description": "Main research findings and conclusions",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "references": {
+                "type": "array",
+                "description": "List of cited references in standard format",
+                "items": {
+                    "type": "string"
+                }
+            }
+        },
+        "required": ["title", "authors"],
+        "additionalProperties": false
+    }
+    
+    # Process batch
+    url = "https://visionapi.unsiloed.ai/batch/cite"
+    headers = {"accept": "application/json", "api-key": api_key}
+    
+    files = [("pdf_files", (f"paper_{i}.pdf", open(pdf, "rb"), "application/pdf")) 
+             for i, pdf in enumerate(pdf_files)]
+    
+    data = {
+        "schema_data": json.dumps(schema),
+        "batch_size": 3
+    }
+    
+    response = requests.post(url, headers=headers, files=files, data=data)
+    
+    if response.status_code == 200:
+        job_info = response.json()
+        return wait_for_extraction_completion(job_info['job_id'], api_key)
+    else:
+        raise Exception(f"Batch extraction failed: {response.text}")
+
+# Usage
+papers = ["paper1.pdf", "paper2.pdf", "paper3.pdf"]
+results = extract_academic_citations(papers, "your-api-key")
+```
+
+### Financial Report Analysis
+
+```python
+def extract_financial_data(pdf_file, api_key):
+    """Extract key financial metrics from reports using comprehensive JSON Schema"""
+    
+    schema = {
+        "type": "object",
+        "properties": {
+            "company_info": {
+                "type": "object",
+                "description": "Company identification",
+                "properties": {
+                    "company_name": {
+                        "type": "string",
+                        "description": "Full company name"
+                    },
+                    "ticker_symbol": {
+                        "type": "string",
+                        "description": "Stock ticker symbol"
+                    },
+                    "reporting_period": {
+                        "type": "string",
+                        "description": "Financial reporting period (Q1 2023, FY 2023, etc.)"
+                    }
+                },
+                "required": ["company_name"],
+                "additionalProperties": false
+            },
+            "financial_metrics": {
+                "type": "object",
+                "description": "Key financial figures",
+                "properties": {
+                    "revenue": {
+                        "type": "number",
+                        "description": "Total revenue in millions"
+                    },
+                    "net_income": {
+                        "type": "number",
+                        "description": "Net income in millions"
+                    },
+                    "eps": {
+                        "type": "number",
+                        "description": "Earnings per share"
+                    },
+                    "cash_flow": {
+                        "type": "number",
+                        "description": "Operating cash flow in millions"
+                    }
+                },
+                "required": ["revenue"],
+                "additionalProperties": false
+            },
+            "key_highlights": {
+                "type": "array",
+                "description": "Important business highlights and achievements",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "risk_factors": {
+                "type": "array",
+                "description": "Identified risk factors and challenges",
+                "items": {
+                    "type": "string"
+                }
+            }
+        },
+        "required": ["company_info", "financial_metrics"],
+        "additionalProperties": false
+    }
+    
+    url = "https://visionapi.unsiloed.ai/cite"
+    headers = {"accept": "application/json", "api-key": api_key}
+    
+    files = {"pdf_file": (pdf_file, open(pdf_file, "rb"), "application/pdf")}
+    data = {"schema_data": json.dumps(schema)}
+    
+    response = requests.post(url, headers=headers, files=files, data=data)
+    
+    if response.status_code == 200:
+        job_info = response.json()
+        return wait_for_extraction_completion(job_info['job_id'], api_key)
+    else:
+        raise Exception(f"Financial extraction failed: {response.text}")
+
+# Usage
+financial_data = extract_financial_data("quarterly_report.pdf", "your-api-key")
+```
+
+## Rate Limits
+
+- **Single Extraction**: 100 requests per minute
+- **Batch Extraction**: 20 batch jobs per minute
+- **File Upload**: 500MB per minute total
+- **Concurrent Jobs**: Maximum 10 active jobs per API key
+
+Rate limits are enforced per API key and reset on a rolling window basis. Monitor your quota usage through the `quota_remaining` field in responses. 

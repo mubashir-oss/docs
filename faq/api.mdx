@@ -1,0 +1,295 @@
+---
+title: "API FAQ"
+description: "Technical questions and answers about Unsiloed AI's API integration"
+---
+
+# API FAQ
+
+Technical questions and answers for developers integrating with Unsiloed AI's APIs.
+
+## Getting Started with the API
+
+### How do I get API access?
+
+1. **Create an account** at [unsiloed-ai.com](https://www.unsiloed-ai.com)
+2. **Navigate to your dashboard** after signing up
+3. **Generate API keys** in the API section
+4. **Start making requests** using our endpoints
+
+### What is the base URL for the API?
+
+The base URL for all API endpoints is:
+```
+https://visionapi.unsiloed.ai
+```
+
+### How do I authenticate API requests?
+
+We use API key authentication. Include your API key in the request headers:
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+     -H "Content-Type: application/json" \
+     https://visionapi.unsiloed.ai/endpoint
+```
+
+<Warning>
+Keep your API keys secure and never expose them in client-side code or public repositories.
+</Warning>
+
+## API Endpoints and Usage
+
+### What are the main API endpoints?
+
+Our core endpoints include:
+
+- **Document Extraction**: `/extraction` - Extract text and data from documents
+- **Table Extraction**: `/tables` - Extract structured table data
+- **Document Parsing**: `/parsing` - Parse and structure document content
+- **Document Splitting**: `/splitter/split-pdf` - Split documents by classification
+- **Document Classification**: `/classification` - Classify document types
+- **Batch Processing**: `/batch` - Process multiple documents
+
+### What HTTP methods are supported?
+
+Most endpoints use **POST** requests for document processing:
+- `POST` - Submit documents for processing
+- `GET` - Retrieve job status and results (for async operations)
+- `DELETE` - Cancel processing jobs
+
+### How do I handle file uploads?
+
+Use `multipart/form-data` for file uploads:
+
+```python
+import requests
+
+files = {"file": ("document.pdf", open("document.pdf", "rb"), "application/pdf")}
+response = requests.post(
+    "https://visionapi.unsiloed.ai/extraction",
+    files=files,
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+```
+
+## Rate Limits and Quotas
+
+### What are the API rate limits?
+
+Default rate limits:
+- **100 requests per minute** for standard plans
+- **1000 requests per minute** for professional plans
+- **Custom limits** for enterprise plans
+
+### How do I handle rate limiting?
+
+When you exceed rate limits, you'll receive a `429 Too Many Requests` response. Implement exponential backoff:
+
+```python
+import time
+import requests
+
+def make_request_with_retry(url, **kwargs):
+    max_retries = 3
+    for attempt in range(max_retries):
+        response = requests.post(url, **kwargs)
+        if response.status_code != 429:
+            return response
+        
+        wait_time = 2 ** attempt  # Exponential backoff
+        time.sleep(wait_time)
+    
+    return response
+```
+
+### What happens if I exceed my quota?
+
+- **Free tier**: Processing stops until next billing cycle
+- **Paid plans**: Overage charges apply
+- **Enterprise**: Custom arrangements available
+
+## Error Handling
+
+### What HTTP status codes should I expect?
+
+Common status codes:
+- `200` - Success
+- `400` - Bad Request (invalid parameters)
+- `401` - Unauthorized (invalid API key)
+- `413` - Payload Too Large (file size exceeded)
+- `429` - Too Many Requests (rate limited)
+- `500` - Internal Server Error
+
+### How should I handle errors?
+
+Always check the response status and handle errors appropriately:
+
+```python
+response = requests.post(url, files=files, headers=headers)
+
+if response.status_code == 200:
+    result = response.json()
+    # Process successful response
+elif response.status_code == 400:
+    error = response.json()
+    print(f"Bad request: {error.get('detail', 'Unknown error')}")
+elif response.status_code == 401:
+    print("Invalid API key")
+elif response.status_code == 413:
+    print("File too large")
+else:
+    print(f"Unexpected error: {response.status_code}")
+```
+
+### What error information is provided?
+
+Error responses include:
+```json
+{
+  "detail": "Descriptive error message",
+  "error_code": "SPECIFIC_ERROR_CODE",
+  "timestamp": "2024-01-01T12:00:00Z"
+}
+```
+
+## Document Processing
+
+### What file formats are supported via API?
+
+Supported formats:
+- **PDF**: Including scanned PDFs
+- **Images**: PNG, JPEG, TIFF, WebP
+- **Documents**: DOCX, TXT
+
+### What's the maximum file size?
+
+- **Standard**: 100MB per file
+- **Enterprise**: Custom limits available
+
+### How do I process multiple files?
+
+Use the batch processing endpoint:
+
+```python
+files = [
+    ("files", ("doc1.pdf", open("doc1.pdf", "rb"), "application/pdf")),
+    ("files", ("doc2.pdf", open("doc2.pdf", "rb"), "application/pdf"))
+]
+
+response = requests.post(
+    "https://visionapi.unsiloed.ai/batch",
+    files=files,
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+```
+
+## Response Formats
+
+### What format do API responses use?
+
+All responses are in JSON format:
+
+```json
+{
+  "status": "success",
+  "data": {
+    "extracted_text": "Document content...",
+    "confidence": 0.95,
+    "metadata": {
+      "pages": 5,
+      "processing_time": 2.3
+    }
+  }
+}
+```
+
+### How do I handle binary responses?
+
+Some endpoints (like document splitting) return ZIP files:
+
+```python
+response = requests.post(url, files=files, headers=headers)
+
+if response.headers.get('content-type') == 'application/zip':
+    with open('result.zip', 'wb') as f:
+        f.write(response.content)
+```
+
+## Webhooks and Async Processing
+
+### Do you support webhooks?
+
+Yes! Configure webhooks in your dashboard to receive notifications when processing completes:
+
+```json
+{
+  "job_id": "12345",
+  "status": "completed",
+  "result_url": "https://api.unsiloed.ai/results/12345",
+  "timestamp": "2024-01-01T12:00:00Z"
+}
+```
+
+### How do I handle long-running processes?
+
+For large documents, use async processing:
+
+1. **Submit job**: Receive a `job_id`
+2. **Poll status**: Check `/jobs/{job_id}/status`
+3. **Retrieve results**: Get results when status is `completed`
+
+```python
+# Submit job
+response = requests.post(url, files=files, headers=headers)
+job_id = response.json()['job_id']
+
+# Poll status
+while True:
+    status_response = requests.get(f"{base_url}/jobs/{job_id}/status", headers=headers)
+    status = status_response.json()['status']
+    
+    if status == 'completed':
+        results = requests.get(f"{base_url}/jobs/{job_id}/results", headers=headers)
+        break
+    elif status == 'failed':
+        print("Job failed")
+        break
+    
+    time.sleep(5)  # Wait 5 seconds before checking again
+```
+
+## SDK and Libraries
+
+### Do you provide SDKs?
+
+We provide official SDKs for:
+- **Python**: `pip install unsiloed-ai`
+- **JavaScript/Node.js**: `npm install unsiloed-ai`
+- **More languages**: Coming soon
+
+### How do I use the Python SDK?
+
+```python
+from unsiloed_ai import UnsiloedAI
+
+client = UnsiloedAI(api_key="your-api-key")
+
+# Extract text from document
+result = client.extract_text("document.pdf")
+print(result.text)
+
+# Parse structured data
+parsed = client.parse_document("financial_report.pdf")
+print(parsed.tables)
+```
+
+---
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Complete API documentation with examples
+  </Card>
+  <Card title="Try the Playground" icon="play" href="/our-playground">
+    Test API endpoints interactively
+  </Card>
+</CardGroup> 

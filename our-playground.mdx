@@ -1,0 +1,282 @@
+---
+title: 'Our Playground'
+description: 'Test and experiment with Unsiloed AI APIs in real-time'
+---
+
+<Info>
+  **Ready to experiment?** Use our interactive playground to test document processing capabilities with real examples. <br />
+  Get your API key from the [dashboard](https://www.unsiloed-ai.com/dashboard) to start experimenting.
+</Info>
+
+Welcome to the Unsiloed AI Playground! This is your sandbox environment to test our document processing APIs, experiment with different parameters, and see real-time results.
+
+## Interactive API Testing
+
+**Step 1**: Set up your environment:
+
+<CodeGroup>
+
+  ```bash curl
+  # Test connection with a simple health check
+  curl -X GET "https://api.unsiloed-ai.com/v1/health" \
+    -H "Authorization: Bearer YOUR_API_KEY"
+  ```
+
+```python python
+# Install the Unsiloed AI Python SDK
+pip install unsiloed-ai
+
+# Quick setup
+from unsiloed_ai import UnsiloedClient
+client = UnsiloedClient(api_key="YOUR_API_KEY")
+```
+
+```javascript javascript
+# Install the Unsiloed AI JavaScript SDK
+npm install @unsiloed-ai/sdk
+
+// Quick setup
+import { UnsiloedClient } from '@unsiloed-ai/sdk';
+const client = new UnsiloedClient({ apiKey: 'YOUR_API_KEY' });
+```
+
+</CodeGroup>
+
+**Step 2**: Try document extraction with our sample documents:
+
+<CodeGroup>
+
+```bash curl
+# Extract data from a sample financial report
+curl -X POST "https://api.unsiloed-ai.com/v1/extract" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "document_url": "https://samples.unsiloed-ai.com/annual-report-2023.pdf",
+    "extraction_type": "financial_metrics",
+    "include_tables": true,
+    "output_format": "json"
+  }'
+```
+
+```python python
+# Process a sample document
+result = client.extract_document(
+    document_url="https://samples.unsiloed-ai.com/annual-report-2023.pdf",
+    extraction_type="comprehensive",
+    include_tables=True,
+    include_charts=True
+)
+
+print(f"Job ID: {result.job_id}")
+print(f"Status: {result.status}")
+```
+
+```javascript javascript
+// Extract financial data
+const result = await client.extractDocument({
+  documentUrl: 'https://samples.unsiloed-ai.com/annual-report-2023.pdf',
+  extractionType: 'financial_metrics',
+  includeTables: true,
+  outputFormat: 'json'
+});
+
+console.log('Job ID:', result.jobId);
+console.log('Status:', result.status);
+```
+
+</CodeGroup>
+
+## Live Examples
+
+### Document Classification
+
+Test our document classification with different financial document types:
+
+<CodeGroup>
+
+```bash Sample 1: Annual Report
+curl -X POST "https://api.unsiloed-ai.com/v1/classify" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "document_url": "https://samples.unsiloed-ai.com/apple-10k-2023.pdf",
+    "classification_types": ["document_type", "financial_period", "company_sector"]
+  }'
+```
+
+```bash Sample 2: Earnings Statement
+curl -X POST "https://api.unsiloed-ai.com/v1/classify" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "document_url": "https://samples.unsiloed-ai.com/q3-earnings-2023.pdf",
+    "classification_types": ["document_type", "financial_period"]
+  }'
+```
+
+</CodeGroup>
+
+### Table Extraction
+
+Extract structured data from financial tables:
+
+```bash
+curl -X POST "https://api.unsiloed-ai.com/v1/tables" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "document_url": "https://samples.unsiloed-ai.com/balance-sheet-2023.pdf",
+    "table_types": ["balance_sheet", "income_statement", "cash_flow"],
+    "output_format": "structured_json"
+  }'
+```
+
+Expected response:
+```json
+{
+  "job_id": "job_abc123",
+  "status": "processing",
+  "estimated_completion": "2024-01-15T10:30:00Z",
+  "tables_found": 3,
+  "preview": {
+    "balance_sheet": {
+      "total_assets": "$1,234,567,000",
+      "total_liabilities": "$567,890,000",
+      "shareholders_equity": "$666,677,000"
+    }
+  }
+}
+```
+
+## Sample Documents
+
+Try these sample documents to test different features:
+
+<CardGroup cols={2}>
+  <Card
+    title="Apple 10-K Filing"
+    icon="file-chart-line"
+    href="https://samples.unsiloed-ai.com/apple-10k-2023.pdf"
+  >
+    Annual report with comprehensive financial data and narrative sections
+  </Card>
+  <Card
+    title="Tesla Q3 Earnings"
+    icon="chart-line"
+    href="https://samples.unsiloed-ai.com/tesla-q3-2023.pdf"
+  >
+    Quarterly earnings report with financial statements and metrics
+  </Card>
+  <Card
+    title="Goldman Sachs Research"
+    icon="magnifying-glass-chart"
+    href="https://samples.unsiloed-ai.com/gs-research-2023.pdf"
+  >
+    Investment research report with analysis and recommendations
+  </Card>
+  <Card
+    title="Berkshire Hathaway Letter"
+    icon="envelope"
+    href="https://samples.unsiloed-ai.com/brk-letter-2023.pdf"
+  >
+    Annual shareholder letter with narrative insights and commentary
+  </Card>
+</CardGroup>
+
+## Advanced Features
+
+### Batch Processing
+
+Process multiple documents simultaneously:
+
+```python
+# Batch process multiple documents
+batch_job = client.create_batch_job([
+    {
+        "document_url": "https://samples.unsiloed-ai.com/doc1.pdf",
+        "extraction_type": "financial_metrics"
+    },
+    {
+        "document_url": "https://samples.unsiloed-ai.com/doc2.pdf",
+        "extraction_type": "comprehensive"
+    }
+])
+
+print(f"Batch Job ID: {batch_job.id}")
+```
+
+### Custom Extraction Templates
+
+Define custom extraction patterns for specific document types:
+
+```javascript
+const customExtraction = await client.extractDocument({
+  documentUrl: 'https://samples.unsiloed-ai.com/custom-report.pdf',
+  extractionTemplate: {
+    fields: [
+      { name: 'revenue', pattern: 'Total Revenue|Net Revenue', type: 'currency' },
+      { name: 'profit_margin', pattern: 'Profit Margin|Operating Margin', type: 'percentage' },
+      { name: 'employee_count', pattern: 'Total Employees|Headcount', type: 'number' }
+    ]
+  }
+});
+```
+
+## Real-time Monitoring
+
+Monitor your document processing jobs in real-time:
+
+<CodeGroup>
+
+```bash Check Job Status
+curl -X GET "https://api.unsiloed-ai.com/v1/jobs/YOUR_JOB_ID" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python Get Results
+# Check job status and get results
+job_status = client.get_job_status("job_abc123")
+
+if job_status.status == "completed":
+    results = client.get_job_results("job_abc123")
+    print("Extraction completed!")
+    print(f"Extracted {len(results.data)} data points")
+```
+
+</CodeGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title='Error: Invalid API key or unauthorized access'>
+    This indicates an authentication issue. Please check:
+    1. Your API key is correct and active
+    2. You have sufficient credits in your account
+    3. The API key has the necessary permissions for the endpoint
+    4. Try regenerating your API key from the dashboard
+  </Accordion>
+
+  <Accordion title="Issue: Document processing is taking too long">
+    Large documents may take several minutes to process. Consider:
+    1. Check the job status using the job ID
+    2. For documents over 100 pages, use our batch processing API
+    3. Split large documents into smaller sections for faster processing
+    4. Contact support if processing exceeds expected timeframes
+  </Accordion>
+
+  <Accordion title="Error: Unsupported document format">
+    We support most common document formats. Ensure:
+    1. Document is in PDF, DOCX, or image format (PNG, JPG)
+    2. File size is under 50MB for single documents
+    3. Document is not password protected or encrypted
+    4. For scanned documents, ensure text is clearly readable
+  </Accordion>
+</AccordionGroup>
+
+## Need Help?
+
+- 📚 [API Documentation](/api-reference/introduction) - Complete API reference
+- 💬 [Community Forum](https://www.unsiloed-ai.com/community) - Connect with other developers
+- 📧 [Support](mailto:support@unsiloed-ai.com) - Direct technical support
+- 🎯 [Examples Repository](https://github.com/unsiloed-ai/examples) - Code samples and tutorials 

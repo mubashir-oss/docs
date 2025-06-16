@@ -1,0 +1,311 @@
+---
+title: "Troubleshooting FAQ"
+description: "Common issues and solutions for Unsiloed AI document processing"
+---
+
+# Troubleshooting FAQ
+
+Solutions to common issues you might encounter while using Unsiloed AI's document processing platform.
+
+## Document Processing Issues
+
+### My document isn't processing correctly
+
+**Common causes and solutions:**
+
+<AccordionGroup>
+  <Accordion title="Poor document quality">
+    **Problem**: Blurry, low-resolution, or poorly scanned documents
+    
+    **Solutions**:
+    - Use high-resolution scans (300 DPI or higher)
+    - Ensure documents are properly aligned
+    - Use PDF format when possible instead of images
+    - Check that text is clearly readable
+  </Accordion>
+
+  <Accordion title="Unsupported file format">
+    **Problem**: File format not supported by our system
+    
+    **Solutions**:
+    - Convert to supported formats: PDF, PNG, JPEG, TIFF, DOCX, TXT
+    - For Excel files, save as PDF first
+    - For PowerPoint, export as PDF
+  </Accordion>
+
+  <Accordion title="File size too large">
+    **Problem**: Document exceeds 100MB limit
+    
+    **Solutions**:
+    - Compress the PDF using online tools
+    - Split large documents into smaller sections
+    - Reduce image resolution if document contains many images
+    - Contact support for enterprise limits
+  </Accordion>
+
+  <Accordion title="Complex document structure">
+    **Problem**: Multi-column layouts, tables, or unusual formatting
+    
+    **Solutions**:
+    - Try the table extraction endpoint for tabular data
+    - Use document splitting for mixed document types
+    - Consider preprocessing complex layouts
+    - Contact support for custom solutions
+  </Accordion>
+</AccordionGroup>
+
+### Processing is taking too long
+
+**Expected processing times:**
+- Simple documents (1-5 pages): 5-15 seconds
+- Complex documents (5-20 pages): 30-60 seconds  
+- Large documents (20+ pages): 2-5 minutes
+
+**If processing exceeds expected times:**
+
+1. **Check document complexity** - Tables, images, and complex layouts take longer
+2. **Verify file size** - Larger files naturally take more time
+3. **Check system status** - Visit our status page for any ongoing issues
+4. **Use async processing** - For large documents, use job-based processing
+
+### Low accuracy results
+
+**Improving accuracy:**
+
+<Tip>
+**Document Quality Checklist:**
+- ✅ High resolution (300+ DPI)
+- ✅ Clear, readable text
+- ✅ Proper orientation
+- ✅ Minimal skew or rotation
+- ✅ Good contrast between text and background
+</Tip>
+
+**For specific document types:**
+- **Financial documents**: Use our specialized financial parsing endpoint
+- **Tables**: Use the dedicated table extraction endpoint
+- **Mixed documents**: Try document splitting first
+- **Handwritten text**: Currently limited support - consider digitizing first
+
+## API Integration Issues
+
+### Authentication errors (401 Unauthorized)
+
+**Common causes:**
+
+1. **Invalid API key**
+   ```bash
+   # Correct format
+   curl -H "Authorization: Bearer your-actual-api-key"
+   ```
+
+2. **Missing Authorization header**
+   ```python
+   # Correct Python example
+   headers = {"Authorization": "Bearer YOUR_API_KEY"}
+   response = requests.post(url, files=files, headers=headers)
+   ```
+
+3. **Expired API key** - Generate a new key in your dashboard
+
+### Rate limiting (429 Too Many Requests)
+
+**Solutions:**
+
+1. **Implement exponential backoff**:
+   ```python
+   import time
+   
+   def retry_with_backoff(func, max_retries=3):
+       for attempt in range(max_retries):
+           try:
+               return func()
+           except requests.exceptions.HTTPError as e:
+               if e.response.status_code == 429:
+                   wait_time = 2 ** attempt
+                   time.sleep(wait_time)
+               else:
+                   raise
+   ```
+
+2. **Reduce request frequency**
+3. **Upgrade to higher rate limits**
+4. **Use batch processing** for multiple files
+
+### File upload errors
+
+**Common issues:**
+
+<AccordionGroup>
+  <Accordion title="413 Payload Too Large">
+    **Solutions**:
+    - Reduce file size (max 100MB)
+    - Compress PDF files
+    - Split large documents
+    - Contact support for enterprise limits
+  </Accordion>
+
+  <Accordion title="400 Bad Request - Invalid file">
+    **Solutions**:
+    - Verify file format is supported
+    - Check file isn't corrupted
+    - Ensure proper multipart/form-data encoding
+    - Verify file parameter name matches API specification
+  </Accordion>
+
+  <Accordion title="Timeout errors">
+    **Solutions**:
+    - Increase request timeout in your code
+    - Use async processing for large files
+    - Check network connectivity
+    - Try uploading during off-peak hours
+  </Accordion>
+</AccordionGroup>
+
+## Response and Output Issues
+
+### Empty or incomplete results
+
+**Troubleshooting steps:**
+
+1. **Check response status code**:
+   ```python
+   if response.status_code == 200:
+       result = response.json()
+       if not result.get('data'):
+           print("No data extracted - check document quality")
+   ```
+
+2. **Verify document contains extractable text**:
+   - PDFs with text layers work best
+   - Image-only PDFs need OCR processing
+   - Handwritten content has limited support
+
+3. **Check confidence scores**:
+   - Low confidence may indicate processing issues
+   - Review document quality if confidence < 0.7
+
+### Incorrect data extraction
+
+**Common issues and fixes:**
+
+- **Wrong table structure**: Use table-specific endpoint
+- **Mixed languages**: Specify language if not English
+- **Special characters**: Check encoding (UTF-8 recommended)
+- **Currency/numbers**: Verify locale settings
+
+### Binary response issues (ZIP files)
+
+**For document splitting endpoint:**
+
+```python
+# Correct way to handle ZIP responses
+response = requests.post(url, files=files, headers=headers)
+
+if response.headers.get('content-type') == 'application/zip':
+    with open('split_documents.zip', 'wb') as f:
+        f.write(response.content)
+    
+    # Extract classification data from headers
+    classifications = json.loads(response.headers.get('X-Classifications', '{}'))
+    confidence_scores = json.loads(response.headers.get('X-Confidence-Scores', '{}'))
+else:
+    print("Unexpected response format")
+```
+
+## Performance Optimization
+
+### Improving processing speed
+
+**Best practices:**
+
+1. **Optimize document format**:
+   - Use PDF with text layers instead of scanned images
+   - Compress images within PDFs
+   - Remove unnecessary pages
+
+2. **Use appropriate endpoints**:
+   - Table extraction for tabular data
+   - Batch processing for multiple files
+   - Async processing for large documents
+
+3. **Implement caching**:
+   - Cache results for frequently processed documents
+   - Use document hashing to avoid reprocessing
+
+### Reducing API costs
+
+**Cost optimization strategies:**
+
+1. **Preprocess documents**:
+   - Remove blank pages
+   - Crop to relevant sections
+   - Optimize file sizes
+
+2. **Use batch processing**:
+   - Process multiple files in single request
+   - Reduces per-request overhead
+
+3. **Implement smart retry logic**:
+   - Don't retry on 4xx errors
+   - Use exponential backoff for 5xx errors
+
+## Getting Help
+
+### When to contact support
+
+Contact our support team if you experience:
+
+- **Consistent processing failures** despite following troubleshooting steps
+- **Unexpected API behavior** not covered in documentation
+- **Performance issues** beyond normal processing times
+- **Custom integration requirements**
+- **Enterprise feature requests**
+
+### How to get effective support
+
+**Include this information in your support request:**
+
+1. **API endpoint** you're using
+2. **Sample document** (if possible)
+3. **Complete error message** and status codes
+4. **Request/response examples** (remove sensitive data)
+5. **Programming language** and SDK version
+6. **Expected vs actual behavior**
+
+### Support channels
+
+- **Email**: [support@unsiloed-ai.com](mailto:support@unsiloed-ai.com)
+- **Documentation**: Check our comprehensive guides
+- **Status Page**: Monitor system status and outages
+- **Community**: Join our developer community
+
+<Warning>
+**Security Note**: Never include API keys, sensitive documents, or personal information in support requests. Use placeholder data or redacted examples.
+</Warning>
+
+---
+
+## Quick Diagnostic Checklist
+
+Before contacting support, try this quick checklist:
+
+<CardGroup cols={2}>
+  <Card title="Document Issues" icon="file">
+    ✅ File format supported?<br/>
+    ✅ File size under 100MB?<br/>
+    ✅ Document quality good?<br/>
+    ✅ Text clearly readable?
+  </Card>
+  
+  <Card title="API Issues" icon="code">
+    ✅ API key valid?<br/>
+    ✅ Correct endpoint URL?<br/>
+    ✅ Proper authentication header?<br/>
+    ✅ Request format correct?
+  </Card>
+</CardGroup>
+
+<Card title="Still need help?" icon="support" href="mailto:support@unsiloed-ai.com">
+  Our support team is here to help with any issues not covered in this guide
+</Card> 

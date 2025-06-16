@@ -1,0 +1,577 @@
+---
+title: "Extraction"
+description: "Advanced PDF processing and data extraction using Vision API"
+---
+
+## Overview
+
+This API provides powerful document processing capabilities using Vision models to extract structured data from PDF documents. It combines computer vision with natural language processing to understand document layouts, identify key information, and extract data according to custom JSON schemas.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Structured Data Extraction" icon="database">
+    Extract specific fields and data points from documents using custom JSON schemas
+  </Card>
+  <Card title="Bounding Box Detection" icon="square-dashed">
+    Identify and locate visual elements with precise coordinate information
+  </Card>
+  <Card title="Multi-format Support" icon="file-pdf">
+    Process PDF documents with high-quality image rendering and OCR capabilities
+  </Card>
+  <Card title="Async Processing" icon="clock">
+    Handle large documents with background processing and job management
+  </Card>
+</CardGroup>
+
+## How It Works
+
+The Vision API processes documents through several stages:
+
+1. **PDF Rendering**: Converts PDF pages to high-quality images
+2. **Vision Analysis**: Uses Vision models to understand document structure
+3. **Data Extraction**: Extracts information based on provided JSON schemas
+4. **Bounding Box Detection**: Identifies locations of extracted elements
+5. **Result Compilation**: Returns structured data with confidence scores and metadata
+
+## JSON Schema Format
+
+All extraction schemas must follow the JSON Schema specification:
+
+- `type`: "object" (root level)
+- `properties`: Object defining the fields to extract
+- `required`: Array of required field names
+- `additionalProperties`: Set to `false` for strict validation
+
+## Basic Usage
+
+### Simple Data Extraction
+
+```python
+import requests
+import json
+
+# Prepare the document and JSON schema
+files = {
+    'pdf_file': open('document.pdf', 'rb')
+}
+
+# Define extraction schema using JSON Schema format
+schema = {
+    "type": "object",
+    "properties": {
+        "title": {
+            "type": "string",
+            "description": "Document title"
+        },
+        "date": {
+            "type": "string",
+            "description": "Document date"
+        },
+        "author": {
+            "type": "string",
+            "description": "Document author"
+        },
+        "sections": {
+            "type": "array",
+            "description": "Document sections",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "heading": {
+                        "type": "string",
+                        "description": "Section heading"
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Section content"
+                    }
+                },
+                "required": ["heading", "content"],
+                "additionalProperties": false
+            }
+        }
+    },
+    "required": ["title", "date"],
+    "additionalProperties": false
+}
+
+data = {
+    'schema_data': json.dumps(schema)
+}
+
+# Make the extraction request
+response = requests.post(
+    'https://visionapi.unsiloed.ai/cite',
+    files=files,
+    data=data,
+    headers={'api-key': 'your-api-key'}
+)
+
+result = response.json()
+print(f"Job ID: {result['job_id']}")
+```
+
+### Financial Document Extraction
+
+```python
+# Financial document schema example
+financial_schema = {
+    "type": "object",
+    "properties": {
+        "Individuals": {
+            "type": "string",
+            "description": "Percentage Holding"
+        },
+        "LIC of India": {
+            "type": "string",
+            "description": "No of Shares Held"
+        },
+        "United bank of india": {
+            "type": "string",
+            "description": "No of shares held by United bank of india"
+        }
+    },
+    "required": [
+        "Individuals",
+        "LIC of India",
+        "United bank of india"
+    ],
+    "additionalProperties": false
+}
+
+files = {'pdf_file': open('financial_report.pdf', 'rb')}
+data = {'schema_data': json.dumps(financial_schema)}
+
+response = requests.post(
+    'https://visionapi.unsiloed.ai/cite',
+    files=files,
+    data=data,
+    headers={'api-key': 'your-api-key'}
+)
+
+job_id = response.json()['job_id']
+```
+
+## Advanced Features
+
+### Asynchronous Processing
+
+For large documents or batch processing, use the async endpoints:
+
+```python
+# Start async extraction job
+response = requests.post(
+    'https://visionapi.unsiloed.ai/cite',
+    files=files,
+    data=data,
+    headers={'api-key': 'your-api-key'}
+)
+
+job_id = response.json()['job_id']
+
+# Check job status
+status_response = requests.get(
+    f'https://visionapi.unsiloed.ai/jobs/{job_id}',
+    headers={'api-key': 'your-api-key'}
+)
+print(status_response.json())
+
+# Get results when completed
+if status_response.json()['status'] == 'completed':
+    result_response = requests.get(
+        f'https://visionapi.unsiloed.ai/jobs/{job_id}/results',
+        headers={'api-key': 'your-api-key'}
+    )
+    results = result_response.json()
+```
+
+### Complex Schema Definition
+
+Define complex schemas for structured extraction:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_type": {
+      "type": "string",
+      "description": "Type of document (invoice, contract, etc.)"
+    },
+    "header": {
+      "type": "object",
+      "description": "Document header information",
+      "properties": {
+        "invoice_number": {
+          "type": "string",
+          "description": "Invoice number"
+        },
+        "date": {
+          "type": "string",
+          "description": "Invoice date"
+        },
+        "due_date": {
+          "type": "string",
+          "description": "Payment due date"
+        }
+      },
+      "required": ["invoice_number", "date"],
+      "additionalProperties": false
+    },
+    "vendor": {
+      "type": "object",
+      "description": "Vendor information",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Vendor name"
+        },
+        "address": {
+          "type": "string",
+          "description": "Vendor address"
+        },
+        "contact": {
+          "type": "string",
+          "description": "Contact information"
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": false
+    },
+    "line_items": {
+      "type": "array",
+      "description": "Invoice line items",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Item description"
+          },
+          "quantity": {
+            "type": "number",
+            "description": "Item quantity"
+          },
+          "unit_price": {
+            "type": "number",
+            "description": "Price per unit"
+          },
+          "total": {
+            "type": "number",
+            "description": "Line total"
+          }
+        },
+        "required": ["description", "quantity", "unit_price"],
+        "additionalProperties": false
+      }
+    },
+    "totals": {
+      "type": "object",
+      "description": "Invoice totals",
+      "properties": {
+        "subtotal": {
+          "type": "number",
+          "description": "Subtotal amount"
+        },
+        "tax": {
+          "type": "number",
+          "description": "Tax amount"
+        },
+        "total": {
+          "type": "number",
+          "description": "Total amount"
+        }
+      },
+      "required": ["total"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["document_type", "header", "totals"],
+  "additionalProperties": false
+}
+```
+
+### Shareholding Pattern Schema
+
+For financial documents with complex shareholding data:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "board of directors": {
+      "type": "array",
+      "description": "list of names of board of directors",
+      "items": {
+        "type": "object",
+        "required": [
+          "names of board of directors"
+        ],
+        "properties": {
+          "names of board of directors": {
+            "type": "string",
+            "description": "names of all the members of board of directors"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "shareholding pattern": {
+      "type": "array",
+      "description": "shareholding pattern",
+      "items": {
+        "type": "object",
+        "required": [
+          "name of shareholders",
+          "number of shares held"
+        ],
+        "properties": {
+          "name of shareholders": {
+            "type": "string",
+            "description": "name of the shareholders"
+          },
+          "number of shares held": {
+            "type": "string",
+            "description": "numbers of shares held by shareholders"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "board of directors",
+    "shareholding pattern"
+  ],
+  "additionalProperties": false
+}
+```
+
+## Response Format
+
+### Extraction Results Structure
+
+Each extracted field returns an object with detailed metadata:
+
+- `value`: The extracted data matching the schema type
+- `score`: Confidence score between 0 and 1
+- `bboxes`: Array of bounding box coordinates
+- `page_no`: Page number where data was found
+- `min_confidence_score`: Overall minimum confidence
+
+### Standard Extraction Response
+
+```json
+{
+  "Individuals": {
+    "score": 0.9998314521743098,
+    "value": "10.57",
+    "bboxes": [
+      {
+        "bbox": [
+          79,
+          381,
+          524,
+          565
+        ]
+      }
+    ],
+    "page_no": 2
+  },
+  "LIC of India": {
+    "score": 0.9999889986487799,
+    "value": "1515000",
+    "bboxes": [
+      {
+        "bbox": [
+          79,
+          381,
+          524,
+          565
+        ]
+      }
+    ],
+    "page_no": 2
+  },
+  "United bank of india": {
+    "score": 0.999984548437705,
+    "value": "500000",
+    "bboxes": [
+      {
+        "bbox": [
+          79,
+          381,
+          524,
+          565
+        ]
+      }
+    ],
+    "page_no": 2
+  },
+  "min_confidence_score": 0.9998314521743098
+}
+```
+
+### Bounding Box Information
+
+Bounding boxes provide precise location data:
+- Coordinates are in pixels: `[x1, y1, x2, y2]`
+- `x1, y1`: Top-left corner
+- `x2, y2`: Bottom-right corner
+- Page numbers are 1-indexed
+
+## Error Handling
+
+The API provides detailed error information for JSON schema validation:
+
+```json
+{
+  "error": "Schema validation failed",
+  "details": {
+    "field": "shareholding pattern",
+    "message": "Invalid JSON Schema format - missing required properties"
+  },
+  "suggestions": [
+    "Ensure all objects have 'type' property",
+    "Add 'properties' for object types",
+    "Include 'items' for array types",
+    "Set 'additionalProperties' to false"
+  ]
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="JSON Schema Design">
+    - Use proper JSON Schema specification with `type`, `properties`, and `required`
+    - Set `additionalProperties: false` for strict validation
+    - Provide clear, descriptive field descriptions
+    - Define `items` structure for arrays
+    - Use appropriate data types (string, number, boolean, array, object)
+  </Accordion>
+
+  <Accordion title="Performance Optimization">
+    - Use async processing for large documents
+    - Implement proper error handling and retries
+    - Monitor confidence scores for quality assurance
+    - Cache results when processing similar documents
+  </Accordion>
+
+  <Accordion title="Quality Assurance">
+    - Set appropriate confidence thresholds (typically > 0.8)
+    - Use bounding box data to verify extraction accuracy
+    - Validate extracted data against expected formats
+    - Implement human review for critical extractions
+  </Accordion>
+</AccordionGroup>
+
+## Integration Examples
+
+### Workflow Integration
+
+```python
+import json
+import requests
+
+def extract_financial_data(pdf_file_path, api_key):
+    """Extract financial data using JSON Schema"""
+    
+    schema = {
+        "type": "object",
+        "properties": {
+            "company_name": {
+                "type": "string",
+                "description": "Company name"
+            },
+            "shares_held_by_institutions": {
+                "type": "array",
+                "description": "Institutional shareholdings",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "institution_name": {
+                            "type": "string",
+                            "description": "Name of institution"
+                        },
+                        "shares_held": {
+                            "type": "string",
+                            "description": "Number of shares held"
+                        }
+                    },
+                    "required": ["institution_name", "shares_held"],
+                    "additionalProperties": false
+                }
+            }
+        },
+        "required": ["company_name"],
+        "additionalProperties": false
+    }
+    
+    files = {'pdf_file': open(pdf_file_path, 'rb')}
+    data = {'schema_data': json.dumps(schema)}
+    
+    response = requests.post(
+        'https://visionapi.unsiloed.ai/cite',
+        files=files,
+        data=data,
+        headers={'api-key': api_key}
+    )
+    
+    return response.json()
+
+# Usage
+result = extract_financial_data('annual_report.pdf', 'your-api-key')
+```
+
+### Batch Processing
+
+```python
+# Process multiple documents with same schema
+files = [
+    ('pdf_files', open('doc1.pdf', 'rb')),
+    ('pdf_files', open('doc2.pdf', 'rb')),
+    ('pdf_files', open('doc3.pdf', 'rb'))
+]
+
+data = {'schema_data': json.dumps(schema)}
+
+response = requests.post(
+    'https://visionapi.unsiloed.ai/batch/cite',
+    files=files,
+    data=data,
+    headers={'api-key': 'your-api-key'}
+)
+
+job_id = response.json()['job_id']
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Schema Validation Issues">
+    **Invalid JSON Schema**: Ensure proper JSON Schema format with required properties
+    
+    **Missing type definitions**: All properties must have a `type` field
+    
+    **Array items not defined**: Arrays must include `items` property defining structure
+    
+    **Object properties missing**: Objects must include `properties` defining nested fields
+  </Accordion>
+
+  <Accordion title="Extraction Quality Issues">
+    **Low confidence scores**: Improve schema descriptions, check document quality
+    
+    **Missing data**: Verify field names match document content, adjust confidence thresholds
+    
+    **Incorrect bounding boxes**: Check document layout, consider page orientation
+  </Accordion>
+
+  <Accordion title="Performance Issues">
+    **Slow processing**: Use batch processing for multiple documents
+    
+    **Timeout errors**: Use async processing for large documents
+    
+    **Rate limiting**: Implement proper retry logic and respect API limits
+  </Accordion>
+</AccordionGroup> 

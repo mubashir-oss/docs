@@ -1,0 +1,290 @@
+---
+title: "Parsing"
+description: "Intelligent document parsing and structure analysis through advanced chunking strategies using AI-powered processing"
+---
+
+## Overview
+
+Document parsing in our Vision API is achieved through intelligent chunking strategies that analyze document structure using advanced AI and vision language models. The parsing functionality identifies different document elements like text blocks, tables, images, headers, and footers while maintaining proper reading order and extracting content with high accuracy.
+
+<Note>
+Parsing capabilities are accessed through the `/chunking` endpoint, which combines structure detection with content extraction and intelligent segmentation.
+</Note>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Element Detection" icon="magnifying-glass">
+    Identify and classify document elements using advanced AI models
+  </Card>
+  <Card title="Content Extraction" icon="file-text">
+    Extract text, tables, and images with appropriate processing methods
+  </Card>
+  <Card title="Reading Order" icon="list-ol">
+    Maintain proper document flow and reading sequence
+  </Card>
+  <Card title="Multi-Modal Processing" icon="layer-group">
+    Handle text, images, tables, and formulas with specialized extractors
+  </Card>
+</CardGroup>
+
+## Document Element Types
+
+The parsing system can identify and process the following element types through chunking strategies:
+
+### Text Elements
+- **Text**: Regular paragraph text
+- **Title**: Document and section titles
+- **Section-header**: Section headings
+- **Page-header**: Header content
+- **Page-footer**: Footer content
+- **Caption**: Image and table captions
+- **Footnote**: Footnote references and content
+- **List-item**: Bulleted and numbered lists
+
+### Visual Elements
+- **Table**: Structured tabular data
+- **Picture**: Images, charts, and diagrams
+- **Formula**: Mathematical equations and expressions
+
+## Parsing Through Chunking Strategies
+
+### Semantic Parsing with Chunking
+
+```python
+import requests
+
+# Parse and chunk document semantically
+url = "https://visionapi.unsiloed.ai/chunking"
+headers = {
+    "accept": "application/json",
+    "X-API-Key": "your-api-key"
+}
+
+files = {
+    "document_file": ("document.pdf", open("document.pdf", "rb"), "application/pdf")
+}
+
+data = {
+    "strategy": "semantic",  # Uses AI for intelligent parsing
+    "chunk_size": 1000,
+    "overlap": 100
+}
+
+response = requests.post(url, headers=headers, files=files, data=data)
+job_info = response.json()
+
+print(f"Parsing job started: {job_info['job_id']}")
+
+# Check job status
+status_url = f"https://visionapi.unsiloed.ai/jobs/{job_info['job_id']}"
+status_response = requests.get(status_url, headers=headers)
+print(f"Status: {status_response.json()['status']}")
+```
+
+## Parsing Strategies
+
+### Semantic Parsing (Recommended)
+Uses advanced AI to intelligently identify and group document elements. Best for maintaining semantic context and understanding document structure.
+
+### Hybrid Parsing
+Multi-modal processing that combines table extraction, image analysis, and enhanced metadata extraction. Most comprehensive parsing option.
+
+### Heading-Based Parsing
+Analyzes document structure based on detected headings and section hierarchy. Ideal for structured documents with clear heading patterns.
+
+### Page-Based Parsing
+Processes documents page by page, maintaining page boundaries. Useful for documents where page structure is important.
+
+## Response Format
+
+### Chunked Parsing Results
+
+When using chunking strategies (`/chunking`), you get parsed content organized into meaningful chunks:
+
+```json
+{
+  "job_id": "b2094b38-e432-44b6-a5d0-67bed07d5de1",
+  "status": "completed",
+  "result": {
+    "chunks": [
+      {
+        "content": "Annual Financial Report 2023\n\nExecutive Summary\n\nThis report presents our financial performance for the fiscal year 2023...",
+        "metadata": {
+          "chunk_index": 0,
+          "page_numbers": [1],
+          "element_types": ["Title", "Section-header", "Text"],
+          "reading_order": [0, 1, 2],
+          "confidence_scores": [0.95, 0.92, 0.88]
+        }
+      },
+      {
+        "content": "Financial Performance\n\n| Quarter | Revenue | Profit |\n|---------|---------|--------|\n| Q1 | $1.2M | $200K |\n| Q2 | $1.4M | $280K |",
+        "metadata": {
+          "chunk_index": 1,
+          "page_numbers": [1, 2],
+          "element_types": ["Section-header", "Table"],
+          "reading_order": [3, 4],
+          "confidence_scores": [0.91, 0.92]
+        }
+      }
+    ],
+    "total_chunks": 2,
+    "processing_metadata": {
+      "strategy_used": "semantic",
+      "total_pages": 2,
+      "total_elements_detected": 8,
+      "processing_time": 4.2
+    }
+  }
+}
+```
+
+## Advanced Parsing Features
+
+### Multi-Format Support
+
+The parsing system supports multiple document formats:
+
+```python
+# Parse different document types
+document_types = [
+    ("document.pdf", "application/pdf"),
+    ("presentation.pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"),
+    ("report.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+]
+    
+for filename, content_type in document_types:
+    files = {"document_file": (filename, open(filename, "rb"), content_type)}
+    response = requests.post(chunking_url, headers=headers, files=files, data=data)
+    print(f"Parsed {filename}: {response.json()['job_id']}")
+```
+
+### Element-Specific Processing
+
+Different element types are processed with specialized methods:
+
+- **Text Elements**: OCR with post-processing for clarity
+- **Tables**: Structured extraction maintaining column/row relationships  
+- **Images**: Vision analysis for content description
+- **Formulas**: Mathematical expression recognition
+- **Headers/Footers**: Context-aware text extraction
+
+## Integration Examples
+
+### Document Analysis Workflow
+
+```python
+import requests
+import time
+
+class DocumentParser:
+    def __init__(self, api_key):
+        self.api_key = api_key
+        self.base_url = "https://visionapi.unsiloed.ai"
+        self.headers = {
+            "accept": "application/json",
+            "X-API-Key": api_key
+        }
+    
+    def parse_document(self, file_path, strategy="semantic"):
+        """Parse document and return structured results"""
+        
+        # Start parsing job
+        files = {"document_file": open(file_path, "rb")}
+        data = {"strategy": strategy}
+        
+        response = requests.post(
+            f"{self.base_url}/chunking",
+            headers=self.headers,
+            files=files,
+            data=data
+        )
+        
+        job_id = response.json()["job_id"]
+        
+        # Wait for completion
+        while True:
+            status_response = requests.get(
+                f"{self.base_url}/jobs/{job_id}",
+                headers=self.headers
+            )
+            status = status_response.json()["status"]
+            
+            if status == "completed":
+                return status_response.json()["result"]
+            elif status == "failed":
+                raise Exception("Parsing failed")
+            
+            time.sleep(2)
+
+# Usage
+parser = DocumentParser("your-api-key")
+
+# Parse into semantic chunks
+chunks = parser.parse_document("document.pdf", strategy="semantic")
+print(f"Created {len(chunks['chunks'])} semantic chunks")
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Choosing the Right Strategy">
+    - **Semantic**: Best for general documents, maintains context and meaning
+    - **Hybrid**: Use for complex documents with tables, images, and mixed content
+    - **Heading**: Ideal for structured documents with clear section hierarchy
+    - **Page**: Use when page structure is important for your use case
+  </Accordion>
+
+  <Accordion title="Performance Optimization">
+    - Use async processing for large documents
+    - Monitor job status with appropriate polling intervals
+    - Consider chunking parameters based on your use case
+    - Cache results for frequently accessed documents
+  </Accordion>
+
+  <Accordion title="Quality Assurance">
+    - Review confidence scores in element detection results
+    - Validate reading order for proper document flow
+    - Check element classifications for accuracy
+    - Use appropriate chunk sizes for your downstream applications
+  </Accordion>
+</AccordionGroup>
+
+## Error Handling
+
+```python
+def safe_parse_document(file_path, api_key):
+    """Parse document with proper error handling"""
+    
+    try:
+        parser = DocumentParser(api_key)
+        result = parser.parse_document(file_path)
+        return {"success": True, "data": result}
+        
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 400:
+            return {"success": False, "error": "Unsupported file type"}
+        elif e.response.status_code == 401:
+            return {"success": False, "error": "Invalid API key"}
+        else:
+            return {"success": False, "error": f"HTTP error: {e.response.status_code}"}
+            
+    except Exception as e:
+        return {"success": False, "error": f"Processing error: {str(e)}"}
+
+# Usage with error handling
+result = safe_parse_document("document.pdf", "your-api-key")
+if result["success"]:
+    chunks = result["data"]["chunks"]
+    print(f"Successfully parsed {len(chunks)} chunks")
+else:
+    print(f"Parsing failed: {result['error']}")
+```
+
+## Related Endpoints
+
+- [Chunking API Reference](/api-reference/parsing) - Complete API documentation
+- [Document Extraction](/document-processing/vision-api) - Structured data extraction
+- [Document Classification](/document-processing/classification) - Document type classification
+- [Document Splitting](/document-processing/splitting) - Page-level document splitting 

@@ -1,6 +1,6 @@
-# Mintlify Starter Kit
+# Unsiloed AI Documentation
 
-Click on `Use this template` to copy the Mintlify starter kit. The starter kit contains examples including
+This documentation contains comprehensive guides and examples for Unsiloed AI's document processing platform, including:
 
 - Guide pages
 - Navigation

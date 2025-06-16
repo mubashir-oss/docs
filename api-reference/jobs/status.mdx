@@ -1,0 +1,704 @@
+---
+title: "Get Job Status"
+api: "GET /jobs/{job_id}"
+description: "Check the status and progress of asynchronous processing jobs"
+---
+
+## Overview
+
+The Get Job Status endpoint allows you to check the current status of any asynchronous processing job. This is essential for monitoring long-running operations like document extraction, parsing, and batch processing.
+
+<Note>
+Jobs are stored in Supabase and updated in real-time. Status checks are lightweight and can be polled frequently.
+</Note>
+
+## Request
+
+<ParamField path="job_id" type="string" required>
+  The unique identifier of the job to check
+</ParamField>
+
+<ParamField header="X-API-Key" type="string">
+  API key for authentication (optional for some endpoints)
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="string">
+  Unique identifier for the job
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Current job status: "queued", "PROCESSING", "COMPLETED", or "FAILED"
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  The operation type for this job (e.g., "extraction", "chunking", "classification")
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  Timestamp when the job was created
+</ResponseField>
+
+<ResponseField name="updated_at" type="string">
+  Timestamp when the job was last updated
+</ResponseField>
+
+<ResponseField name="pdf_name" type="string">
+  Original filename of the processed document
+</ResponseField>
+
+<ResponseField name="pdf_hash" type="string">
+  Hash of the PDF file for identification
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message (if job failed)
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X GET "https://visionapi.unsiloed.ai/jobs/b2094b38-e432-44b6-a5d0-67bed07d5de1" \
+  -H "X-API-Key: your-api-key"
+```
+
+```python Python
+import requests
+
+job_id = "b2094b38-e432-44b6-a5d0-67bed07d5de1"
+url = f"https://visionapi.unsiloed.ai/jobs/{job_id}"
+headers = {"X-API-Key": "your-api-key"}
+
+response = requests.get(url, headers=headers)
+
+if response.status_code == 200:
+    job = response.json()
+    print(f"Job Status: {job['status']}")
+    print(f"Type: {job['type']}")
+    print(f"Created: {job['created_at']}")
+    
+    if job['status'] == 'COMPLETED':
+        print("Job completed successfully!")
+    elif job['status'] == 'FAILED':
+        print(f"Job failed: {job.get('error', 'Unknown error')}")
+    elif job['status'] == 'PROCESSING':
+        print("Job is currently being processed...")
+    else:
+        print("Job is queued for processing")
+else:
+    print("Error:", response.status_code, response.text)
+```
+
+```javascript JavaScript
+const jobId = 'b2094b38-e432-44b6-a5d0-67bed07d5de1';
+const response = await fetch(`https://visionapi.unsiloed.ai/jobs/${jobId}`, {
+  headers: {
+    'X-API-Key': 'your-api-key'
+  }
+});
+
+if (response.ok) {
+  const job = await response.json();
+  console.log('Job Status:', job.status);
+  console.log('Type:', job.type);
+  console.log('Created:', job.created_at);
+  
+  switch (job.status) {
+    case 'COMPLETED':
+      console.log('Job completed successfully!');
+      break;
+    case 'FAILED':
+      console.log('Job failed:', job.error || 'Unknown error');
+      break;
+    case 'PROCESSING':
+      console.log('Job is currently being processed...');
+      break;
+    default:
+      console.log('Job is queued for processing');
+  }
+} else {
+  console.error('Failed to get job status:', await response.text());
+}
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json Queued Job
+{
+  "id": "b2094b38-e432-44b6-a5d0-67bed07d5de1",
+  "status": "queued",
+  "type": "extraction",
+  "created_at": "2024-01-15T10:30:00.000Z",
+  "updated_at": "2024-01-15T10:30:00.000Z",
+  "pdf_name": "financial_report.pdf",
+  "pdf_hash": "sha256:abc123...",
+  "user_id": "user_123"
+}
+```
+
+```json Processing Job
+{
+  "id": "b2094b38-e432-44b6-a5d0-67bed07d5de1",
+  "status": "PROCESSING",
+  "type": "extraction",
+  "created_at": "2024-01-15T10:30:00.000Z",
+  "updated_at": "2024-01-15T10:32:15.000Z",
+  "pdf_name": "financial_report.pdf",
+  "pdf_hash": "sha256:abc123...",
+  "user_id": "user_123"
+}
+```
+
+```json Completed Job
+{
+  "id": "b2094b38-e432-44b6-a5d0-67bed07d5de1",
+  "status": "COMPLETED",
+  "type": "extraction",
+  "created_at": "2024-01-15T10:30:00.000Z",
+  "updated_at": "2024-01-15T10:35:42.000Z",
+  "pdf_name": "financial_report.pdf",
+  "pdf_hash": "sha256:abc123...",
+  "user_id": "user_123"
+}
+```
+
+```json Failed Job
+{
+  "id": "b2094b38-e432-44b6-a5d0-67bed07d5de1",
+  "status": "FAILED",
+  "type": "extraction",
+  "created_at": "2024-01-15T10:30:00.000Z",
+  "updated_at": "2024-01-15T10:33:20.000Z",
+  "pdf_name": "corrupted_file.pdf",
+  "pdf_hash": "sha256:def456...",
+  "user_id": "user_123",
+  "error": "Failed to process PDF: File appears to be corrupted"
+}
+```
+
+```json Error Response - Job Not Found
+{
+  "detail": "Job b2094b38-e432-44b6-a5d0-67bed07d5de1 not found"
+}
+```
+
+</ResponseExample>
+
+## Job Status Values
+
+<AccordionGroup>
+  <Accordion title="queued">
+    Job has been created and is waiting to be processed. Jobs are processed in the order they were created.
+  </Accordion>
+
+  <Accordion title="PROCESSING">
+    Job is currently being processed. For extraction jobs, this includes PDF conversion, image analysis, and data extraction.
+  </Accordion>
+
+  <Accordion title="COMPLETED">
+    Job has finished successfully. Results can be retrieved using the `/jobs/{job_id}/result` endpoint.
+  </Accordion>
+
+  <Accordion title="FAILED">
+    Job encountered an error and could not complete. Check the `error` field for details.
+  </Accordion>
+</AccordionGroup>
+
+## Polling for Completion
+
+For long-running jobs, implement polling to check status periodically:
+
+```python
+import time
+import requests
+
+def wait_for_job_completion(job_id, api_key, poll_interval=5, max_wait=300):
+    """Wait for job to complete with polling"""
+    
+    start_time = time.time()
+    headers = {"X-API-Key": api_key}
+    
+    while time.time() - start_time < max_wait:
+        response = requests.get(f"https://visionapi.unsiloed.ai/jobs/{job_id}", headers=headers)
+        
+        if response.status_code == 200:
+            job = response.json()
+            status = job['status']
+            
+            print(f"Job status: {status}")
+            
+            if status == 'COMPLETED':
+                return job, True
+            elif status == 'FAILED':
+                return job, False
+                
+        time.sleep(poll_interval)
+    
+    raise TimeoutError(f"Job {job_id} did not complete within {max_wait} seconds")
+
+# Usage
+job_id = "your-job-id"
+job, success = wait_for_job_completion(job_id, "your-api-key")
+
+if success:
+    print("Job completed successfully!")
+else:
+    print(f"Job failed: {job.get('error', 'Unknown error')}")
+```
+
+## Best Practices
+
+<Tip>
+**Polling Frequency**: Poll every 5-10 seconds for most jobs. Avoid polling more frequently than every 2 seconds.
+</Tip>
+
+<Tip>
+**Timeout Handling**: Set reasonable timeouts (5-15 minutes) depending on document size and complexity.
+</Tip>
+
+<Warning>
+**Job Persistence**: Completed jobs and their results are stored for 7 days before cleanup.
+</Warning>
+
+## Common Issues
+
+<AccordionGroup>
+  <Accordion title="Job Not Found">
+    The job ID doesn't exist or has been cleaned up. Check that you're using the correct job ID.
+  </Accordion>
+
+  <Accordion title="Long Processing Times">
+    Large or complex documents may take several minutes. Monitor the `updated_at` field to ensure progress.
+  </Accordion>
+
+  <Accordion title="Failed Jobs">
+    Check the `error` field for specific error details. Common causes include corrupted PDFs or invalid schemas.
+  </Accordion>
+</AccordionGroup>
+
+## Batch Status Check
+
+<api>GET /jobs/batch/{batch_id}</api>
+
+Check the status of all jobs in a batch.
+
+<RequestExample>
+
+```python Python
+response = requests.get(
+    "https://api.example.com/jobs/batch/batch_xyz789abc123",
+    headers=headers,
+    params={"include_progress": True}
+)
+
+batch_status = response.json()
+print(f"Batch Status: {batch_status['status']}")
+print(f"Completed Jobs: {batch_status['completed_jobs']}/{batch_status['total_jobs']}")
+
+for job in batch_status['jobs']:
+    print(f"  {job['job_id']}: {job['status']}")
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json Batch Status
+{
+  "batch_id": "batch_xyz789abc123",
+  "status": "processing",
+  "created_at": "2024-01-15T10:30:00Z",
+  "total_jobs": 5,
+  "completed_jobs": 3,
+  "failed_jobs": 0,
+  "cancelled_jobs": 0,
+  "overall_progress": 60,
+  "jobs": [
+    {
+      "job_id": "job_1",
+      "status": "completed",
+      "operation": "extract",
+      "progress": 100
+    },
+    {
+      "job_id": "job_2",
+      "status": "completed", 
+      "operation": "parse",
+      "progress": 100
+    },
+    {
+      "job_id": "job_3",
+      "status": "processing",
+      "operation": "classify",
+      "progress": 75
+    }
+  ]
+}
+```
+
+</ResponseExample>
+
+## Multiple Jobs Status
+
+<api>GET /jobs/status</api>
+
+Check status of multiple jobs simultaneously.
+
+### Query Parameters
+
+<ParamField query="job_ids" type="string" required>
+  Comma-separated list of job IDs
+</ParamField>
+
+<ParamField query="include_progress" type="boolean" default="false">
+  Include progress details for all jobs
+</ParamField>
+
+<RequestExample>
+
+```python Python
+job_ids = ["job_abc123", "job_def456", "job_ghi789"]
+params = {
+    "job_ids": ",".join(job_ids),
+    "include_progress": True
+}
+
+response = requests.get(
+    "https://api.example.com/jobs/status",
+    headers=headers,
+    params=params
+)
+
+jobs_status = response.json()
+for job in jobs_status['jobs']:
+    print(f"{job['job_id']}: {job['status']} ({job.get('progress', {}).get('percentage', 0)}%)")
+```
+
+</RequestExample>
+
+## Job Status Polling
+
+### Polling Best Practices
+
+```python
+import time
+
+def wait_for_job_completion(job_id, max_wait_time=300, poll_interval=5):
+    """
+    Poll job status until completion or timeout
+    """
+    start_time = time.time()
+    
+    while time.time() - start_time < max_wait_time:
+        response = requests.get(
+            f"https://api.example.com/jobs/{job_id}",
+            headers=headers
+        )
+        
+        if response.status_code == 200:
+            job = response.json()
+            status = job['status']
+            
+            print(f"Job {job_id}: {status}")
+            
+            if status in ['completed', 'failed', 'cancelled']:
+                return job
+                
+            # Show progress if available
+            if 'progress' in job:
+                print(f"  Progress: {job['progress']['percentage']}%")
+        
+        time.sleep(poll_interval)
+    
+    raise TimeoutError(f"Job {job_id} did not complete within {max_wait_time} seconds")
+
+# Usage
+try:
+    completed_job = wait_for_job_completion("job_abc123def456")
+    if completed_job['status'] == 'completed':
+        print("Job completed successfully!")
+    else:
+        print(f"Job failed: {completed_job.get('error_details', {}).get('message')}")
+except TimeoutError as e:
+    print(f"Timeout: {e}")
+```
+
+### Exponential Backoff Polling
+
+```python
+def poll_with_backoff(job_id, initial_interval=2, max_interval=30, backoff_factor=1.5):
+    """
+    Poll with exponential backoff to reduce API calls
+    """
+    interval = initial_interval
+    
+    while True:
+        response = requests.get(f"https://api.example.com/jobs/{job_id}", headers=headers)
+        job = response.json()
+        
+        if job['status'] in ['completed', 'failed', 'cancelled']:
+            return job
+            
+        print(f"Job {job_id}: {job['status']} - waiting {interval}s")
+        time.sleep(interval)
+        
+        # Increase interval for next poll
+        interval = min(interval * backoff_factor, max_interval)
+```
+
+## Real-time Status Updates
+
+### WebSocket Connection
+
+```javascript
+const ws = new WebSocket('wss://api.example.com/jobs/job_abc123def456/status');
+
+ws.onopen = function() {
+    console.log('Connected to job status stream');
+};
+
+ws.onmessage = function(event) {
+    const statusUpdate = JSON.parse(event.data);
+    
+    console.log(`Job ${statusUpdate.job_id}: ${statusUpdate.status}`);
+    
+    if (statusUpdate.progress) {
+        console.log(`Progress: ${statusUpdate.progress.percentage}%`);
+        updateProgressBar(statusUpdate.progress.percentage);
+    }
+    
+    if (statusUpdate.status === 'completed') {
+        console.log('Job completed!');
+        ws.close();
+        handleJobCompletion(statusUpdate);
+    } else if (statusUpdate.status === 'failed') {
+        console.log('Job failed:', statusUpdate.error_details);
+        ws.close();
+        handleJobFailure(statusUpdate);
+    }
+};
+
+ws.onerror = function(error) {
+    console.error('WebSocket error:', error);
+};
+```
+
+## Job Status Filters
+
+<api>GET /jobs</api>
+
+List jobs with status filtering.
+
+### Query Parameters
+
+<ParamField query="status" type="string">
+  Filter by status: "queued", "processing", "completed", "failed", "cancelled"
+</ParamField>
+
+<ParamField query="operation" type="string">
+  Filter by operation type: "extract", "parse", "split", "classify"
+</ParamField>
+
+<ParamField query="created_after" type="string">
+  ISO timestamp - only jobs created after this time
+</ParamField>
+
+<ParamField query="created_before" type="string">
+  ISO timestamp - only jobs created before this time
+</ParamField>
+
+<ParamField query="tags" type="string">
+  Comma-separated list of tags to filter by
+</ParamField>
+
+<ParamField query="limit" type="number" default="50">
+  Maximum number of jobs to return (1-100)
+</ParamField>
+
+<ParamField query="offset" type="number" default="0">
+  Number of jobs to skip for pagination
+</ParamField>
+
+<RequestExample>
+
+```python Python
+# Get all failed extraction jobs from the last 24 hours
+from datetime import datetime, timedelta
+
+yesterday = (datetime.utcnow() - timedelta(days=1)).isoformat() + 'Z'
+
+params = {
+    'status': 'failed',
+    'operation': 'extract',
+    'created_after': yesterday,
+    'limit': 20
+}
+
+response = requests.get(
+    "https://api.example.com/jobs",
+    headers=headers,
+    params=params
+)
+
+failed_jobs = response.json()
+print(f"Found {len(failed_jobs['jobs'])} failed extraction jobs")
+
+for job in failed_jobs['jobs']:
+    print(f"  {job['job_id']}: {job['error_details']['message']}")
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json Jobs List
+{
+  "jobs": [
+    {
+      "job_id": "job_abc123def456",
+      "status": "completed",
+      "operation": "extract",
+      "created_at": "2024-01-15T10:30:00Z",
+      "completed_at": "2024-01-15T10:35:00Z",
+      "file_count": 2,
+      "tags": ["invoices", "batch-2024-01"]
+    },
+    {
+      "job_id": "job_def456ghi789",
+      "status": "failed",
+      "operation": "parse", 
+      "created_at": "2024-01-15T09:45:00Z",
+      "error_details": {
+        "error_type": "file_corrupted",
+        "message": "Unable to read PDF file"
+      }
+    }
+  ],
+  "pagination": {
+    "total": 156,
+    "limit": 50,
+    "offset": 0,
+    "has_more": true
+  }
+}
+```
+
+</ResponseExample>
+
+## Status Change Notifications
+
+### Webhook Events
+
+Jobs automatically send webhook notifications for status changes:
+
+```json
+{
+  "event": "job.status_changed",
+  "job_id": "job_abc123def456",
+  "previous_status": "processing",
+  "current_status": "completed",
+  "timestamp": "2024-01-15T10:35:42Z",
+  "progress": {
+    "percentage": 100,
+    "files_completed": 3,
+    "total_files": 3
+  }
+}
+```
+
+### Email Notifications
+
+Configure email notifications for job completion:
+
+```python
+# Enable email notifications when creating job
+data = {
+    'operation': 'extract',
+    'parameters': extraction_params,
+    'notification_settings': {
+        'email': 'user@example.com',
+        'events': ['completed', 'failed'],
+        'include_summary': True
+    }
+}
+```
+
+## Error Handling
+
+### Common Error Scenarios
+
+<ResponseField name="404" type="Not Found">
+  Job ID does not exist or has been deleted
+</ResponseField>
+
+<ResponseField name="403" type="Forbidden">
+  Job belongs to different account or insufficient permissions
+</ResponseField>
+
+<ResponseField name="429" type="Too Many Requests">
+  Status check rate limit exceeded
+</ResponseField>
+
+### Error Response Format
+
+```json
+{
+  "error": "Job not found",
+  "details": {
+    "error_type": "not_found",
+    "message": "Job with ID 'job_invalid123' does not exist",
+    "job_id": "job_invalid123"
+  },
+  "suggestions": [
+    "Check the job ID for typos",
+    "Verify the job belongs to your account",
+    "Job may have been automatically deleted after retention period"
+  ]
+}
+```
+
+## Performance Optimization
+
+### Efficient Status Checking
+
+```python
+# Instead of checking each job individually
+for job_id in job_ids:
+    response = requests.get(f"https://api.example.com/jobs/{job_id}")  # Multiple API calls
+
+# Use batch status check
+response = requests.get(
+    "https://api.example.com/jobs/status",
+    params={"job_ids": ",".join(job_ids)}  # Single API call
+)
+```
+
+### Caching Status Results
+
+```python
+import time
+from functools import lru_cache
+
+@lru_cache(maxsize=100)
+def get_job_status_cached(job_id, cache_duration=30):
+    """Cache job status for 30 seconds to reduce API calls"""
+    cache_key = f"{job_id}_{int(time.time() // cache_duration)}"
+    
+    response = requests.get(f"https://api.example.com/jobs/{job_id}", headers=headers)
+    return response.json()
+
+# Usage - will use cached result if called within 30 seconds
+status = get_job_status_cached("job_abc123def456")
+```
+
+## Rate Limits
+
+- **Individual Status Check**: 1000 requests per minute
+- **Batch Status Check**: 100 requests per minute
+- **Job Listing**: 60 requests per minute
+- **WebSocket Connections**: 10 concurrent connections per account
+
+Rate limits are enforced per API key and reset on a rolling window basis. 

@@ -1,0 +1,619 @@
+---
+title: "Extract Tables"
+api: "POST /tables"
+description: "Extract and structure table data from PDF documents with advanced table detection and parsing"
+---
+
+## Overview
+
+The Extract Tables endpoint processes PDF documents and extracts structured table data using advanced AI-powered table detection and parsing. This endpoint is specifically designed to identify, extract, and structure tabular content from documents with high accuracy.
+
+<Note>
+The endpoint returns a job ID for asynchronous processing. Use the job management endpoints to check status and retrieve results.
+</Note>
+
+## Request
+
+<ParamField body="pdf_file" type="file" required>
+  The PDF file to process for table extraction. Maximum file size: 100MB
+</ParamField>
+
+<ParamField header="api-key" type="string" required>
+  API key for authentication
+</ParamField>
+
+## Response
+
+<ResponseField name="job_id" type="string">
+  Unique identifier for the table extraction job
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Initial job status (typically "queued")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Descriptive message about the job creation
+</ResponseField>
+
+<ResponseField name="quota_remaining" type="number">
+  Number of API calls remaining in your quota
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST "https://visionapi.unsiloed.ai/tables" \
+  -H "accept: application/json" \
+  -H "api-key: your-api-key" \
+  -H "Content-Type: multipart/form-data" \
+  -F "pdf_file=@document.pdf;type=application/pdf"
+```
+
+```python Python
+import requests
+
+url = "https://visionapi.unsiloed.ai/tables"
+headers = {
+    "accept": "application/json",
+    "api-key": "your-api-key"
+}
+
+files = {"pdf_file": ("document.pdf", open("document.pdf", "rb"), "application/pdf")}
+
+response = requests.post(url, headers=headers, files=files)
+
+if response.status_code == 200:
+    result = response.json()
+    print(f"Table extraction job created: {result['job_id']}")
+    print(f"Status: {result['status']}")
+    print(f"Quota remaining: {result['quota_remaining']}")
+    
+    # Poll for job completion
+    job_id = result['job_id']
+    # Use job status endpoint to check progress
+    
+else:
+    print("Error:", response.status_code, response.text)
+```
+
+```javascript JavaScript
+const formData = new FormData();
+formData.append('pdf_file', fileInput.files[0]);
+
+const response = await fetch('https://visionapi.unsiloed.ai/tables', {
+  method: 'POST',
+  headers: {
+    'accept': 'application/json',
+    'api-key': 'your-api-key'
+  },
+  body: formData
+});
+
+if (response.ok) {
+  const result = await response.json();
+  console.log(`Table extraction job created: ${result.job_id}`);
+  console.log(`Status: ${result.status}`);
+  console.log(`Quota remaining: ${result.quota_remaining}`);
+  
+  // Poll for job completion using job management endpoints
+  
+} else {
+  console.error('Table extraction failed:', response.status, await response.text());
+}
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json Success Response
+{
+  "job_id": "e4a73f3c-869e-4129-bdef-614a6a51b043",
+  "status": "queued",
+  "message": "PDF table extraction started",
+  "quota_remaining": 48960
+}
+```
+
+```json Error Response
+{
+  "detail": [
+    {
+      "type": "value_error",
+      "loc": ["body", "pdf_file"],
+      "msg": "File is required",
+      "input": null
+    }
+  ]
+}
+```
+
+</ResponseExample>
+
+## Job Management Integration
+
+After creating a table extraction job, use the job management endpoints to monitor progress and retrieve results:
+
+```python
+import time
+import requests
+
+def wait_for_table_extraction_completion(job_id, api_key):
+    """Poll job status until completion"""
+    
+    headers = {"api-key": api_key}
+    status_url = f"https://visionapi.unsiloed.ai/jobs/{job_id}"
+    
+    while True:
+        response = requests.get(status_url, headers=headers)
+        
+        if response.status_code == 200:
+            status_data = response.json()
+            print(f"Job status: {status_data['status']}")
+            
+            if status_data['status'] == 'completed':
+                # Get results
+                results_url = f"https://visionapi.unsiloed.ai/jobs/{job_id}/results"
+                results_response = requests.get(results_url, headers=headers)
+                
+                if results_response.status_code == 200:
+                    return results_response.json()
+                else:
+                    raise Exception(f"Failed to get results: {results_response.text}")
+                    
+            elif status_data['status'] == 'failed':
+                raise Exception(f"Job failed: {status_data.get('error', 'Unknown error')}")
+                
+        time.sleep(5)  # Wait 5 seconds before next check
+
+# Usage
+job_id = "e4a73f3c-869e-4129-bdef-614a6a51b043"
+results = wait_for_table_extraction_completion(job_id, "your-api-key")
+print("Table extraction completed:", results)
+```
+
+## Expected Results Structure
+
+When the job completes, the results will contain structured table data:
+
+```json
+{
+  "job_id": "e4a73f3c-869e-4129-bdef-614a6a51b043",
+  "status": "completed",
+  "results": {
+    "tables": [
+      {
+        "table_id": "table_1",
+        "page_number": 1,
+        "bbox": {
+          "x1": 50,
+          "y1": 100,
+          "x2": 550,
+          "y2": 300
+        },
+        "confidence": 0.95,
+        "headers": [
+          "Product",
+          "Quantity",
+          "Price",
+          "Total"
+        ],
+        "rows": [
+          ["Widget A", "10", "$25.00", "$250.00"],
+          ["Widget B", "5", "$40.00", "$200.00"],
+          ["Widget C", "8", "$15.00", "$120.00"]
+        ],
+        "structured_data": {
+          "headers": ["Product", "Quantity", "Price", "Total"],
+          "data": [
+            {
+              "Product": "Widget A",
+              "Quantity": "10",
+              "Price": "$25.00",
+              "Total": "$250.00"
+            },
+            {
+              "Product": "Widget B",
+              "Quantity": "5",
+              "Price": "$40.00",
+              "Total": "$200.00"
+            },
+            {
+              "Product": "Widget C",
+              "Quantity": "8",
+              "Price": "$15.00",
+              "Total": "$120.00"
+            }
+          ]
+        },
+        "table_type": "data_table",
+        "column_count": 4,
+        "row_count": 3
+      }
+    ],
+    "summary": {
+      "total_tables": 1,
+      "pages_processed": 1,
+      "extraction_method": "ai_vision",
+      "processing_time": 4.2
+    }
+  }
+}
+```
+
+## Table Detection Features
+
+The table extraction endpoint provides advanced features for accurate table detection and parsing:
+
+### Detection Capabilities
+
+- **Multi-format Support**: Handles various table formats including bordered, borderless, and complex nested tables
+- **Column Alignment**: Automatically detects column boundaries and alignments
+- **Header Recognition**: Identifies table headers and separates them from data rows
+- **Merged Cells**: Handles merged cells and complex table structures
+- **Multi-page Tables**: Detects tables that span across multiple pages
+
+### Data Structuring
+
+- **Raw Data**: Provides raw table data as arrays of rows and columns
+- **Structured Format**: Converts tables to structured JSON with named columns
+- **Data Types**: Attempts to identify data types (text, numbers, dates)
+- **Formatting Preservation**: Maintains original formatting where possible
+
+## Advanced Table Processing
+
+### Complex Table Handling
+
+```python
+def extract_complex_tables(pdf_file, api_key):
+    """Extract tables from complex documents with advanced processing"""
+    
+    url = "https://visionapi.unsiloed.ai/tables"
+    headers = {"accept": "application/json", "api-key": api_key}
+    
+    files = {"pdf_file": (pdf_file, open(pdf_file, "rb"), "application/pdf")}
+    
+    response = requests.post(url, headers=headers, files=files)
+    
+    if response.status_code == 200:
+        job_info = response.json()
+        results = wait_for_table_extraction_completion(job_info['job_id'], api_key)
+        
+        # Process extracted tables
+        processed_tables = []
+        
+        for table in results['results']['tables']:
+            processed_table = {
+                'id': table['table_id'],
+                'page': table['page_number'],
+                'confidence': table['confidence'],
+                'dimensions': {
+                    'rows': table['row_count'],
+                    'columns': table['column_count']
+                },
+                'data': table['structured_data']['data'],
+                'headers': table['headers'],
+                'location': table['bbox']
+            }
+            processed_tables.append(processed_table)
+        
+        return processed_tables
+    else:
+        raise Exception(f"Table extraction failed: {response.text}")
+
+# Usage
+tables = extract_complex_tables("financial_report.pdf", "your-api-key")
+for table in tables:
+    print(f"Table {table['id']} on page {table['page']}:")
+    print(f"  Dimensions: {table['dimensions']['rows']} rows x {table['dimensions']['columns']} columns")
+    print(f"  Confidence: {table['confidence']:.3f}")
+    print(f"  Headers: {table['headers']}")
+```
+
+### Financial Table Processing
+
+```python
+def extract_financial_tables(pdf_file, api_key):
+    """Extract and process financial tables with data validation"""
+    
+    tables = extract_complex_tables(pdf_file, api_key)
+    financial_data = []
+    
+    for table in tables:
+        # Look for financial indicators
+        headers = [h.lower() for h in table['headers']]
+        
+        if any(keyword in ' '.join(headers) for keyword in ['revenue', 'income', 'profit', 'loss', 'balance']):
+            financial_table = {
+                'table_id': table['id'],
+                'page': table['page'],
+                'table_type': 'financial',
+                'data': table['data'],
+                'metrics': []
+            }
+            
+            # Extract financial metrics
+            for row in table['data']:
+                for header, value in row.items():
+                    if any(keyword in header.lower() for keyword in ['total', 'revenue', 'income', 'profit']):
+                        # Try to extract numeric value
+                        import re
+                        numeric_value = re.findall(r'[\d,]+\.?\d*', str(value))
+                        if numeric_value:
+                            financial_table['metrics'].append({
+                                'metric': header,
+                                'value': numeric_value[0].replace(',', ''),
+                                'raw_value': value
+                            })
+            
+            financial_data.append(financial_table)
+    
+    return financial_data
+
+# Usage
+financial_tables = extract_financial_tables("annual_report.pdf", "your-api-key")
+for table in financial_tables:
+    print(f"Financial table on page {table['page']}:")
+    for metric in table['metrics']:
+        print(f"  {metric['metric']}: {metric['raw_value']}")
+```
+
+## Data Export Options
+
+### CSV Export
+
+```python
+import csv
+import io
+
+def export_tables_to_csv(tables):
+    """Export extracted tables to CSV format"""
+    
+    csv_files = {}
+    
+    for table in tables:
+        # Create CSV content
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write headers
+        writer.writerow(table['headers'])
+        
+        # Write data rows
+        for row_data in table['structured_data']['data']:
+            row = [row_data.get(header, '') for header in table['headers']]
+            writer.writerow(row)
+        
+        csv_content = output.getvalue()
+        csv_files[f"table_{table['table_id']}_page_{table['page_number']}.csv"] = csv_content
+    
+    return csv_files
+
+# Usage
+results = wait_for_table_extraction_completion(job_id, api_key)
+tables = results['results']['tables']
+csv_files = export_tables_to_csv(tables)
+
+for filename, content in csv_files.items():
+    with open(filename, 'w', newline='') as f:
+        f.write(content)
+    print(f"Exported: {filename}")
+```
+
+### Excel Export
+
+```python
+import pandas as pd
+
+def export_tables_to_excel(tables, output_file):
+    """Export extracted tables to Excel with multiple sheets"""
+    
+    with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
+        for table in tables:
+            # Convert to DataFrame
+            df = pd.DataFrame(table['structured_data']['data'])
+            
+            # Create sheet name
+            sheet_name = f"Table_{table['table_id']}_P{table['page_number']}"
+            
+            # Write to Excel
+            df.to_excel(writer, sheet_name=sheet_name, index=False)
+            
+            # Add metadata sheet
+            metadata = pd.DataFrame([
+                ['Table ID', table['table_id']],
+                ['Page Number', table['page_number']],
+                ['Confidence', table['confidence']],
+                ['Rows', table['row_count']],
+                ['Columns', table['column_count']],
+                ['Table Type', table['table_type']]
+            ], columns=['Property', 'Value'])
+            
+            metadata.to_excel(writer, sheet_name=f"{sheet_name}_Meta", index=False)
+
+# Usage
+results = wait_for_table_extraction_completion(job_id, api_key)
+tables = results['results']['tables']
+export_tables_to_excel(tables, "extracted_tables.xlsx")
+print("Tables exported to extracted_tables.xlsx")
+```
+
+## Error Handling
+
+<ResponseField name="400" type="Bad Request">
+  Invalid request parameters or malformed file
+</ResponseField>
+
+<ResponseField name="401" type="Unauthorized">
+  Invalid or missing API key
+</ResponseField>
+
+<ResponseField name="413" type="Payload Too Large">
+  File size exceeds 100MB limit
+</ResponseField>
+
+<ResponseField name="422" type="Unprocessable Entity">
+  Invalid file format or processing error
+</ResponseField>
+
+<ResponseField name="429" type="Too Many Requests">
+  Rate limit exceeded or quota exhausted
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  Server error during processing
+</ResponseField>
+
+## Best Practices
+
+<Tip>
+**Document Quality**: Higher quality PDFs with clear table borders produce better results. Scanned documents may have lower accuracy.
+</Tip>
+
+<Tip>
+**Table Structure**: Tables with consistent formatting, clear headers, and regular structure are extracted more accurately.
+</Tip>
+
+<Tip>
+**Multi-page Tables**: For tables spanning multiple pages, the system attempts to merge them automatically based on column structure.
+</Tip>
+
+<Warning>
+**Complex Layouts**: Tables with irregular structures, merged cells, or nested tables may require manual review of results.
+</Warning>
+
+<Warning>
+**Processing Time**: Large documents with many tables may take longer to process. Monitor job status regularly.
+</Warning>
+
+## Integration Examples
+
+### Automated Report Processing
+
+```python
+def process_monthly_reports(report_files, api_key):
+    """Process multiple monthly reports and extract all tables"""
+    
+    all_tables = []
+    
+    for report_file in report_files:
+        print(f"Processing {report_file}...")
+        
+        try:
+            tables = extract_complex_tables(report_file, api_key)
+            
+            # Add source file information
+            for table in tables:
+                table['source_file'] = report_file
+                table['extraction_date'] = datetime.now().isoformat()
+            
+            all_tables.extend(tables)
+            
+        except Exception as e:
+            print(f"Error processing {report_file}: {e}")
+            continue
+    
+    return all_tables
+
+# Usage
+import datetime
+from pathlib import Path
+
+report_directory = Path("monthly_reports")
+report_files = list(report_directory.glob("*.pdf"))
+
+all_extracted_tables = process_monthly_reports(report_files, "your-api-key")
+
+print(f"Extracted {len(all_extracted_tables)} tables from {len(report_files)} reports")
+
+# Export summary
+summary_data = []
+for table in all_extracted_tables:
+    summary_data.append({
+        'source_file': table['source_file'],
+        'table_id': table['id'],
+        'page': table['page'],
+        'rows': table['dimensions']['rows'],
+        'columns': table['dimensions']['columns'],
+        'confidence': table['confidence']
+    })
+
+summary_df = pd.DataFrame(summary_data)
+summary_df.to_csv("extraction_summary.csv", index=False)
+```
+
+### Real-time Table Monitoring
+
+```python
+import asyncio
+import aiohttp
+
+async def monitor_table_extraction(job_id, api_key, callback=None):
+    """Monitor table extraction job with real-time updates"""
+    
+    headers = {"api-key": api_key}
+    status_url = f"https://visionapi.unsiloed.ai/jobs/{job_id}"
+    
+    async with aiohttp.ClientSession() as session:
+        while True:
+            async with session.get(status_url, headers=headers) as response:
+                if response.status == 200:
+                    status_data = await response.json()
+                    
+                    if callback:
+                        callback(status_data)
+                    
+                    if status_data['status'] == 'completed':
+                        # Get results
+                        results_url = f"https://visionapi.unsiloed.ai/jobs/{job_id}/results"
+                        async with session.get(results_url, headers=headers) as results_response:
+                            if results_response.status == 200:
+                                return await results_response.json()
+                            else:
+                                raise Exception(f"Failed to get results: {await results_response.text()}")
+                                
+                    elif status_data['status'] == 'failed':
+                        raise Exception(f"Job failed: {status_data.get('error', 'Unknown error')}")
+            
+            await asyncio.sleep(3)  # Check every 3 seconds
+
+def status_callback(status_data):
+    """Callback function for status updates"""
+    print(f"Job status: {status_data['status']}")
+    if 'progress' in status_data:
+        print(f"Progress: {status_data['progress']}%")
+
+# Usage
+async def main():
+    job_id = "e4a73f3c-869e-4129-bdef-614a6a51b043"
+    results = await monitor_table_extraction(job_id, "your-api-key", status_callback)
+    print("Extraction completed!")
+    print(f"Found {len(results['results']['tables'])} tables")
+
+# Run the async function
+# asyncio.run(main())
+```
+
+## Rate Limits
+
+- **Table Extraction**: 50 requests per minute
+- **File Upload**: 500MB per minute total
+- **Concurrent Jobs**: Maximum 5 active table extraction jobs per API key
+- **Results Retrieval**: 200 requests per minute
+
+Rate limits are enforced per API key and reset on a rolling window basis. Monitor your quota usage through the `quota_remaining` field in responses.
+
+## Supported Document Types
+
+- **PDF**: Native PDF documents with embedded tables
+- **Scanned PDFs**: Image-based PDFs processed with OCR
+- **Multi-page Documents**: Documents with tables spanning multiple pages
+- **Complex Layouts**: Documents with mixed content including tables
+
+## Performance Optimization
+
+- **Document Preparation**: Ensure tables have clear borders and consistent formatting
+- **File Size**: Optimize PDF file size while maintaining table clarity
+- **Batch Processing**: For multiple documents, process them sequentially to avoid rate limits
+- **Result Caching**: Cache results for frequently accessed tables to reduce API calls

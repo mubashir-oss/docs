@@ -1,35 +1,41 @@
 {
-  "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "theme": "willow",
+  "name": "Unsiloed AI",
+  "description": "AI agents for Unstructured data",
   "colors": {
     "primary": "#16A34A",
     "light": "#07C983",
     "dark": "#15803D"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "/UnsiloedAILogo.webp",
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
             "group": "Get Started",
             "pages": [
               "index",
               "quickstart",
-              "development"
+              "our-playground"
             ]
           },
           {
-            "group": "Essentials",
+            "group": "Core Functions",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/settings",
-              "essentials/navigation",
-              "essentials/reusable-snippets"
+              "document-processing/vision-api",
+              "document-processing/parsing",
+              "document-processing/splitting",
+              "document-processing/classification"
+            ]
+          },
+          {
+            "group": "FAQ",
+            "pages": [
+              "faq/general",
+              "faq/api",
+              "faq/troubleshooting"
             ]
           }
         ]
@@ -38,65 +44,51 @@
         "tab": "API Reference",
         "groups": [
           {
-            "group": "API Documentation",
+            "group": "Core Endpoints",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/extraction",
+              "api-reference/tables",
+              "api-reference/batch",
+              "api-reference/parsing",
+              "api-reference/splitting",
+              "api-reference/classification"
             ]
           },
           {
-            "group": "Endpoint Examples",
+            "group": "Job Management",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api-reference/jobs/status",
+              "api-reference/jobs/results",
+              "api-reference/jobs/cancel"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Community",
-          "href": "https://mintlify.com/community",
-          "icon": "slack"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
+    ]
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/UnsiloedAILogo.webp",
+    "dark": "/UnsiloedAILogo.webp",
+    "href": "https://www.unsiloed-ai.com"
   },
   "navbar": {
     "links": [
       {
         "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "href": "mailto:hello@unsiloed-ai.com"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "href": "https://www.unsiloed-ai.com/dashboard"
     }
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "x": "https://x.com/unsiloed_ai",
+      "github": "https://github.com/unsiloed-ai",
+      "linkedin": "https://linkedin.com/company/unsiloed-ai"
     }
   }
 }

@@ -1,0 +1,523 @@
+---
+title: "Classification"
+description: "AI-powered document categorization with confidence scoring and multi-page analysis"
+---
+
+## Overview
+
+The document classification system uses advanced AI models to automatically categorize documents based on their content, structure, and visual elements. It provides accurate classification with confidence scores and supports both single-page and multi-page document analysis.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="AI-Powered Classification" icon="brain">
+    Use OpenAI Vision models to understand document content and structure
+  </Card>
+  <Card title="Multi-Page Analysis" icon="file-lines">
+    Analyze entire documents with page-by-page classification and aggregation
+  </Card>
+  <Card title="Confidence Scoring" icon="percentage">
+    Provide detailed confidence scores based on model certainty
+  </Card>
+  <Card title="Custom Categories" icon="tags">
+    Support for custom classification categories with detailed descriptions
+  </Card>
+</CardGroup>
+
+## How It Works
+
+The classification process involves several steps:
+
+1. **Document Preprocessing**: Convert PDF pages to high-quality images
+2. **Vision Analysis**: Use OpenAI Vision API to analyze document content
+3. **Page Classification**: Classify each page individually with confidence scores
+4. **Result Aggregation**: Combine page-level results into overall document classification
+5. **Confidence Calculation**: Calculate weighted confidence scores based on page importance
+
+## Basic Usage
+
+### Simple Document Classification
+
+```python
+from vision_api.services.classification.classification_service import classify_document
+
+# Define classification categories
+conditions = [
+    "invoice - Business invoices with itemized charges",
+    "contract - Legal agreements and binding documents", 
+    "report - Analytical reports and data presentations",
+    "letter - Correspondence and communication documents"
+]
+
+# Classify the document
+result = await classify_document("document.pdf", conditions)
+
+if result["success"]:
+    print(f"Classification: {result['classification']}")
+    print(f"Confidence: {result['confidence']:.2f}")
+    print(f"Pages processed: {result['processed_pages']}")
+else:
+    print(f"Error: {result['error']}")
+```
+
+### Advanced Classification with Custom Prompts
+
+```python
+# Create detailed classification prompt
+def create_custom_classification_prompt(categories):
+    formatted_conditions = ", ".join([f'"{cat}"' for cat in categories])
+    
+    prompt = f"""
+    You are a document classification expert analyzing a document page. 
+    Your task is to classify this document into EXACTLY ONE of these categories: {formatted_conditions}.
+
+    Examine the document content, structure, layout, and any visual elements to determine its type. 
+    Look for headers, titles, formatting patterns, and specific content that helps identify the document type.
+
+    IMPORTANT: Your response MUST be exactly one of the provided category names. 
+    Do not add any explanation, prefix, suffix, or quotation marks.
+    
+    Select the category that best matches from these options: {formatted_conditions}
+    """
+    
+    return prompt
+
+# Use custom prompt for classification
+categories = ["invoice", "contract", "report", "letter"]
+custom_prompt = create_custom_classification_prompt(categories)
+```
+
+## Advanced Features
+
+### Multi-Page Document Analysis
+
+```python
+async def classify_multi_page_document(pdf_path, conditions):
+    """Classify a multi-page document with detailed analysis"""
+    
+    # Convert PDF to images
+    images = convert_pdf_to_images(pdf_path)
+    
+    classification_results = []
+    
+    for i, image_path in enumerate(images):
+        try:
+            # Process each page with Vision API
+            result, logprobs = await process_image_with_vision_api(image_path, prompt)
+            
+            # Parse classification result
+            classification = parse_classification_result(result, conditions)
+            
+            # Calculate confidence score
+            confidence_score = calculate_confidence_score(classification, logprobs)
+            
+            classification_results.append({
+                "page": i + 1,
+                "classification": classification,
+                "confidence": confidence_score,
+                "raw_result": result
+            })
+            
+        except Exception as e:
+            logger.error(f"Error processing page {i+1}: {e}")
+            continue
+    
+    # Determine overall classification
+    overall_classification, overall_confidence = determine_overall_classification(
+        classification_results, conditions
+    )
+    
+    return {
+        "success": True,
+        "classification": overall_classification,
+        "confidence": overall_confidence,
+        "page_results": classification_results,
+        "total_pages": len(images),
+        "processed_pages": len(classification_results)
+    }
+```
+
+### Confidence Score Calculation
+
+```python
+def calculate_confidence_score(classification, logprobs):
+    """Calculate confidence score from model logprobs"""
+    if not logprobs or not logprobs.content:
+        return 0.5  # Default confidence
+    
+    # Extract relevant logprobs for the classification
+    relevant_logprobs = []
+    classification_lower = classification.lower()
+    
+    for logprob_item in logprobs.content:
+        if logprob_item.token and classification_lower in logprob_item.token.lower():
+            relevant_logprobs.append(logprob_item.logprob)
+    
+    if not relevant_logprobs:
+        return 0.5
+    
+    # Calculate average logprob and convert to confidence
+    avg_logprob = sum(relevant_logprobs) / len(relevant_logprobs)
+    confidence = min(max(math.exp(avg_logprob), 0.1), 0.99)
+    
+    return confidence
+```
+
+### Overall Classification Determination
+
+```python
+def determine_overall_classification(classification_results, conditions):
+    """Determine overall classification with weighted scoring"""
+    if not classification_results:
+        return conditions[0] if conditions else "unknown", 0.3
+    
+    # Initialize scoring
+    classification_counts = {condition: 0 for condition in conditions}
+    classification_confidences = {condition: [] for condition in conditions}
+    classification_weighted_scores = {condition: 0 for condition in conditions}
+    
+    total_processed_pages = len(classification_results)
+    
+    for i, result in enumerate(classification_results):
+        classification = result["classification"]
+        confidence = result.get("confidence", 0.5)
+        
+        # Calculate weight - earlier pages have higher importance
+        if i == 0:
+            weight = 3.0    # First page (often cover/title page)
+        elif i == 1:
+            weight = 2.0    # Second page
+        elif i == 2:
+            weight = 1.5    # Third page
+        else:
+            weight = 1.0    # Other pages
+        
+        if classification in classification_counts:
+            classification_counts[classification] += 1
+            classification_confidences[classification].append(confidence)
+            classification_weighted_scores[classification] += confidence * weight
+    
+    # Find classification with highest weighted score
+    if sum(classification_weighted_scores.values()) == 0:
+        return conditions[0], 0.3
+    
+    most_common_class = max(classification_weighted_scores.items(), key=lambda x: x[1])[0]
+    
+    # Calculate final confidence
+    count = classification_counts[most_common_class]
+    confidences = classification_confidences[most_common_class]
+    
+    if confidences:
+        avg_confidence = sum(confidences) / len(confidences)
+        # Boost confidence for consistent classifications across pages
+        consistency_boost = min(count / total_processed_pages, 1.0) * 0.1
+        final_confidence = min(avg_confidence + consistency_boost, 0.99)
+    else:
+        final_confidence = 0.3
+    
+    return most_common_class, final_confidence
+```
+
+## Configuration Options
+
+### Classification Parameters
+
+```python
+classification_config = {
+    'model': 'gpt-4-vision-preview',  # Vision model to use
+    'max_retries': 2,                 # Retry attempts for failed requests
+    'timeout': 30,                    # Request timeout in seconds
+    'temperature': 0.1,               # Model temperature for consistency
+    'max_tokens': 50                  # Maximum tokens in response
+}
+```
+
+### Processing Settings
+
+```python
+processing_config = {
+    'image_quality': 85,              # JPEG quality for image conversion
+    'dpi': 200,                       # DPI for PDF to image conversion
+    'max_pages': 10,                  # Maximum pages to process
+    'parallel_processing': True,      # Enable parallel page processing
+    'cache_results': True            # Cache classification results
+}
+```
+
+## Response Format
+
+### Classification Response
+
+```json
+{
+  "success": true,
+  "classification": "invoice",
+  "confidence": 0.87,
+  "page_results": [
+    {
+      "page": 1,
+      "classification": "invoice",
+      "confidence": 0.92,
+      "raw_result": "invoice"
+    },
+    {
+      "page": 2, 
+      "classification": "invoice",
+      "confidence": 0.82,
+      "raw_result": "invoice"
+    }
+  ],
+  "total_pages": 2,
+  "processed_pages": 2,
+  "processing_info": {
+    "model_used": "gpt-4-vision-preview",
+    "processing_time": 3.2,
+    "retry_count": 0
+  }
+}
+```
+
+### Error Response
+
+```json
+{
+  "success": false,
+  "error": "Failed to process document",
+  "details": {
+    "error_type": "vision_api_error",
+    "message": "Rate limit exceeded",
+    "retry_after": 60
+  },
+  "partial_results": {
+    "pages_processed": 1,
+    "total_pages": 3
+  }
+}
+```
+
+## Integration Examples
+
+### Workflow Integration
+
+```python
+from platform_backend.services.workflow_engine.node_executors.extraction_node import ExtractionNodeExecutor
+
+class ClassificationNode(ExtractionNodeExecutor):
+    async def classify_documents(self, files, conditions, context):
+        """Classify multiple documents in a workflow"""
+        
+        results = []
+        
+        for file_info in files:
+            try:
+                # Download file to temporary location
+                temp_path = await self.download_file(file_info['url'])
+                
+                # Classify the document
+                classification_result = await classify_document(temp_path, conditions)
+                
+                if classification_result["success"]:
+                    results.append({
+                        "file": file_info['name'],
+                        "classification": classification_result['classification'],
+                        "confidence": classification_result['confidence'],
+                        "success": True
+                    })
+                else:
+                    results.append({
+                        "file": file_info['name'],
+                        "error": classification_result['error'],
+                        "success": False
+                    })
+                    
+            except Exception as e:
+                results.append({
+                    "file": file_info.get('name', 'unknown'),
+                    "error": str(e),
+                    "success": False
+                })
+            finally:
+                # Clean up temporary file
+                if 'temp_path' in locals():
+                    os.unlink(temp_path)
+        
+        return {
+            "classification_results": results,
+            "total_files": len(files),
+            "successful_classifications": sum(1 for r in results if r.get("success"))
+        }
+```
+
+### Review Interface Integration
+
+```python
+class ClassificationReviewTable:
+    def __init__(self, classification_results):
+        self.classification_results = classification_results
+        self.review_items = self.prepare_review_items()
+    
+    def prepare_review_items(self):
+        """Prepare classification results for review"""
+        review_items = []
+        
+        for result in self.classification_results:
+            if result.get("success"):
+                review_items.append({
+                    "file": result["file"],
+                    "classification": result["classification"],
+                    "confidence": result["confidence"],
+                    "needs_review": result["confidence"] < 0.8,
+                    "page_details": result.get("page_results", [])
+                })
+        
+        return review_items
+    
+    def get_low_confidence_items(self, threshold=0.8):
+        """Get items that need human review"""
+        return [item for item in self.review_items if item["confidence"] < threshold]
+    
+    def update_classification(self, item_index, new_classification):
+        """Update classification after human review"""
+        if 0 <= item_index < len(self.review_items):
+            self.review_items[item_index]["classification"] = new_classification
+            self.review_items[item_index]["confidence"] = 1.0  # Human verified
+            self.review_items[item_index]["needs_review"] = False
+```
+
+## Error Handling and Retry Logic
+
+### Robust Error Handling
+
+```python
+async def classify_with_retry(pdf_path, conditions, max_retries=3):
+    """Classify document with retry logic"""
+    
+    for attempt in range(max_retries + 1):
+        try:
+            result = await classify_document(pdf_path, conditions)
+            
+            if result["success"]:
+                return result
+            else:
+                logger.warning(f"Classification attempt {attempt + 1} failed: {result['error']}")
+                
+                if attempt < max_retries:
+                    # Wait before retry with exponential backoff
+                    wait_time = 2 ** attempt
+                    await asyncio.sleep(wait_time)
+                    continue
+                else:
+                    return result
+                    
+        except Exception as e:
+            logger.error(f"Classification attempt {attempt + 1} error: {e}")
+            
+            if attempt < max_retries:
+                wait_time = 2 ** attempt
+                await asyncio.sleep(wait_time)
+                continue
+            else:
+                return {
+                    "success": False,
+                    "error": f"Classification failed after {max_retries + 1} attempts: {str(e)}"
+                }
+```
+
+### Fallback Classification
+
+```python
+def fallback_classification(pdf_path, conditions):
+    """Provide fallback classification when AI fails"""
+    try:
+        # Extract basic text features
+        text = extract_text_from_pdf(pdf_path)
+        text_lower = text.lower()
+        
+        # Simple keyword-based classification
+        keyword_scores = {}
+        
+        for condition in conditions:
+            condition_lower = condition.lower()
+            score = 0
+            
+            # Check for exact matches
+            if condition_lower in text_lower:
+                score += 10
+            
+            # Check for related keywords
+            keywords = get_related_keywords(condition_lower)
+            for keyword in keywords:
+                if keyword in text_lower:
+                    score += 1
+            
+            keyword_scores[condition] = score
+        
+        # Return highest scoring condition
+        best_condition = max(keyword_scores.items(), key=lambda x: x[1])
+        
+        return {
+            "success": True,
+            "classification": best_condition[0],
+            "confidence": min(best_condition[1] / 10, 0.6),  # Cap at 0.6 for fallback
+            "method": "keyword_fallback"
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Fallback classification failed: {str(e)}"
+        }
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Category Design">
+    - Use clear, mutually exclusive categories
+    - Provide detailed descriptions for each category
+    - Test categories with representative documents
+    - Avoid overlapping or ambiguous classifications
+  </Accordion>
+
+  <Accordion title="Confidence Management">
+    - Set appropriate confidence thresholds for your use case
+    - Implement human review for low-confidence classifications
+    - Use page-level confidence for quality assessment
+    - Consider document complexity when interpreting confidence
+  </Accordion>
+
+  <Accordion title="Performance Optimization">
+    - Use appropriate image quality settings
+    - Implement caching for repeated classifications
+    - Process pages in parallel when possible
+    - Set reasonable timeouts and retry limits
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Classification Accuracy">
+    **Low accuracy**: Improve category descriptions, use more specific categories, or increase image quality
+    
+    **Inconsistent results**: Ensure document quality and consider using multiple pages for classification
+    
+    **Wrong categories**: Review category definitions and test with representative samples
+  </Accordion>
+
+  <Accordion title="Performance Issues">
+    **Slow processing**: Reduce image quality, limit pages processed, or enable parallel processing
+    
+    **API timeouts**: Increase timeout values or implement better retry logic
+    
+    **Rate limiting**: Implement proper backoff strategies and respect API limits
+  </Accordion>
+
+  <Accordion title="Integration Issues">
+    **Confidence interpretation**: Understand that confidence scores are relative and should be calibrated for your use case
+    
+    **Multi-page handling**: Consider document structure when interpreting page-level vs document-level classifications
+    
+    **Error handling**: Implement robust error handling and fallback mechanisms
+  </Accordion>
+</AccordionGroup> 

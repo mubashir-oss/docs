@@ -1,0 +1,365 @@
+---
+title: "Parse Document"
+api: "POST /chunking"
+description: "Parse and chunk PDF documents into semantic sections using advanced AI-powered strategies"
+---
+
+## Overview
+
+The Parse Document endpoint processes PDF, DOCX, and PPTX documents using various chunking strategies to break them into meaningful sections. This endpoint is designed for document analysis, RAG applications, and content organization workflows.
+
+<Note>
+This endpoint returns a job ID for asynchronous processing. Use the job status endpoints to monitor progress and retrieve results when processing is complete.
+</Note>
+
+## Request
+
+<ParamField body="document_file" type="file" required>
+  Document file to process. Supported formats: PDF, DOCX, PPTX
+</ParamField>
+
+<ParamField body="strategy" type="string" default="semantic">
+  Chunking strategy to use. Options: "semantic", "fixed", "page", "paragraph", "heading", "zchunk", "hybrid"
+</ParamField>
+
+<ParamField body="chunk_size" type="integer" default="1000">
+  Size of chunks in characters (used for "fixed" strategy)
+</ParamField>
+
+<ParamField body="overlap" type="integer" default="100">
+  Overlap size in characters between chunks (used for "fixed" strategy)
+</ParamField>
+
+<ParamField header="X-API-Key" type="string" required>
+  API key for authentication
+</ParamField>
+
+## Response
+
+<ResponseField name="job_id" type="string">
+  Unique identifier for the processing job
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Initial job status (typically "queued")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Status message about the job creation
+</ResponseField>
+
+<ResponseField name="quota_remaining" type="number">
+  Remaining API quota after this request
+</ResponseField>
+
+## Chunking Strategies
+
+### Semantic Chunking (Default)
+Uses advanced AI to intelligently group related content together. Best for maintaining context and meaning.
+
+### Fixed Size Chunking
+Splits text into fixed-size chunks with configurable overlap. Useful for consistent chunk sizes.
+
+### Page-Based Chunking
+Splits documents by pages (PDF only). For other formats, falls back to paragraph chunking.
+
+### Paragraph Chunking
+Splits text based on paragraph boundaries. Good for maintaining natural text flow.
+
+### Heading Chunking
+Splits text based on detected headings and section structure. Ideal for structured documents.
+
+### zChunk Semantic Chunking
+Advanced semantic chunking using LLaMA logprobs for boundary detection. Provides high-quality semantic boundaries.
+
+### Hybrid Chunking
+Multi-modal processing with table extraction, image analysis, and enhanced metadata. Most comprehensive option.
+
+
+<RequestExample>
+
+```bash cURL
+curl -X 'POST' \
+  'https://visionapi.unsiloed.ai/chunking' \
+  -H 'accept: application/json' \
+  -H 'X-API-Key: your-api-key' \
+  -H 'Content-Type: multipart/form-data' \
+  -F 'document_file=@document.pdf;type=application/pdf' \
+  -F 'strategy=semantic' \
+  -F 'chunk_size=1000' \
+  -F 'overlap=100'
+```
+
+```python Python
+import requests
+
+url = "https://visionapi.unsiloed.ai/chunking"
+headers = {
+    "accept": "application/json",
+    "X-API-Key": "your-api-key"
+}
+
+# Prepare file and form data
+files = {
+    "document_file": ("document.pdf", open("document.pdf", "rb"), "application/pdf")
+}
+
+data = {
+    "strategy": "semantic",
+    "chunk_size": 1000,
+    "overlap": 100
+}
+
+response = requests.post(url, headers=headers, files=files, data=data)
+
+if response.status_code == 200:
+    result = response.json()
+    print(f"Job ID: {result['job_id']}")
+    print(f"Status: {result['status']}")
+    print(f"Message: {result['message']}")
+    print(f"Quota remaining: {result['quota_remaining']}")
+else:
+    print("Error:", response.status_code, response.text)
+
+# Close file
+files["document_file"][1].close()
+```
+
+```javascript JavaScript
+const formData = new FormData();
+
+// Add document file
+const fileInput = document.querySelector('input[type="file"]');
+if (fileInput.files[0]) {
+  formData.append('document_file', fileInput.files[0]);
+}
+
+// Add chunking parameters
+formData.append('strategy', 'semantic');
+formData.append('chunk_size', '1000');
+formData.append('overlap', '100');
+
+const response = await fetch('https://visionapi.unsiloed.ai/chunking', {
+  method: 'POST',
+  headers: {
+    'accept': 'application/json',
+    'X-API-Key': 'your-api-key'
+  },
+  body: formData
+});
+
+if (response.ok) {
+  const result = await response.json();
+  console.log(`Job ID: ${result.job_id}`);
+  console.log(`Status: ${result.status}`);
+  console.log(`Message: ${result.message}`);
+  console.log(`Quota remaining: ${result.quota_remaining}`);
+} else {
+  console.error('Parsing failed:', response.status, await response.text());
+}
+```
+
+</RequestExample>
+
+
+<ResponseExample>
+
+```json Success Response
+{
+  "job_id": "b2094b38-e432-44b6-a5d0-67bed07d5de1",
+  "status": "queued",
+  "message": "Document chunking started",
+  "quota_remaining": 48954
+}
+```
+
+```json Error Response - Unsupported File Type
+{
+  "detail": "Unsupported file type. Only PDF, DOCX, and PPTX are supported."
+}
+```
+
+```json Error Response - Validation Error
+{
+  "detail": [
+    {
+      "loc": [
+        "body",
+        "document_file"
+      ],
+      "msg": "field required",
+      "type": "value_error.missing"
+    }
+  ]
+}
+```
+
+```json Error Response - Quota Exceeded
+{
+  "detail": {
+    "error": "API quota exceeded",
+    "message": "You have exceeded your API usage limit. Please upgrade your plan or wait for the quota to reset.",
+    "quota_remaining": 0
+  }
+}
+```
+
+</ResponseExample>
+
+## Retrieving Results
+
+After the job is created, use the job status and results endpoints to monitor progress and retrieve the parsed chunks:
+
+```python
+import requests
+import time
+
+def get_chunking_results(job_id, api_key):
+    """Monitor job and retrieve results when complete"""
+    
+    headers = {"X-API-Key": api_key}
+    status_url = f"https://visionapi.unsiloed.ai/jobs/{job_id}"
+    
+    # Poll for completion
+    while True:
+        response = requests.get(status_url, headers=headers)
+        
+        if response.status_code == 200:
+            status_data = response.json()
+            print(f"Job Status: {status_data['status']}")
+            
+            if status_data['status'] == 'COMPLETED':
+                # Get results
+                results_url = f"https://visionapi.unsiloed.ai/jobs/{job_id}/result"
+                results_response = requests.get(results_url, headers=headers)
+                
+                if results_response.status_code == 200:
+                    return results_response.json()
+                else:
+                    raise Exception(f"Failed to get results: {results_response.text}")
+                    
+            elif status_data['status'] == 'FAILED':
+                raise Exception(f"Job failed: {status_data.get('error', 'Unknown error')}")
+                
+        time.sleep(5)  # Check every 5 seconds
+
+# Usage
+job_id = "your-job-id"
+results = get_chunking_results(job_id, "your-api-key")
+```
+
+## Expected Results Structure
+
+When the job completes, the results contain the parsed chunks and metadata:
+
+```json
+{
+  "job_id": "f7e8d9c2-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
+  "status": "completed",
+  "results": {
+    "file_type": "pdf",
+    "strategy": "semantic",
+    "total_chunks": 15,
+    "avg_chunk_size": 847.3,
+    "chunks": [
+      {
+        "chunk_id": 1,
+        "text": "Introduction\n\nThis document provides an overview of our quarterly financial performance...",
+        "page_number": 1,
+        "bbox": {
+          "x1": 72,
+          "y1": 100,
+          "x2": 540,
+          "y2": 300
+        },
+        "confidence": 0.95,
+        "element_types": ["Title", "Text"],
+        "word_count": 156,
+        "char_count": 892
+      },
+      {
+        "chunk_id": 2,
+        "text": "Financial Highlights\n\n• Revenue increased by 15% year-over-year\n• Net income grew by 22%...",
+        "page_number": 1,
+        "bbox": {
+          "x1": 72,
+          "y1": 320,
+          "x2": 540,
+          "y2": 480
+        },
+        "confidence": 0.92,
+        "element_types": ["Title", "List"],
+        "word_count": 89,
+        "char_count": 534
+      }
+    ],
+    "image_dimensions": [
+      {
+        "page": 1,
+        "width": 612,
+        "height": 792
+      }
+    ]
+  }
+}
+```
+
+## Advanced Chunking Options
+
+### zChunk Semantic Chunking
+
+For advanced semantic boundary detection:
+
+```python
+data = {
+    "strategy": "zchunk",
+    "chunk_size": 2000,
+    "overlap": 200
+}
+```
+
+zChunk uses LLaMA logprobs for intelligent boundary detection, providing high-quality semantic chunks.
+
+## Error Handling
+
+### Common Error Scenarios
+
+1. **Unsupported File Type**: Only PDF, DOCX, and PPTX files are supported
+2. **File Size Limits**: Large files may exceed processing limits
+3. **Quota Exceeded**: API usage limits reached
+4. **Invalid Strategy**: Unsupported chunking strategy specified
+5. **Processing Timeout**: Document too complex or large to process
+
+### Best Practices
+
+- **File Quality**: Use high-quality, text-based documents for better results
+- **Strategy Selection**: Choose the appropriate strategy based on your use case:
+  - **Semantic**: Best for maintaining context and meaning
+  - **Fixed**: Good for consistent chunk sizes
+  - **Hybrid**: Most comprehensive for complex documents
+- **Monitor Jobs**: Always check job status before assuming completion
+- **Handle Failures**: Implement retry logic for failed jobs
+- **Quota Management**: Monitor your API quota usage
+
+## Rate Limits
+
+- **Concurrent Jobs**: Limited number of active processing jobs per API key
+- **File Size**: Individual files may have size restrictions
+- **Processing Time**: Complex documents may take several minutes to process
+- **Daily Quota**: API usage limits based on your subscription plan
+
+Check your API plan for specific limits and quotas.
+
+## Use Cases
+
+### RAG Applications
+Use semantic or hybrid chunking to create meaningful chunks for retrieval-augmented generation systems.
+
+### Document Analysis
+Parse documents into structured sections for content analysis and information extraction.
+
+### Content Organization
+Automatically organize long documents into logical sections based on content structure.
+
+### Search Indexing
+Create searchable chunks optimized for document search and retrieval systems. 

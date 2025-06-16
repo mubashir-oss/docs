@@ -1,0 +1,395 @@
+---
+title: "Get Job Results"
+api: "GET /jobs/{job_id}/result"
+description: "Retrieve the results of a completed processing job"
+---
+
+## Overview
+
+The Get Job Results endpoint retrieves the processed data from a completed job. This endpoint should only be called after confirming the job status is "COMPLETED" using the status endpoint.
+
+<Note>
+Results are only available for completed jobs. Check job status first to ensure processing has finished.
+</Note>
+
+## Request
+
+<ParamField path="job_id" type="string" required>
+  The unique identifier of the completed job
+</ParamField>
+
+<ParamField header="X-API-Key" type="string">
+  API key for authentication (optional for some endpoints)
+</ParamField>
+
+## Response
+
+The response structure depends on the job type (extraction, parsing, classification, etc.).
+
+### Extraction Job Results
+
+<ResponseField name="data" type="object">
+  The extracted data matching the provided JSON schema
+</ResponseField>
+
+<ResponseField name="processing_time" type="number">
+  Total processing time in seconds
+</ResponseField>
+
+<ResponseField name="detections" type="array">
+  Array of detected elements with bounding boxes and confidence scores
+</ResponseField>
+
+<ResponseField name="citations" type="array">
+  Citation information for extracted data
+</ResponseField>
+
+<ResponseField name="visualization_paths" type="array">
+  Paths to visualization images (if requested)
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X GET "https://visionapi.unsiloed.ai/jobs/b2094b38-e432-44b6-a5d0-67bed07d5de1/result" \
+  -H "X-API-Key: your-api-key"
+```
+
+```python Python
+import requests
+
+job_id = "b2094b38-e432-44b6-a5d0-67bed07d5de1"
+url = f"https://visionapi.unsiloed.ai/jobs/{job_id}/result"
+headers = {"X-API-Key": "your-api-key"}
+
+response = requests.get(url, headers=headers)
+
+if response.status_code == 200:
+    result = response.json()
+    print("Extraction results:", result['data'])
+    print(f"Processing time: {result['processing_time']:.2f} seconds")
+    
+    if 'detections' in result:
+        print(f"Found {len(result['detections'])} detected elements")
+        
+    if 'citations' in result:
+        print(f"Found {len(result['citations'])} citations")
+        
+elif response.status_code == 400:
+    print("Job is still processing or failed")
+elif response.status_code == 404:
+    print("Job not found or results not available")
+else:
+    print("Error:", response.status_code, response.text)
+```
+
+```javascript JavaScript
+const jobId = 'b2094b38-e432-44b6-a5d0-67bed07d5de1';
+const response = await fetch(`https://visionapi.unsiloed.ai/jobs/${jobId}/result`, {
+  headers: {
+    'X-API-Key': 'your-api-key'
+  }
+});
+
+if (response.ok) {
+  const result = await response.json();
+  console.log('Extraction results:', result.data);
+  console.log('Processing time:', result.processing_time, 'seconds');
+  
+  if (result.detections) {
+    console.log('Detected elements:', result.detections.length);
+  }
+  
+  if (result.citations) {
+    console.log('Citations found:', result.citations.length);
+  }
+} else if (response.status === 400) {
+  console.log('Job is still processing or failed');
+} else if (response.status === 404) {
+  console.log('Job not found or results not available');
+} else {
+  console.error('Error:', response.status, await response.text());
+}
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json Extraction Results
+{
+  "data": {
+    "company_name": {
+      "score": 0.9945,
+      "value": "Acme Corporation",
+      "bboxes": [
+        {
+          "bbox": [72, 100, 400, 140]
+        }
+      ],
+      "page_no": 1
+    },
+    "financial_data": {
+      "revenue": {
+        "score": 0.9876,
+        "value": "1250000",
+        "bboxes": [
+          {
+            "bbox": [150, 250, 300, 280]
+          }
+        ],
+        "page_no": 1
+      },
+      "profit": {
+        "score": 0.9654,
+        "value": "185000",
+        "bboxes": [
+          {
+            "bbox": [150, 290, 300, 320]
+          }
+        ],
+        "page_no": 1
+      }
+    },
+    "min_confidence_score": 0.9654
+  },
+  "processing_time": 15.7,
+  "detections": [
+    {
+      "class": "Title",
+      "confidence": 0.95,
+      "bbox": [72, 100, 400, 140],
+      "page": 1
+    },
+    {
+      "class": "Text",
+      "confidence": 0.89,
+      "bbox": [72, 150, 500, 200],
+      "page": 1
+    }
+  ],
+  "citations": [
+    {
+      "field": "company_name",
+      "text": "Acme Corporation",
+      "page": 1,
+      "bbox": [72, 100, 400, 140]
+    }
+  ]
+}
+```
+
+```json Parsing Results
+{
+  "file_type": "pdf",
+  "strategy": "semantic",
+  "total_chunks": 12,
+  "avg_chunk_size": 847.3,
+  "chunks": [
+    {
+      "chunk_id": 1,
+      "text": "Executive Summary\n\nThis quarterly report presents...",
+      "page_number": 1,
+      "bbox": {
+        "x1": 72,
+        "y1": 100,
+        "x2": 540,
+        "y2": 300
+      },
+      "confidence": 0.95,
+      "element_types": ["Title", "Text"],
+      "word_count": 156,
+      "char_count": 892
+    }
+  ],
+  "processing_time": 8.2
+}
+```
+
+```json Classification Results
+{
+  "classification": "invoice",
+  "confidence": 0.94,
+  "page_results": [
+    {
+      "page": 1,
+      "classification": "invoice",
+      "confidence": 0.94,
+      "raw_result": "invoice"
+    }
+  ],
+  "total_pages": 1,
+  "processed_pages": 1,
+  "processing_time": 3.1
+}
+```
+
+```json Error - Job Still Processing
+{
+  "detail": "Job b2094b38-e432-44b6-a5d0-67bed07d5de1 is still processing"
+}
+```
+
+```json Error - Job Failed
+{
+  "detail": "Job b2094b38-e432-44b6-a5d0-67bed07d5de1 failed: PDF file corrupted"
+}
+```
+
+```json Error - Job Not Found
+{
+  "detail": "Job b2094b38-e432-44b6-a5d0-67bed07d5de1 not found"
+}
+```
+
+```json Error - Results Not Available
+{
+  "detail": "Result for job b2094b38-e432-44b6-a5d0-67bed07d5de1 not found"
+}
+```
+
+</ResponseExample>
+
+## Complete Workflow Example
+
+Here's a complete example of submitting a job, monitoring its progress, and retrieving results:
+
+```python
+import requests
+import time
+import json
+
+def process_document_with_results(file_path, schema, api_key):
+    """Complete workflow: submit job, wait for completion, get results"""
+    
+    headers = {"X-API-Key": api_key}
+    
+    # Step 1: Submit extraction job
+    files = {"pdf_file": open(file_path, "rb")}
+    data = {"schema_data": json.dumps(schema)}
+    
+    response = requests.post(
+        "https://visionapi.unsiloed.ai/cite",
+        files=files,
+        data=data,
+        headers=headers
+    )
+    
+    if response.status_code != 200:
+        raise Exception(f"Failed to submit job: {response.text}")
+    
+    job_id = response.json()["job_id"]
+    print(f"Job submitted: {job_id}")
+    
+    # Step 2: Poll for completion
+    while True:
+        status_response = requests.get(
+            f"https://visionapi.unsiloed.ai/jobs/{job_id}",
+            headers=headers
+        )
+        
+        if status_response.status_code != 200:
+            raise Exception(f"Failed to check status: {status_response.text}")
+            
+        job = status_response.json()
+        status = job["status"]
+        print(f"Job status: {status}")
+        
+        if status == "COMPLETED":
+            break
+        elif status == "FAILED":
+            raise Exception(f"Job failed: {job.get('error', 'Unknown error')}")
+        
+        time.sleep(5)  # Wait 5 seconds before checking again
+    
+    # Step 3: Get results
+    results_response = requests.get(
+        f"https://visionapi.unsiloed.ai/jobs/{job_id}/result",
+        headers=headers
+    )
+    
+    if results_response.status_code != 200:
+        raise Exception(f"Failed to get results: {results_response.text}")
+    
+    return results_response.json()
+
+# Usage example
+schema = {
+    "type": "object",
+    "properties": {
+        "company_name": {
+            "type": "string",
+            "description": "Name of the company"
+        },
+        "total_amount": {
+            "type": "number",
+            "description": "Total financial amount"
+        }
+    },
+    "required": ["company_name"],
+    "additionalProperties": False
+}
+
+try:
+    results = process_document_with_results("invoice.pdf", schema, "your-api-key")
+    print("Extraction completed!")
+    print("Results:", results["data"])
+except Exception as e:
+    print(f"Error: {e}")
+```
+
+## Result Data Structure
+
+### Bounding Box Format
+
+Bounding boxes use the format `[x1, y1, x2, y2]` where:
+- `x1, y1`: Top-left corner coordinates
+- `x2, y2`: Bottom-right corner coordinates
+- Coordinates are in pixels from the top-left of the page
+- Page numbers are 1-indexed
+
+### Confidence Scores
+
+- **0.9-1.0**: Very high confidence, extraction is very likely correct
+- **0.8-0.9**: High confidence, extraction is likely correct
+- **0.7-0.8**: Good confidence, may warrant review for critical applications
+- **0.6-0.7**: Medium confidence, should be reviewed
+- **Below 0.6**: Low confidence, likely needs manual verification
+
+## Error Handling
+
+<AccordionGroup>
+  <Accordion title="Job Still Processing (400)">
+    The job hasn't completed yet. Wait for the status to change to "COMPLETED" before requesting results.
+  </Accordion>
+
+  <Accordion title="Job Failed (500)">
+    The job encountered an error during processing. Check the error message for details about what went wrong.
+  </Accordion>
+
+  <Accordion title="Results Not Found (404)">
+    Either the job doesn't exist, or the results have been cleaned up. Results are typically stored for 7 days.
+  </Accordion>
+
+  <Accordion title="Job Not Found (404)">
+    The job ID is invalid or the job has been deleted. Verify you're using the correct job ID.
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<Tip>
+**Check Status First**: Always verify job status is "COMPLETED" before requesting results to avoid unnecessary API calls.
+</Tip>
+
+<Tip>
+**Handle Errors Gracefully**: Implement proper error handling for different HTTP status codes and error scenarios.
+</Tip>
+
+<Tip>
+**Cache Results**: Store important results locally, as they may be cleaned up after 7 days.
+</Tip>
+
+<Warning>
+**Result Persistence**: Job results are automatically cleaned up after 7 days to manage storage costs.
+</Warning> 
