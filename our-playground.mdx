@@ -1,14 +1,15 @@
 ---
-title: 'Our Playground'
-description: 'Test and experiment with Unsiloed AI APIs in real-time'
+title: "Our Playground"
+description: "Test and experiment with Unsiloed AI APIs in real-time"
 ---
 
 <Info>
-  **Ready to experiment?** Use our interactive playground to test document processing capabilities with real examples. <br />
+  **Ready to experiment?** Use our interactive playground to test document processing capabilities with real examples\
+  
   Get your API key from the [dashboard](https://www.unsiloed-ai.com/dashboard) to start experimenting.
 </Info>
 
-Welcome to the Unsiloed AI Playground! This is your sandbox environment to test our document processing APIs, experiment with different parameters, and see real-time results.
+Welcome to the Unsiloed AI Playground\! This is your sandbox environment to test our document processing APIs, experiment with different parameters, and see real-time results.
 
 ## Interactive API Testing
 
@@ -16,11 +17,12 @@ Welcome to the Unsiloed AI Playground! This is your sandbox environment to test 
 
 <CodeGroup>
 
-  ```bash curl
-  # Test connection with a simple health check
-  curl -X GET "https://api.unsiloed-ai.com/v1/health" \
-    -H "Authorization: Bearer YOUR_API_KEY"
-  ```
+```bash curl
+# Test connection with a simple health check
+curl -X GET "https://api.unsiloed-ai.com/v1/health" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
 
 ```python python
 # Install the Unsiloed AI Python SDK
@@ -30,6 +32,7 @@ pip install unsiloed-ai
 from unsiloed_ai import UnsiloedClient
 client = UnsiloedClient(api_key="YOUR_API_KEY")
 ```
+
 
 ```javascript javascript
 # Install the Unsiloed AI JavaScript SDK
@@ -59,6 +62,7 @@ curl -X POST "https://api.unsiloed-ai.com/v1/extract" \
   }'
 ```
 
+
 ```python python
 # Process a sample document
 result = client.extract_document(
@@ -71,6 +75,7 @@ result = client.extract_document(
 print(f"Job ID: {result.job_id}")
 print(f"Status: {result.status}")
 ```
+
 
 ```javascript javascript
 // Extract financial data
@@ -105,6 +110,7 @@ curl -X POST "https://api.unsiloed-ai.com/v1/classify" \
   }'
 ```
 
+
 ```bash Sample 2: Earnings Statement
 curl -X POST "https://api.unsiloed-ai.com/v1/classify" \
   -H "Authorization: Bearer YOUR_API_KEY" \
@@ -133,6 +139,7 @@ curl -X POST "https://api.unsiloed-ai.com/v1/tables" \
 ```
 
 Expected response:
+
 ```json
 {
   "job_id": "job_abc123",
@@ -154,32 +161,16 @@ Expected response:
 Try these sample documents to test different features:
 
 <CardGroup cols={2}>
-  <Card
-    title="Apple 10-K Filing"
-    icon="file-chart-line"
-    href="https://samples.unsiloed-ai.com/apple-10k-2023.pdf"
-  >
+  <Card title="Apple 10-K Filing" icon="file-chart-line" href="https://samples.unsiloed-ai.com/apple-10k-2023.pdf">
     Annual report with comprehensive financial data and narrative sections
   </Card>
-  <Card
-    title="Tesla Q3 Earnings"
-    icon="chart-line"
-    href="https://samples.unsiloed-ai.com/tesla-q3-2023.pdf"
-  >
+  <Card title="Tesla Q3 Earnings" icon="chart-line" href="https://samples.unsiloed-ai.com/tesla-q3-2023.pdf">
     Quarterly earnings report with financial statements and metrics
   </Card>
-  <Card
-    title="Goldman Sachs Research"
-    icon="magnifying-glass-chart"
-    href="https://samples.unsiloed-ai.com/gs-research-2023.pdf"
-  >
+  <Card title="Goldman Sachs Research" icon="magnifying-glass-chart" href="https://samples.unsiloed-ai.com/gs-research-2023.pdf">
     Investment research report with analysis and recommendations
   </Card>
-  <Card
-    title="Berkshire Hathaway Letter"
-    icon="envelope"
-    href="https://samples.unsiloed-ai.com/brk-letter-2023.pdf"
-  >
+  <Card title="Berkshire Hathaway Letter" icon="envelope" href="https://samples.unsiloed-ai.com/brk-letter-2023.pdf">
     Annual shareholder letter with narrative insights and commentary
   </Card>
 </CardGroup>
@@ -234,6 +225,7 @@ curl -X GET "https://api.unsiloed-ai.com/v1/jobs/YOUR_JOB_ID" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
+
 ```python Get Results
 # Check job status and get results
 job_status = client.get_job_status("job_abc123")
@@ -249,24 +241,25 @@ if job_status.status == "completed":
 ## Troubleshooting
 
 <AccordionGroup>
-  <Accordion title='Error: Invalid API key or unauthorized access'>
+  <Accordion title="Error: Invalid API key or unauthorized access">
     This indicates an authentication issue. Please check:
+
     1. Your API key is correct and active
     2. You have sufficient credits in your account
     3. The API key has the necessary permissions for the endpoint
     4. Try regenerating your API key from the dashboard
   </Accordion>
-
   <Accordion title="Issue: Document processing is taking too long">
     Large documents may take several minutes to process. Consider:
+
     1. Check the job status using the job ID
     2. For documents over 100 pages, use our batch processing API
     3. Split large documents into smaller sections for faster processing
     4. Contact support if processing exceeds expected timeframes
   </Accordion>
-
   <Accordion title="Error: Unsupported document format">
     We support most common document formats. Ensure:
+
     1. Document is in PDF, DOCX, or image format (PNG, JPG)
     2. File size is under 50MB for single documents
     3. Document is not password protected or encrypted
@@ -279,4 +272,4 @@ if job_status.status == "completed":
 - 📚 [API Documentation](/api-reference/extraction) - Complete API reference
 - 💬 [Community Forum](https://www.unsiloed-ai.com/community) - Connect with other developers
 - 📧 [Support](mailto:support@unsiloed-ai.com) - Direct technical support
-- 🎯 [Examples Repository](https://github.com/unsiloed-ai/examples) - Code samples and tutorials 
+- 🎯 [Examples Repository](https://github.com/unsiloed-ai/examples) - Code samples and tutorials
