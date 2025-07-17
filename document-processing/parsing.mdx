@@ -55,7 +55,7 @@ The parsing system can identify and process the following element types through 
 import requests
 
 # Parse and chunk document semantically
-url = "https://visionapi.unsiloed.ai/chunking"
+url = "https://prod.visionapi.unsiloed.ai/chunking"
 headers = {
     "accept": "application/json",
     "X-API-Key": "your-api-key"
@@ -77,7 +77,7 @@ job_info = response.json()
 print(f"Parsing job started: {job_info['job_id']}")
 
 # Check job status
-status_url = f"https://visionapi.unsiloed.ai/jobs/{job_info['job_id']}"
+status_url = f"https://prod.visionapi.unsiloed.ai/jobs/{job_info['job_id']}"
 status_response = requests.get(status_url, headers=headers)
 print(f"Status: {status_response.json()['status']}")
 ```
@@ -181,7 +181,7 @@ import time
 class DocumentParser:
     def __init__(self, api_key):
         self.api_key = api_key
-        self.base_url = "https://visionapi.unsiloed.ai"
+        self.base_url = "https://prod.visionapi.unsiloed.ai"
         self.headers = {
             "accept": "application/json",
             "X-API-Key": api_key

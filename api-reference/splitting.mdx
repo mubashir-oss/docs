@@ -61,7 +61,7 @@ The ZIP file contains separate PDF files for each category found in the document
 <RequestExample>
 
 ```bash cURL
-curl -X POST "https://visionapi.unsiloed.ai/splitter/split-pdf?classes=invoice,contract,report" \
+curl -X POST "https://prod.visionapi.unsiloed.ai/splitter/split-pdf?classes=invoice,contract,report" \
   -H "Content-Type: multipart/form-data" \
   -F "file=@mixed_documents.pdf" \
   -F 'categories={"invoice":"Business invoices with itemized charges","contract":"Legal agreements and binding documents"}' \
@@ -72,7 +72,7 @@ curl -X POST "https://visionapi.unsiloed.ai/splitter/split-pdf?classes=invoice,c
 import requests
 import json
 
-url = "https://visionapi.unsiloed.ai/splitter/split-pdf"
+url = "https://prod.visionapi.unsiloed.ai/splitter/split-pdf"
 
 # Define categories with descriptions for better accuracy
 categories = {
@@ -129,7 +129,7 @@ const params = new URLSearchParams({
   classes: 'invoice,contract,report'
 });
 
-const response = await fetch(`https://visionapi.unsiloed.ai/splitter/split-pdf?${params}`, {
+const response = await fetch(`https://prod.visionapi.unsiloed.ai/splitter/split-pdf?${params}`, {
   method: 'POST',
   body: formData
 });
