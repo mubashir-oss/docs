@@ -160,7 +160,7 @@ For a simple financial document schema:
 <RequestExample>
 
 ```bash cURL
-curl -X POST "https://visionapi.unsiloed.ai/cite" \
+curl -X POST "https://prod.visionapi.unsiloed.ai/cite" \
   -H "accept: application/json" \
   -H "api-key: your-api-key" \
   -H "Content-Type: multipart/form-data" \
@@ -172,7 +172,7 @@ curl -X POST "https://visionapi.unsiloed.ai/cite" \
 import requests
 import json
 
-url = "https://visionapi.unsiloed.ai/cite"
+url = "https://prod.visionapi.unsiloed.ai/cite"
 headers = {
     "accept": "application/json",
     "api-key": "your-api-key"
@@ -271,7 +271,7 @@ const schema = {
 
 formData.append('schema_data', JSON.stringify(schema));
 
-const response = await fetch('https://visionapi.unsiloed.ai/cite', {
+const response = await fetch('https://prod.visionapi.unsiloed.ai/cite', {
   method: 'POST',
   headers: {
     'accept': 'application/json',
@@ -348,7 +348,7 @@ Process multiple PDF files simultaneously for efficient batch data extraction.
 <RequestExample>
 
 ```bash cURL
-curl -X POST "https://visionapi.unsiloed.ai/batch/cite" \
+curl -X POST "https://prod.visionapi.unsiloed.ai/batch/cite" \
   -H "accept: application/json" \
   -H "api-key: your-api-key" \
   -H "Content-Type: multipart/form-data" \
@@ -363,7 +363,7 @@ curl -X POST "https://visionapi.unsiloed.ai/batch/cite" \
 import requests
 import json
 
-url = "https://visionapi.unsiloed.ai/batch/cite"
+url = "https://prod.visionapi.unsiloed.ai/batch/cite"
 headers = {
     "accept": "application/json",
     "api-key": "your-api-key"
@@ -458,7 +458,7 @@ const schema = {
 formData.append('schema_data', JSON.stringify(schema));
 formData.append('batch_size', '8');
 
-const response = await fetch('https://visionapi.unsiloed.ai/batch/cite', {
+const response = await fetch('https://prod.visionapi.unsiloed.ai/batch/cite', {
   method: 'POST',
   headers: {
     'accept': 'application/json',
@@ -782,7 +782,7 @@ def wait_for_extraction_completion(job_id, api_key):
     """Poll job status until completion"""
     
     headers = {"api-key": api_key}
-    status_url = f"https://visionapi.unsiloed.ai/jobs/{job_id}"
+    status_url = f"https://prod.visionapi.unsiloed.ai/jobs/{job_id}"
     
     while True:
         response = requests.get(status_url, headers=headers)
@@ -793,7 +793,7 @@ def wait_for_extraction_completion(job_id, api_key):
             
             if status_data['status'] == 'completed':
                 # Get results
-                results_url = f"https://visionapi.unsiloed.ai/jobs/{job_id}/results"
+                results_url = f"https://prod.visionapi.unsiloed.ai/jobs/{job_id}/results"
                 results_response = requests.get(results_url, headers=headers)
                 
                 if results_response.status_code == 200:
@@ -1034,7 +1034,7 @@ def extract_academic_citations(pdf_files, api_key):
     }
     
     # Process batch
-    url = "https://visionapi.unsiloed.ai/batch/cite"
+    url = "https://prod.visionapi.unsiloed.ai/batch/cite"
     headers = {"accept": "application/json", "api-key": api_key}
     
     files = [("pdf_files", (f"paper_{i}.pdf", open(pdf, "rb"), "application/pdf")) 
@@ -1130,7 +1130,7 @@ def extract_financial_data(pdf_file, api_key):
         "additionalProperties": false
     }
     
-    url = "https://visionapi.unsiloed.ai/cite"
+    url = "https://prod.visionapi.unsiloed.ai/cite"
     headers = {"accept": "application/json", "api-key": api_key}
     
     files = {"pdf_file": (pdf_file, open(pdf_file, "rb"), "application/pdf")}
