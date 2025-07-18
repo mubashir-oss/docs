@@ -1,0 +1,480 @@
+---
+title: "Get Classification Job Status"
+api: "GET /classify/{job_id}"
+description: "Check the status and progress of classification jobs and retrieve results"
+---
+
+## Overview
+
+The Get Classification Job Status endpoint allows you to check the current status of classification jobs and retrieve the final results once processing is complete. Classification jobs process documents asynchronously, uploading files to cloud storage and analyzing them in the background.
+
+<Note>
+Classification jobs are stored in Supabase and updated in real-time. Status checks are lightweight and can be polled frequently to monitor progress.
+</Note>
+
+## Request
+
+<ParamField path="job_id" type="string" required>
+  The unique identifier of the classification job to check
+</ParamField>
+
+<ParamField header="api-key" type="string" required>
+  API key for authentication
+</ParamField>
+
+<ParamField header="Content-Type" type="string">
+  Set to "application/json"
+</ParamField>
+
+## Response
+
+<ResponseField name="job_id" type="string">
+  Unique identifier for the classification job
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Current job status: "processing", "completed", or "failed"
+</ResponseField>
+
+<ResponseField name="progress" type="string">
+  Human-readable progress message describing current processing stage
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message (if job failed, otherwise null)
+</ResponseField>
+
+<ResponseField name="result" type="object">
+  Classification results (only present when status is "completed")
+  <Expandable title="result_structure">
+    <ResponseField name="success" type="boolean">
+      Whether the classification operation succeeded
+    </ResponseField>
+    <ResponseField name="classification" type="string">
+      Primary assigned category from the provided conditions list
+    </ResponseField>
+    <ResponseField name="confidence" type="number">
+      Confidence score for primary classification (0.0-1.0)
+    </ResponseField>
+    <ResponseField name="page_results" type="array">
+      Per-page classification details
+      <Expandable title="page_result_structure">
+        <ResponseField name="page" type="number">
+          Page number (1-indexed)
+        </ResponseField>
+        <ResponseField name="success" type="boolean">
+          Whether this page was processed successfully
+        </ResponseField>
+        <ResponseField name="classification" type="string">
+          Classification result for this page
+        </ResponseField>
+        <ResponseField name="confidence" type="number">
+          Confidence score for this page
+        </ResponseField>
+        <ResponseField name="raw_result" type="string">
+          Raw response from the vision model
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="total_pages" type="number">
+      Total number of pages in the document
+    </ResponseField>
+    <ResponseField name="processed_pages" type="number">
+      Number of pages actually processed
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Request Examples
+
+<RequestExample>
+
+```bash cURL
+curl -X GET "https://prod.visionapi.unsiloed.ai/classify/47c536aa-9fab-48ca-b27c-2fd74d30490a" \
+  -H "api-key: your-api-key" \
+  -H "Content-Type: application/json"
+```
+
+```python Python
+import requests
+
+job_id = "47c536aa-9fab-48ca-b27c-2fd74d30490a"
+url = f"https://prod.visionapi.unsiloed.ai/classify/{job_id}"
+headers = {
+    "api-key": "your-api-key",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, headers=headers)
+
+if response.status_code == 200:
+    result = response.json()
+    print(f"Job ID: {result['job_id']}")
+    print(f"Status: {result['status']}")
+    print(f"Progress: {result.get('progress', 'N/A')}")
+    
+    if result['status'] == 'completed':
+        classification_result = result['result']
+        print(f"Classification: {classification_result['classification']}")
+        print(f"Confidence: {classification_result['confidence']:.2f}")
+        print(f"Total pages: {classification_result['total_pages']}")
+        
+        # Page-by-page results
+        for page_result in classification_result['page_results']:
+            print(f"Page {page_result['page']}: {page_result['classification']} (confidence: {page_result['confidence']:.2f})")
+    elif result['status'] == 'failed':
+        print(f"Error: {result.get('error', 'Unknown error')}")
+    else:
+        print("Job is still processing...")
+else:
+    print("Error:", response.status_code, response.text)
+```
+
+```javascript JavaScript
+const jobId = '47c536aa-9fab-48ca-b27c-2fd74d30490a';
+
+const response = await fetch(`https://prod.visionapi.unsiloed.ai/classify/${jobId}`, {
+  method: 'GET',
+  headers: {
+    'api-key': 'your-api-key',
+    'Content-Type': 'application/json'
+  }
+});
+
+if (response.ok) {
+  const result = await response.json();
+  console.log('Job ID:', result.job_id);
+  console.log('Status:', result.status);
+  console.log('Progress:', result.progress || 'N/A');
+  
+  if (result.status === 'completed') {
+    const classificationResult = result.result;
+    console.log('Classification:', classificationResult.classification);
+    console.log('Confidence:', classificationResult.confidence);
+    console.log('Total pages:', classificationResult.total_pages);
+    
+    // Display page-by-page results
+    classificationResult.page_results.forEach(pageResult => {
+      console.log(`Page ${pageResult.page}: ${pageResult.classification} (${pageResult.confidence.toFixed(2)})`);
+    });
+  } else if (result.status === 'failed') {
+    console.error('Error:', result.error || 'Unknown error');
+  } else {
+    console.log('Job is still processing...');
+  }
+} else {
+  console.error('Request failed:', response.status, await response.text());
+}
+```
+
+</RequestExample>
+
+## Response Examples
+
+<ResponseExample>
+
+```json Processing Status
+{
+  "job_id": "47c536aa-9fab-48ca-b27c-2fd74d30490a",
+  "status": "processing",
+  "progress": "Processing page 1 of 2",
+  "error": null,
+  "result": null
+}
+```
+
+```json Completed Status
+{
+  "job_id": "47c536aa-9fab-48ca-b27c-2fd74d30490a",
+  "status": "completed",
+  "progress": "Classification completed",
+  "error": null,
+  "result": {
+    "success": true,
+    "classification": "invoice",
+    "confidence": 0.9999996871837232,
+    "page_results": [
+      {
+        "page": 1,
+        "success": true,
+        "confidence": 0.9999996871837232,
+        "raw_result": "invoice",
+        "classification": "invoice"
+      }
+    ],
+    "total_pages": 1,
+    "processed_pages": 1
+  }
+}
+```
+
+```json Multi-Page Completed Status
+{
+  "job_id": "47c536aa-9fab-48ca-b27c-2fd74d30490a",
+  "status": "completed",
+  "progress": "Classification completed",
+  "error": null,
+  "result": {
+    "success": true,
+    "classification": "contract",
+    "confidence": 0.89,
+    "page_results": [
+      {
+        "page": 1,
+        "success": true,
+        "confidence": 0.92,
+        "raw_result": "contract",
+        "classification": "contract"
+      },
+      {
+        "page": 2,
+        "success": true,
+        "confidence": 0.86,
+        "raw_result": "contract",
+        "classification": "contract"
+      }
+    ],
+    "total_pages": 2,
+    "processed_pages": 2
+  }
+}
+```
+
+```json Failed Status
+{
+  "job_id": "47c536aa-9fab-48ca-b27c-2fd74d30490a",
+  "status": "failed",
+  "progress": "Classification failed",
+  "error": "Failed to process document: File appears to be corrupted",
+  "result": null
+}
+```
+
+```json Job Not Found
+{
+  "detail": "Job not found"
+}
+```
+
+</ResponseExample>
+
+## Job Status Values
+
+<AccordionGroup>
+  <Accordion title="processing">
+    Job is currently being processed. This includes file upload to storage, document analysis, and classification processing. Progress messages will indicate the current stage.
+  </Accordion>
+
+  <Accordion title="completed">
+    Job has completed successfully. The result field contains the classification results with confidence scores and page-by-page details.
+  </Accordion>
+
+  <Accordion title="failed">
+    Job failed during processing. The error field contains details about what went wrong. Common causes include file corruption, invalid conditions, or processing errors.
+  </Accordion>
+</AccordionGroup>
+
+## Polling Strategy
+
+For long-running classification jobs, implement polling with exponential backoff:
+
+```python
+import time
+import asyncio
+
+async def poll_classification_status(job_id, max_wait_time=300):
+    """Poll classification job status with exponential backoff"""
+    
+    base_delay = 1  # Start with 1 second
+    max_delay = 30  # Maximum delay between polls
+    current_delay = base_delay
+    total_wait_time = 0
+    
+    while total_wait_time < max_wait_time:
+        try:
+            response = requests.get(
+                f"https://prod.visionapi.unsiloed.ai/classify/{job_id}",
+                headers={"api-key": "your-api-key", "Content-Type": "application/json"}
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                
+                if result['status'] == 'completed':
+                    return result['result']
+                elif result['status'] == 'failed':
+                    raise Exception(f"Classification failed: {result.get('error', 'Unknown error')}")
+                else:
+                    print(f"Status: {result['status']}, Progress: {result.get('progress', 'N/A')}")
+            
+            # Wait before next poll
+            await asyncio.sleep(current_delay)
+            total_wait_time += current_delay
+            
+            # Exponential backoff
+            current_delay = min(current_delay * 2, max_delay)
+            
+        except Exception as e:
+            print(f"Error polling status: {e}")
+            await asyncio.sleep(current_delay)
+            total_wait_time += current_delay
+    
+    raise Exception("Classification job timed out")
+```
+
+## Progress Messages
+
+During processing, the progress field will show informative messages:
+
+- **"Starting classification..."** - Job has been queued and is beginning
+- **"Processing page X of Y"** - Currently analyzing specific pages
+- **"Classification completed"** - Job finished successfully
+- **"Classification failed"** - Job encountered an error
+
+## Error Handling
+
+### Common Error Scenarios
+
+1. **File Processing Errors**: PDF corruption, password protection, or unreadable content
+2. **Invalid Conditions**: Empty conditions list or malformed JSON
+3. **Storage Errors**: File upload failures to Supabase storage
+4. **Vision API Errors**: OpenAI API failures or timeouts
+5. **Job Not Found**: Invalid job ID or job has been deleted
+
+### Error Response Examples
+
+```json File Processing Error
+{
+  "job_id": "47c536aa-9fab-48ca-b27c-2fd74d30490a",
+  "status": "failed",
+  "progress": "Classification failed",
+  "error": "Failed to process PDF: File appears to be corrupted",
+  "result": null
+}
+```
+
+```json Invalid Conditions Error
+{
+  "job_id": "47c536aa-9fab-48ca-b27c-2fd74d30490a",
+  "status": "failed",
+  "progress": "Classification failed",
+  "error": "Invalid conditions format. Must be a valid JSON string.",
+  "result": null
+}
+```
+
+```json Storage Error
+{
+  "job_id": "47c536aa-9fab-48ca-b27c-2fd74d30490a",
+  "status": "failed",
+  "progress": "Classification failed",
+  "error": "Failed to upload file to storage. Please try again.",
+  "result": null
+}
+```
+
+## Best Practices
+
+<Tip>
+**Polling Frequency**: Use exponential backoff when polling job status to avoid overwhelming the API. Start with 1-second intervals and increase gradually.
+</Tip>
+
+<Tip>
+**Timeout Handling**: Set reasonable timeouts for classification jobs. Most jobs complete within 30-60 seconds, but complex multi-page documents may take longer.
+</Tip>
+
+<Tip>
+**Error Recovery**: Implement retry logic for transient errors and provide fallback handling for permanent failures.
+</Tip>
+
+<Tip>
+**Result Caching**: Once a job is completed, cache the results to avoid unnecessary API calls for the same job ID.
+</Tip>
+
+<Warning>
+**Rate Limits**: Status checking endpoints have rate limits. Implement proper backoff strategies to avoid hitting limits.
+</Warning>
+
+<Warning>
+**Job Retention**: Classification jobs and their results may be automatically cleaned up after a certain period. Check with your service provider for retention policies.
+</Warning>
+
+## Integration Examples
+
+### Simple Status Check
+
+```python
+def check_classification_status(job_id):
+    """Simple function to check classification job status"""
+    
+    response = requests.get(
+        f"https://prod.visionapi.unsiloed.ai/classify/{job_id}",
+        headers={"api-key": "your-api-key", "Content-Type": "application/json"}
+    )
+    
+    if response.status_code == 200:
+        return response.json()
+    else:
+        raise Exception(f"Failed to get job status: {response.status_code}")
+```
+
+### Batch Status Monitoring
+
+```python
+async def monitor_classification_jobs(job_ids):
+    """Monitor multiple classification jobs concurrently"""
+    
+    async def check_single_job(session, job_id):
+        async with session.get(
+            f"https://prod.visionapi.unsiloed.ai/classify/{job_id}",
+            headers={"api-key": "your-api-key", "Content-Type": "application/json"}
+        ) as response:
+            return await response.json()
+    
+    async with aiohttp.ClientSession() as session:
+        tasks = [check_single_job(session, job_id) for job_id in job_ids]
+        results = await asyncio.gather(*tasks)
+        return results
+
+# Usage
+job_ids = ["job1", "job2", "job3"]
+results = asyncio.run(monitor_classification_jobs(job_ids))
+```
+
+### Webhook Integration
+
+```python
+from flask import Flask, request
+
+app = Flask(__name__)
+
+@app.route('/classification-webhook', methods=['POST'])
+def classification_webhook():
+    """Webhook endpoint for classification job completion"""
+    
+    data = request.json
+    
+    if data['status'] == 'completed':
+        # Process completed classification
+        result = data['result']
+        classification = result['classification']
+        confidence = result['confidence']
+        
+        # Route document based on classification
+        route_document(classification, confidence)
+        
+        return {"status": "processed"}, 200
+    elif data['status'] == 'failed':
+        # Handle failed classification
+        error = data['error']
+        log_error(error)
+        
+        return {"status": "error_logged"}, 200
+    
+    return {"status": "ignored"}, 200
+```
+
+## Related Endpoints
+
+- **[POST /classify](../classification.mdx)** - Start a new classification job
+- **[POST /classify-by-url](../classification.mdx)** - Classify document from URL

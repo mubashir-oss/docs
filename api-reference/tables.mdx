@@ -595,15 +595,6 @@ async def main():
 # asyncio.run(main())
 ```
 
-## Rate Limits
-
-- **Table Extraction**: 50 requests per minute
-- **File Upload**: 500MB per minute total
-- **Concurrent Jobs**: Maximum 5 active table extraction jobs per API key
-- **Results Retrieval**: 200 requests per minute
-
-Rate limits are enforced per API key and reset on a rolling window basis. Monitor your quota usage through the `quota_remaining` field in responses.
-
 ## Supported Document Types
 
 - **PDF**: Native PDF documents with embedded tables

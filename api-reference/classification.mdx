@@ -1,15 +1,15 @@
 ---
 title: "Classify Document"
 api: "POST /classify"
-description: "Classify PDF documents into predefined categories with confidence scoring"
+description: "Classify PDF documents into predefined categories with confidence scoring using job-based processing"
 ---
 
 ## Overview
 
-The Classify Document endpoint analyzes PDF documents and assigns them to predefined categories based on their content, structure, and visual characteristics. This is ideal for document routing, automated filing, and content-based processing workflows.
+The Classify Document endpoint analyzes PDF documents and assigns them to predefined categories based on their content, structure, and visual characteristics. This endpoint uses job-based processing where files are uploaded to cloud storage and processed asynchronously.
 
 <Note>
-The endpoint supports both single-page and multi-page classification with detailed confidence scoring for each page.
+The endpoint supports both single-page and multi-page classification with detailed confidence scoring for each page. Files are uploaded to Supabase storage and processed in the background.
 </Note>
 
 ## Request
@@ -22,48 +22,22 @@ The endpoint supports both single-page and multi-page classification with detail
   JSON string containing list of classification categories (e.g., ["invoice", "contract", "report"])
 </ParamField>
 
-<ParamField header="X-API-Key" type="string">
-  API key for authentication (optional for some endpoints)
+<ParamField header="api-key" type="string" required>
+  API key for authentication
 </ParamField>
 
 ## Response
 
-<ResponseField name="success" type="boolean">
-  Whether the classification operation succeeded
+<ResponseField name="job_id" type="string">
+  Unique identifier for the classification job
 </ResponseField>
 
-<ResponseField name="classification" type="string">
-  Primary assigned category from the provided conditions list
+<ResponseField name="status" type="string">
+  Current status of the job ("processing")
 </ResponseField>
 
-<ResponseField name="confidence" type="number">
-  Confidence score for primary classification (0.0-1.0)
-</ResponseField>
-
-<ResponseField name="page_results" type="array">
-  Per-page classification details
-  <Expandable title="page_result_structure">
-    <ResponseField name="page" type="number">
-      Page number (1-indexed)
-    </ResponseField>
-    <ResponseField name="classification" type="string">
-      Classification result for this page
-    </ResponseField>
-    <ResponseField name="confidence" type="number">
-      Confidence score for this page
-    </ResponseField>
-    <ResponseField name="raw_result" type="string">
-      Raw response from the vision model
-    </ResponseField>
-  </Expandable>
-</ResponseField>
-
-<ResponseField name="total_pages" type="number">
-  Total number of pages in the document
-</ResponseField>
-
-<ResponseField name="processed_pages" type="number">
-  Number of pages actually processed
+<ResponseField name="message" type="string">
+  Human-readable status message
 </ResponseField>
 
 ## Request Examples
@@ -72,7 +46,7 @@ The endpoint supports both single-page and multi-page classification with detail
 
 ```bash cURL
 curl -X POST "https://prod.visionapi.unsiloed.ai/classify" \
-  -H "X-API-Key: your-api-key" \
+  -H "api-key: your-api-key" \
   -H "Content-Type: multipart/form-data" \
   -F "pdf_file=@document.pdf" \
   -F "conditions=[\"invoice\", \"contract\", \"report\", \"letter\"]"
@@ -83,7 +57,7 @@ import requests
 import json
 
 url = "https://prod.visionapi.unsiloed.ai/classify"
-headers = {"X-API-Key": "your-api-key"}
+headers = {"api-key": "your-api-key"}
 
 # Define classification categories
 conditions = ["invoice", "contract", "report", "letter"]
@@ -93,19 +67,12 @@ data = {"conditions": json.dumps(conditions)}
 
 response = requests.post(url, headers=headers, files=files, data=data)
 
-if response.status_code == 200:
+if response.status_code == 202:
     result = response.json()
-    if result["success"]:
-        print(f"Classification: {result['classification']}")
-        print(f"Confidence: {result['confidence']:.2f}")
-        print(f"Total pages: {result['total_pages']}")
-        print(f"Processed pages: {result['processed_pages']}")
-        
-        # Page-by-page results
-        for page_result in result['page_results']:
-            print(f"Page {page_result['page']}: {page_result['classification']} (confidence: {page_result['confidence']:.2f})")
-    else:
-        print(f"Classification failed: {result['error']}")
+    job_id = result["job_id"]
+    print(f"Classification job started: {job_id}")
+    print(f"Status: {result['status']}")
+    print(f"Message: {result['message']}")
 else:
     print("Error:", response.status_code, response.text)
 
@@ -121,26 +88,16 @@ formData.append('conditions', JSON.stringify(['invoice', 'contract', 'report', '
 const response = await fetch('https://prod.visionapi.unsiloed.ai/classify', {
   method: 'POST',
   headers: {
-    'X-API-Key': 'your-api-key'
+    'api-key': 'your-api-key'
   },
   body: formData
 });
 
-if (response.ok) {
+if (response.status === 202) {
   const result = await response.json();
-  
-  if (result.success) {
-    console.log('Classification:', result.classification);
-    console.log('Confidence:', result.confidence);
-    console.log('Total pages:', result.total_pages);
-    
-    // Display page-by-page results
-    result.page_results.forEach(pageResult => {
-      console.log(`Page ${pageResult.page}: ${pageResult.classification} (${pageResult.confidence.toFixed(2)})`);
-    });
-  } else {
-    console.error('Classification failed:', result.error);
-  }
+  console.log('Job ID:', result.job_id);
+  console.log('Status:', result.status);
+  console.log('Message:', result.message);
 } else {
   console.error('Request failed:', response.status, await response.text());
 }
@@ -154,68 +111,232 @@ if (response.ok) {
 
 ```json Success Response
 {
-  "success": true,
-  "classification": "invoice",
-  "confidence": 0.89,
-  "page_results": [
-    {
-      "page": 1,
-      "classification": "invoice",
-      "confidence": 0.92,
-      "raw_result": "invoice"
-    },
-    {
-      "page": 2,
-      "classification": "invoice",
-      "confidence": 0.86,
-      "raw_result": "invoice"
-    }
-  ],
-  "total_pages": 2,
-  "processed_pages": 2
-}
-```
-
-```json Single Page Response
-{
-  "success": true,
-  "classification": "contract",
-  "confidence": 0.94,
-  "page_results": [
-    {
-      "page": 1,
-      "classification": "contract",
-      "confidence": 0.94,
-      "raw_result": "contract"
-    }
-  ],
-  "total_pages": 1,
-  "processed_pages": 1
-}
-```
-
-```json Error Response - Processing Failed
-{
-  "success": false,
-  "error": "Failed to process document"
+  "job_id": "47c536aa-9fab-48ca-b27c-2fd74d30490a",
+  "status": "processing",
+  "message": "Classification started"
 }
 ```
 
 ```json Error Response - Invalid Conditions
 {
   "success": false,
-  "error": "No valid conditions provided for classification"
+  "error": "Invalid conditions format. Must be a valid JSON string."
 }
 ```
 
-```json Error Response - File Not Found
+```json Error Response - File Upload Failed
 {
   "success": false,
-  "error": "PDF file not found"
+  "error": "Failed to upload file to storage. Please try again."
 }
 ```
 
 </ResponseExample>
+
+## Job Status Checking
+
+After starting a classification job, you can check its status using the job ID.
+
+### Status Endpoint
+
+<ParamField header="api-key" type="string" required>
+  API key for authentication
+</ParamField>
+
+<ParamField header="Content-Type" type="string">
+  Set to "application/json"
+</ParamField>
+
+### Status Request Examples
+
+<RequestExample>
+
+```bash cURL
+curl -X GET "https://prod.visionapi.unsiloed.ai/classify/47c536aa-9fab-48ca-b27c-2fd74d30490a" \
+  -H "api-key: your-api-key" \
+  -H "Content-Type: application/json"
+```
+
+```python Python
+import requests
+
+job_id = "47c536aa-9fab-48ca-b27c-2fd74d30490a"
+url = f"https://prod.visionapi.unsiloed.ai/classify/{job_id}"
+headers = {
+    "api-key": "your-api-key",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, headers=headers)
+
+if response.status_code == 200:
+    result = response.json()
+    print(f"Job ID: {result['job_id']}")
+    print(f"Status: {result['status']}")
+    print(f"Progress: {result.get('progress', 'N/A')}")
+    
+    if result['status'] == 'completed':
+        classification_result = result['result']
+        print(f"Classification: {classification_result['classification']}")
+        print(f"Confidence: {classification_result['confidence']:.2f}")
+        print(f"Total pages: {classification_result['total_pages']}")
+        
+        # Page-by-page results
+        for page_result in classification_result['page_results']:
+            print(f"Page {page_result['page']}: {page_result['classification']} (confidence: {page_result['confidence']:.2f})")
+    elif result['status'] == 'failed':
+        print(f"Error: {result.get('error', 'Unknown error')}")
+else:
+    print("Error:", response.status_code, response.text)
+```
+
+```javascript JavaScript
+const jobId = '47c536aa-9fab-48ca-b27c-2fd74d30490a';
+
+const response = await fetch(`https://prod.visionapi.unsiloed.ai/classify/${jobId}`, {
+  method: 'GET',
+  headers: {
+    'api-key': 'your-api-key',
+    'Content-Type': 'application/json'
+  }
+});
+
+if (response.ok) {
+  const result = await response.json();
+  console.log('Job ID:', result.job_id);
+  console.log('Status:', result.status);
+  console.log('Progress:', result.progress || 'N/A');
+  
+  if (result.status === 'completed') {
+    const classificationResult = result.result;
+    console.log('Classification:', classificationResult.classification);
+    console.log('Confidence:', classificationResult.confidence);
+    console.log('Total pages:', classificationResult.total_pages);
+    
+    // Display page-by-page results
+    classificationResult.page_results.forEach(pageResult => {
+      console.log(`Page ${pageResult.page}: ${pageResult.classification} (${pageResult.confidence.toFixed(2)})`);
+    });
+  } else if (result.status === 'failed') {
+    console.error('Error:', result.error || 'Unknown error');
+  }
+} else {
+  console.error('Request failed:', response.status, await response.text());
+}
+```
+
+</RequestExample>
+
+### Status Response Examples
+
+<ResponseExample>
+
+```json Processing Status
+{
+  "job_id": "47c536aa-9fab-48ca-b27c-2fd74d30490a",
+  "status": "processing",
+  "progress": "Processing page 1 of 2",
+  "error": null,
+  "result": null
+}
+```
+
+```json Completed Status
+{
+  "job_id": "47c536aa-9fab-48ca-b27c-2fd74d30490a",
+  "status": "completed",
+  "progress": "Classification completed",
+  "error": null,
+  "result": {
+    "success": true,
+    "classification": "invoice",
+    "confidence": 0.9999996871837232,
+    "page_results": [
+      {
+        "page": 1,
+        "success": true,
+        "confidence": 0.9999996871837232,
+        "raw_result": "invoice",
+        "classification": "invoice"
+      }
+    ],
+    "total_pages": 1,
+    "processed_pages": 1
+  }
+}
+```
+
+```json Failed Status
+{
+  "job_id": "47c536aa-9fab-48ca-b27c-2fd74d30490a",
+  "status": "failed",
+  "progress": "Classification failed",
+  "error": "Failed to process document",
+  "result": null
+}
+```
+
+```json Job Not Found
+{
+  "detail": "Job not found"
+}
+```
+
+</ResponseExample>
+
+## Job Status Values
+
+- **`processing`**: Job is currently being processed
+- **`completed`**: Job completed successfully with results available
+- **`failed`**: Job failed with error details
+
+## Polling Strategy
+
+For long-running classification jobs, implement polling with exponential backoff:
+
+```python
+import time
+import asyncio
+
+async def poll_classification_status(job_id, max_wait_time=300):
+    """Poll classification job status with exponential backoff"""
+    
+    base_delay = 1  # Start with 1 second
+    max_delay = 30  # Maximum delay between polls
+    current_delay = base_delay
+    total_wait_time = 0
+    
+    while total_wait_time < max_wait_time:
+        try:
+            response = requests.get(
+                f"https://prod.visionapi.unsiloed.ai/classify/{job_id}",
+                headers={"api-key": "your-api-key", "Content-Type": "application/json"}
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                
+                if result['status'] == 'completed':
+                    return result['result']
+                elif result['status'] == 'failed':
+                    raise Exception(f"Classification failed: {result.get('error', 'Unknown error')}")
+                else:
+                    print(f"Status: {result['status']}, Progress: {result.get('progress', 'N/A')}")
+            
+            # Wait before next poll
+            await asyncio.sleep(current_delay)
+            total_wait_time += current_delay
+            
+            # Exponential backoff
+            current_delay = min(current_delay * 2, max_delay)
+            
+        except Exception as e:
+            print(f"Error polling status: {e}")
+            await asyncio.sleep(current_delay)
+            total_wait_time += current_delay
+    
+    raise Exception("Classification job timed out")
+```
 
 ## Classification Logic
 
@@ -267,7 +388,7 @@ async def classify_documents(file_paths, conditions):
         
         async with session.post(
             'https://prod.visionapi.unsiloed.ai/classify',
-            headers={'X-API-Key': 'your-api-key'},
+            headers={'api-key': 'your-api-key'},
             data=data
         ) as response:
             return await response.json()
@@ -291,6 +412,7 @@ results = asyncio.run(classify_documents(file_paths, conditions))
 2. **Invalid Conditions**: Empty conditions list or malformed JSON
 3. **API Limits**: Rate limiting or quota exceeded
 4. **Vision API Errors**: OpenAI API failures or timeouts
+5. **Storage Errors**: File upload failures to Supabase storage
 
 ### Retry Logic
 
@@ -310,17 +432,17 @@ async def classify_with_retry(pdf_path, conditions, max_retries=3):
             
             response = requests.post(
                 "https://prod.visionapi.unsiloed.ai/classify",
-                headers={"X-API-Key": "your-api-key"},
+                headers={"api-key": "your-api-key"},
                 files=files,
                 data=data
             )
             
-            if response.status_code == 200:
+            if response.status_code == 202:
                 result = response.json()
-                if result["success"]:
-                    return result
-                else:
-                    raise Exception(result["error"])
+                job_id = result["job_id"]
+                
+                # Poll for completion
+                return await poll_classification_status(job_id)
             else:
                 response.raise_for_status()
                 
@@ -351,62 +473,17 @@ async def classify_with_retry(pdf_path, conditions, max_retries=3):
 **Condition Naming**: Use clear, descriptive category names that match the document content and structure.
 </Tip>
 
+<Tip>
+**Polling Strategy**: Use exponential backoff when polling job status to avoid overwhelming the API.
+</Tip>
+
 <Warning>
 **Rate Limits**: The classification endpoint has rate limits. Implement proper retry logic and consider batch processing for large volumes.
 </Warning>
 
-## Integration Examples
-
-### Workflow Integration
-
-```python
-def process_document_batch(documents, categories):
-    """Process a batch of documents with classification"""
-    
-    results = []
-    
-    for doc in documents:
-        try:
-            # Classify the document
-            classification_result = classify_document(doc['path'], categories)
-            
-            if classification_result['success']:
-                # Route based on classification
-                category = classification_result['classification']
-                confidence = classification_result['confidence']
-                
-                if confidence >= 0.8:
-                    # High confidence - auto-process
-                    route_document(doc, category, 'auto')
-                elif confidence >= 0.5:
-                    # Medium confidence - flag for review
-                    route_document(doc, category, 'review')
-                else:
-                    # Low confidence - manual processing
-                    route_document(doc, 'manual', 'manual')
-                
-                results.append({
-                    'document': doc['name'],
-                    'classification': category,
-                    'confidence': confidence,
-                    'action': 'processed'
-                })
-            else:
-                results.append({
-                    'document': doc['name'],
-                    'error': classification_result['error'],
-                    'action': 'failed'
-                })
-                
-        except Exception as e:
-            results.append({
-                'document': doc.get('name', 'unknown'),
-                'error': str(e),
-                'action': 'failed'
-            })
-    
-    return results
-```
+<Warning>
+**File Storage**: Files are uploaded to Supabase storage and may be subject to storage limits and retention policies.
+</Warning>
 
 ## Supported Document Types
 

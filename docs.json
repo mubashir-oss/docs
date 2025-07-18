@@ -59,7 +59,9 @@
             "pages": [
               "api-reference/jobs/status",
               "api-reference/jobs/results",
-              "api-reference/jobs/cancel"
+              "api-reference/jobs/cancel",
+              "api-reference/jobs/parse-status",
+              "api-reference/jobs/classification-status"
             ]
           }
         ]
