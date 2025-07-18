@@ -9,7 +9,7 @@ description: "Extract structured data from PDF documents using custom schemas fo
 The Extract Data endpoint processes PDF documents and extracts structured information based on custom schemas. This is ideal for extracting specific data points, citations, references, and structured content from documents using AI-powered analysis.
 
 <Note>
-The endpoint returns a job ID for asynchronous processing. Use the job management endpoints to check status and retrieve results.
+  The endpoint returns a job ID for asynchronous processing. Use the job management endpoints to check status and retrieve results.
 </Note>
 
 ## Request
@@ -168,6 +168,7 @@ curl -X POST "https://prod.visionapi.unsiloed.ai/cite" \
   -F "schema_data={\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\",\"description\":\"Document title\"},\"authors\":{\"type\":\"array\",\"description\":\"List of authors\",\"items\":{\"type\":\"string\"}}},\"required\":[\"title\",\"authors\"],\"additionalProperties\":false}"
 ```
 
+
 ```python Python
 import requests
 import json
@@ -234,6 +235,7 @@ if response.status_code == 200:
 else:
     print("Error:", response.status_code, response.text)
 ```
+
 
 ```javascript JavaScript
 const formData = new FormData();
@@ -306,6 +308,7 @@ if (response.ok) {
 }
 ```
 
+
 ```json Error Response
 {
   "detail": [
@@ -323,7 +326,7 @@ if (response.ok) {
 
 ## Batch Extraction
 
-<api>POST /batch/cite</api>
+POST /batch/cite
 
 Process multiple PDF files simultaneously for efficient batch data extraction.
 
@@ -337,7 +340,7 @@ Process multiple PDF files simultaneously for efficient batch data extraction.
   JSON schema defining the structure and fields to extract (applied to all files)
 </ParamField>
 
-<ParamField body="batch_size" type="number" default="10">
+<ParamField body="batch_size" default="10" type="number">
   Number of files to process concurrently in the batch
 </ParamField>
 
@@ -358,6 +361,7 @@ curl -X POST "https://prod.visionapi.unsiloed.ai/batch/cite" \
   -F "schema_data={\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\"},\"authors\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}},\"required\":[\"title\",\"authors\"],\"additionalProperties\":false}" \
   -F "batch_size=5"
 ```
+
 
 ```python Python
 import requests
@@ -423,6 +427,7 @@ else:
     print("Error:", response.status_code, response.text)
 ```
 
+
 ```javascript JavaScript
 const formData = new FormData();
 
@@ -485,6 +490,7 @@ The `schema_data` parameter must be a valid JSON Schema that defines the structu
 ### Basic Schema Structure
 
 All extraction schemas must include:
+
 - `type`: "object" (root level)
 - `properties`: Object defining the fields to extract
 - `required`: Array of required field names
@@ -934,35 +940,35 @@ For extracting lists of structured data:
 ## Best Practices
 
 <Tip>
-**Schema Design**: Use specific, descriptive field names and descriptions. Clear descriptions improve extraction accuracy significantly.
+  **Schema Design**: Use specific, descriptive field names and descriptions. Clear descriptions improve extraction accuracy significantly.
 </Tip>
 
 <Tip>
-**Required Fields**: Only mark fields as required if they are essential. Optional fields allow for more flexible extraction.
+  **Required Fields**: Only mark fields as required if they are essential. Optional fields allow for more flexible extraction.
 </Tip>
 
 <Tip>
-**Field Types**: Choose appropriate types - use `number` for numeric data, `string` for text, `array` for lists, and `object` for nested structures.
+  **Field Types**: Choose appropriate types - use `number` for numeric data, `string` for text, `array` for lists, and `object` for nested structures.
 </Tip>
 
 <Tip>
-**Array Items**: Always define the `items` property for arrays to specify the structure of array elements.
+  **Array Items**: Always define the `items` property for arrays to specify the structure of array elements.
 </Tip>
 
 <Tip>
-**Batch Processing**: Use batch extraction for multiple similar documents to improve efficiency and reduce API calls.
+  **Batch Processing**: Use batch extraction for multiple similar documents to improve efficiency and reduce API calls.
 </Tip>
 
 <Warning>
-**Schema Validation**: Ensure your JSON schema is valid. Invalid schemas will result in 422 errors.
+  **Schema Validation**: Ensure your JSON schema is valid. Invalid schemas will result in 422 errors.
 </Warning>
 
 <Warning>
-**Processing Time**: Complex schemas and large documents take longer to process. Monitor job status regularly.
+  **Processing Time**: Complex schemas and large documents take longer to process. Monitor job status regularly.
 </Warning>
 
 <Warning>
-**Quota Management**: Check `quota_remaining` in responses to avoid hitting limits during batch operations.
+  **Quota Management**: Check `quota_remaining` in responses to avoid hitting limits during batch operations.
 </Warning>
 
 ## Integration Examples
@@ -1148,11 +1154,3 @@ def extract_financial_data(pdf_file, api_key):
 financial_data = extract_financial_data("quarterly_report.pdf", "your-api-key")
 ```
 
-## Rate Limits
-
-- **Single Extraction**: 100 requests per minute
-- **Batch Extraction**: 20 batch jobs per minute
-- **File Upload**: 500MB per minute total
-- **Concurrent Jobs**: Maximum 10 active jobs per API key
-
-Rate limits are enforced per API key and reset on a rolling window basis. Monitor your quota usage through the `quota_remaining` field in responses. 
