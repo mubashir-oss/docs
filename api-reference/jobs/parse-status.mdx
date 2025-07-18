@@ -1,0 +1,361 @@
+---
+title: "Get Parse Task Status"
+api: "GET /parse/{task_id}"
+description: "Check the status and retrieve results of parsing tasks"
+---
+
+## Overview
+
+The Get Parse Task Status endpoint allows you to check the current status of parsing tasks and retrieve the complete results when processing is complete. This endpoint is specifically designed for the parsing API and returns comprehensive document analysis including text extraction, image recognition, table parsing, and OCR data.
+
+<Note>
+Parsing tasks are processed asynchronously. Use this endpoint to poll for completion and retrieve results when the task status is "Succeeded".
+</Note>
+
+## Request
+
+<ParamField path="task_id" type="string" required>
+  The unique identifier of the parsing task to check
+</ParamField>
+
+<ParamField header="api-key" type="string" required>
+  API key for authentication
+</ParamField>
+
+## Response
+
+<ResponseField name="task_id" type="string">
+  Unique identifier for the parsing task
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Current task status: "Starting", "Processing", "Succeeded", or "Failed"
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  Timestamp when the task was created
+</ResponseField>
+
+<ResponseField name="started_at" type="string">
+  Timestamp when processing started (only present when status is not "Starting")
+</ResponseField>
+
+<ResponseField name="finished_at" type="string">
+  Timestamp when processing completed (only present when status is "Succeeded" or "Failed")
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Status message about the task
+</ResponseField>
+
+<ResponseField name="total_chunks" type="number">
+  Number of chunks in the document (only present when status is "Succeeded")
+</ResponseField>
+
+<ResponseField name="chunks" type="array">
+  Array of document chunks with detailed analysis (only present when status is "Succeeded")
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X 'GET' \
+  'https://prod.visionapi.unsiloed.ai/parse/e77a5c42-4dc1-44d0-a30e-ed191e8a8908' \
+  -H 'accept: application/json' \
+  -H 'api-key: your-api-key'
+```
+
+```python Python
+import requests
+import time
+
+def get_parse_task_status(task_id, api_key):
+    """Get the status of a parsing task"""
+    
+    url = f"https://prod.visionapi.unsiloed.ai/parse/{task_id}"
+    headers = {"api-key": api_key}
+    
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        task = response.json()
+        print(f"Task Status: {task['status']}")
+        print(f"Created: {task['created_at']}")
+        
+        if task['status'] == 'Succeeded':
+            print("Task completed successfully!")
+            print(f"Total chunks: {task['total_chunks']}")
+            return task
+        elif task['status'] == 'Failed':
+            print(f"Task failed: {task.get('message', 'Unknown error')}")
+            return None
+        elif task['status'] in ['Starting', 'Processing']:
+            print("Task is currently being processed...")
+            return task
+    else:
+        print("Error:", response.status_code, response.text)
+        return None
+
+# Usage
+task_id = "e77a5c42-4dc1-44d0-a30e-ed191e8a8908"
+result = get_parse_task_status(task_id, "your-api-key")
+```
+
+```javascript JavaScript
+async function getParseTaskStatus(taskId, apiKey) {
+  const response = await fetch(`https://prod.visionapi.unsiloed.ai/parse/${taskId}`, {
+    headers: {
+      'accept': 'application/json',
+      'api-key': apiKey
+    }
+  });
+
+  if (response.ok) {
+    const task = await response.json();
+    console.log('Task Status:', task.status);
+    console.log('Created:', task.created_at);
+    
+    switch (task.status) {
+      case 'Succeeded':
+        console.log('Task completed successfully!');
+        console.log('Total chunks:', task.total_chunks);
+        return task;
+      case 'Failed':
+        console.log('Task failed:', task.message || 'Unknown error');
+        return null;
+      case 'Starting':
+      case 'Processing':
+        console.log('Task is currently being processed...');
+        return task;
+      default:
+        console.log('Unknown status:', task.status);
+        return task;
+    }
+  } else {
+    console.error('Failed to get task status:', await response.text());
+    return null;
+  }
+}
+
+// Usage
+const taskId = 'e77a5c42-4dc1-44d0-a30e-ed191e8a8908';
+const result = await getParseTaskStatus(taskId, 'your-api-key');
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json Starting Task
+{
+  "task_id": "e77a5c42-4dc1-44d0-a30e-ed191e8a8908",
+  "status": "Starting",
+  "created_at": "2025-07-18T10:42:10.545832Z",
+  "message": "Task created successfully. Use GET /parse/{task_id} to check status and retrieve results."
+}
+```
+
+```json Processing Task
+{
+  "task_id": "e77a5c42-4dc1-44d0-a30e-ed191e8a8908",
+  "status": "Processing",
+  "created_at": "2025-07-18T10:42:10.545832Z",
+  "started_at": "2025-07-18T10:42:10.666328Z",
+  "message": "Task is being processed"
+}
+```
+
+```json Completed Task
+{
+  "task_id": "e77a5c42-4dc1-44d0-a30e-ed191e8a8908",
+  "status": "Succeeded",
+  "created_at": "2025-07-18T10:42:10.545832Z",
+  "started_at": "2025-07-18T10:42:10.666328Z",
+  "finished_at": "2025-07-18T10:42:23.560572Z",
+  "message": "Task succeeded",
+  "total_chunks": 2,
+  "chunks": [
+    {
+      "segments": [
+        {
+          "segment_type": "Picture",
+          "content": "eternal",
+          "image": "https://s3.us-east-1.amazonaws.com/chunker-bucket/...",
+          "page_number": 1,
+          "segment_id": "1c60ecbd-b6da-493c-b3f6-6849337a981f",
+          "confidence": 0.6062846,
+          "page_width": 1191.0,
+          "page_height": 1684.0,
+          "html": "<p>The image displays a logo...</p>",
+          "markdown": "Eternal Logo\n\nThe image displays a logo...",
+          "bbox": {
+            "left": 72.92226,
+            "top": 62.030334,
+            "width": 230.36308,
+            "height": 55.395317
+          },
+          "ocr": [
+            {
+              "bbox": {
+                "left": 63.753525,
+                "top": 5.395447,
+                "width": 164.45312,
+                "height": 42.757812
+              },
+              "text": "eternal",
+              "confidence": 0.9999992
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+```json Failed Task
+{
+  "task_id": "e77a5c42-4dc1-44d0-a30e-ed191e8a8908",
+  "status": "Failed",
+  "created_at": "2025-07-18T10:42:10.545832Z",
+  "started_at": "2025-07-18T10:42:10.666328Z",
+  "finished_at": "2025-07-18T10:42:15.123456Z",
+  "message": "Failed to process document: File appears to be corrupted"
+}
+```
+
+```json Error Response - Task Not Found
+{
+  "detail": "Task e77a5c42-4dc1-44d0-a30e-ed191e8a8908 not found"
+}
+```
+
+```json Error Response - Invalid API Key
+{
+  "detail": "Invalid API key"
+}
+```
+
+</ResponseExample>
+
+## Task Status Values
+
+<AccordionGroup>
+  <Accordion title="Starting">
+    Task has been created and is waiting to be processed. This is the initial status when a parsing task is first created.
+  </Accordion>
+
+  <Accordion title="Processing">
+    Task is currently being processed. This includes PDF parsing, text extraction, image analysis, table detection, and OCR processing.
+  </Accordion>
+
+  <Accordion title="Succeeded">
+    Task has completed successfully. The response includes the complete analysis results with all extracted data, images, and metadata.
+  </Accordion>
+
+  <Accordion title="Failed">
+    Task failed during processing. Check the message field for details about what went wrong.
+  </Accordion>
+</AccordionGroup>
+
+## Polling Strategy
+
+For long-running parsing tasks, implement a polling strategy to check status periodically:
+
+```python
+import requests
+import time
+
+def poll_parse_task(task_id, api_key, max_wait_time=300, poll_interval=5):
+    """Poll a parsing task until completion or timeout"""
+    
+    start_time = time.time()
+    headers = {"api-key": api_key}
+    
+    while time.time() - start_time < max_wait_time:
+        response = requests.get(
+            f"https://prod.visionapi.unsiloed.ai/parse/{task_id}",
+            headers=headers
+        )
+        
+        if response.status_code == 200:
+            task = response.json()
+            
+            if task['status'] == 'Succeeded':
+                return task
+            elif task['status'] == 'Failed':
+                raise Exception(f"Task failed: {task.get('message', 'Unknown error')}")
+            elif task['status'] in ['Starting', 'Processing']:
+                print(f"Task status: {task['status']} - waiting...")
+                time.sleep(poll_interval)
+            else:
+                print(f"Unknown status: {task['status']}")
+                time.sleep(poll_interval)
+        else:
+            print(f"Error checking status: {response.status_code}")
+            time.sleep(poll_interval)
+    
+    raise Exception("Task polling timed out")
+
+# Usage
+try:
+    result = poll_parse_task("e77a5c42-4dc1-44d0-a30e-ed191e8a8908", "your-api-key")
+    print("Task completed successfully!")
+    print(f"Total chunks: {result['total_chunks']}")
+except Exception as e:
+    print(f"Error: {e}")
+```
+
+## Segment Types
+
+When a task succeeds, the response includes detailed analysis of different document segments:
+
+### Picture
+Images and graphics within the document, including logos, charts, and illustrations.
+
+### SectionHeader
+Document headers and titles that define section boundaries.
+
+### Text
+Regular text content including paragraphs, sentences, and individual text elements.
+
+### Table
+Tabular data with structured rows and columns.
+
+### Caption
+Text captions associated with images or figures.
+
+Each segment includes:
+- **segment_type**: Type of content detected
+- **content**: Extracted text content
+- **image**: URL to extracted image (if applicable)
+- **page_number**: Page where the segment appears
+- **confidence**: Confidence score for the extraction
+- **bbox**: Precise coordinates of the segment
+- **html**: HTML-formatted content
+- **markdown**: Markdown-formatted content
+- **ocr**: Detailed OCR data with individual text elements
+
+## Error Handling
+
+### Common Error Scenarios
+
+1. **Task Not Found**: Invalid or expired task ID
+2. **Invalid API Key**: Authentication failed
+3. **Processing Timeout**: Task took too long to complete
+4. **Server Error**: Internal processing error
+
+### Best Practices
+
+- **Polling Frequency**: Check status every 5-10 seconds for long-running tasks
+- **Timeout Handling**: Implement reasonable timeouts to prevent infinite polling
+- **Error Recovery**: Handle failed tasks gracefully with retry logic
+- **API Key Security**: Keep your API key secure and never expose it in client-side code
+
+## Rate Limits
+
+- **Status Checks**: Rate limits apply to prevent abuse
+- **Concurrent Tasks**: Limited number of active parsing tasks per API key
+- **Request Frequency**: Avoid excessive polling (recommended: 5-10 second intervals)
+
+Check your API plan for specific limits and quotas. 
