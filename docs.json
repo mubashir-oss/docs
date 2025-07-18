@@ -15,11 +15,7 @@
         "groups": [
           {
             "group": "Get Started",
-            "pages": [
-              "index",
-              "quickstart",
-              "our-playground"
-            ]
+            "pages": "index"
           },
           {
             "group": "Core Functions",
