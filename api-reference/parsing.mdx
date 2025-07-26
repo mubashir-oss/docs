@@ -151,11 +151,7 @@ if (response.ok) {
 }
 ```
 
-```json Error Response - Unsupported File Type
-{
-  "detail": "Unsupported file type. Only PDF files are supported."
-}
-```
+
 
 ```json Error Response - Validation Error
 {
@@ -241,7 +237,7 @@ When the task completes successfully, the response contains comprehensive docume
         {
           "segment_type": "Picture",
           "content": "eternal",
-          "image": "https://s3.us-east-1.amazonaws.com/chunker-bucket/...",
+          "image": "https://s3.us-east-1.amazonaws.com/unsiloed-bucket/...",
           "page_number": 1,
           "segment_id": "1c60ecbd-b6da-493c-b3f6-6849337a981f",
           "confidence": 0.6062846,
@@ -328,29 +324,10 @@ Each segment includes detailed metadata such as confidence scores, bounding boxe
 ## Error Handling
 
 ### Common Error Scenarios
-
-1. **Unsupported File Type**: Only PDF files are supported
-2. **File Size Limits**: Files must be under 100MB
-3. **Processing Timeout**: Document too complex or large to process
 4. **Invalid API Key**: Authentication failed
 5. **Server Error**: Internal processing error
 
-### Best Practices
 
-- **File Quality**: Use high-quality, text-based PDF documents for better results
-- **File Size**: Keep files under 100MB for optimal processing
-- **Monitor Tasks**: Always check task status before assuming completion
-- **Handle Failures**: Implement retry logic for failed tasks
-- **API Key Security**: Keep your API key secure and never expose it in client-side code
-
-## Rate Limits
-
-- **Concurrent Tasks**: Limited number of active processing tasks per API key
-- **File Size**: Maximum 100MB per file
-- **Processing Time**: Complex documents may take several minutes to process
-- **Request Frequency**: Rate limits apply to prevent abuse
-
-Check your API plan for specific limits and quotas.
 
 ## Use Cases
 

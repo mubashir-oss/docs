@@ -10,36 +10,7 @@
   "favicon": "/UnsiloedAILogo.webp",
   "navigation": {
     "tabs": [
-      {
-        "tab": "Documentation",
-        "groups": [
-          {
-            "group": "Get Started",
-            "pages": [
-              "index",
-              "playground",
-              "quickstart"
-            ]
-          },
-          {
-            "group": "Core Functions",
-            "pages": [
-              "document-processing/vision-api",
-              "document-processing/parsing",
-              "document-processing/splitting",
-              "document-processing/classification"
-            ]
-          },
-          {
-            "group": "FAQ",
-            "pages": [
-              "faq/general",
-              "faq/api",
-              "faq/troubleshooting"
-            ]
-          }
-        ]
-      },
+    
       {
         "tab": "API Reference",
         "groups": [

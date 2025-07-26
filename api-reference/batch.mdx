@@ -353,19 +353,3 @@ final_status = monitor_batch_progress(batch_id, "your-api-key")
 3. **Invalid Batch Size**: Must be a positive integer
 4. **Authentication Error**: Invalid or missing API key
 5. **File Size Limits**: Individual files may have size restrictions
-
-### Best Practices
-
-- **Validate Schema**: Test your JSON schema with a small batch first
-- **File Quality**: Use high-quality, text-based PDFs for better extraction
-- **Batch Size**: Start with smaller batch sizes (5-10 files) for testing
-- **Monitor Progress**: Regularly check batch status for large jobs
-- **Error Recovery**: Handle partial failures gracefully
-
-## Rate Limits
-
-- **Concurrent Batches**: Limited number of active batch jobs per API key
-- **File Limits**: Maximum number of files per batch may apply
-- **Processing Time**: Large batches may take significant time to complete
-
-Check your API plan for specific limits and quotas.
