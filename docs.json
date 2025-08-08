@@ -8,6 +8,25 @@
     "dark": "#15803D"
   },
   "favicon": "/UnsiloedAILogo.webp",
+  "api": {
+    "baseUrl": ["https://prod.visionapi.unsiloed.ai"],
+    "auth": {
+      "method": "key",
+      "name": "api-key"
+    },
+    "mdx": {
+      "auth": {
+        "method": "key",
+        "name": "api-key"
+      },
+      "server": ["https://prod.visionapi.unsiloed.ai"]
+    },
+    "playground": {
+      "display": "interactive",
+      "proxy": true
+    },
+    "maintainOrder": true
+  },
   "navigation": {
     "tabs": [
     
@@ -30,7 +49,6 @@
             "pages": [
               "api-reference/jobs/status",
               "api-reference/jobs/results",
-              "api-reference/jobs/cancel",
               "api-reference/jobs/parse-status",
               "api-reference/jobs/classification-status"
             ]

@@ -1,6 +1,6 @@
 ---
 title: "Classify Document"
-api: "POST /classify"
+openapi: "/api-reference/openapi.json POST /classify"
 description: "Classify PDF documents into predefined categories with confidence scoring using job-based processing"
 ---
 
@@ -20,10 +20,6 @@ The endpoint supports both single-page and multi-page classification with detail
 
 <ParamField body="conditions" type="string" required>
   JSON string containing list of classification categories (e.g., ["invoice", "contract", "report"])
-</ParamField>
-
-<ParamField header="api-key" type="string" required>
-  API key for authentication
 </ParamField>
 
 ## Response
@@ -138,14 +134,6 @@ if (response.status === 202) {
 After starting a classification job, you can check its status using the job ID.
 
 ### Status Endpoint
-
-<ParamField header="api-key" type="string" required>
-  API key for authentication
-</ParamField>
-
-<ParamField header="Content-Type" type="string">
-  Set to "application/json"
-</ParamField>
 
 ### Status Request Examples
 
@@ -458,42 +446,3 @@ async def classify_with_retry(pdf_path, conditions, max_retries=3):
             if 'files' in locals():
                 files["pdf_file"].close()
 ```
-
-## Best Practices
-
-<Tip>
-**Category Selection**: Use 3-7 categories for optimal accuracy. Too many categories can reduce precision.
-</Tip>
-
-<Tip>
-**Document Quality**: Ensure documents are high-quality and text-readable. Scanned documents should be OCR-processed first.
-</Tip>
-
-<Tip>
-**Condition Naming**: Use clear, descriptive category names that match the document content and structure.
-</Tip>
-
-<Tip>
-**Polling Strategy**: Use exponential backoff when polling job status to avoid overwhelming the API.
-</Tip>
-
-<Warning>
-**Rate Limits**: The classification endpoint has rate limits. Implement proper retry logic and consider batch processing for large volumes.
-</Warning>
-
-<Warning>
-**File Storage**: Files are uploaded to Supabase storage and may be subject to storage limits and retention policies.
-</Warning>
-
-## Supported Document Types
-
-The classification system works best with:
-
-- **Business Documents**: Invoices, receipts, purchase orders, contracts
-- **Financial Documents**: Bank statements, financial reports, tax forms  
-- **Legal Documents**: Contracts, agreements, legal notices, compliance forms
-- **Healthcare Documents**: Medical records, insurance forms, lab reports
-- **HR Documents**: Resumes, employment forms, payroll documents
-- **Academic Documents**: Research papers, reports, transcripts
-
-Classification accuracy varies by document type and quality. Business and financial documents typically achieve 90%+ accuracy. 

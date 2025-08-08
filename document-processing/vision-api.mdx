@@ -439,30 +439,3 @@ The API provides detailed error information for JSON schema validation:
   ]
 }
 ```
-
-## Best Practices
-
-<AccordionGroup>
-  <Accordion title="JSON Schema Design">
-    - Use proper JSON Schema specification with `type`, `properties`, and `required`
-    - Set `additionalProperties: false` for strict validation
-    - Provide clear, descriptive field descriptions
-    - Define `items` structure for arrays
-    - Use appropriate data types (string, number, boolean, array, object)
-  </Accordion>
-
-  <Accordion title="Performance Optimization">
-    - Use async processing for large documents
-    - Implement proper error handling and retries
-    - Monitor confidence scores for quality assurance
-    - Cache results when processing similar documents
-  </Accordion>
-
-  <Accordion title="Quality Assurance">
-    - Set appropriate confidence thresholds (typically > 0.8)
-    - Use bounding box data to verify extraction accuracy
-    - Validate extracted data against expected formats
-    - Implement human review for critical extractions
-  </Accordion>
-</AccordionGroup>
-

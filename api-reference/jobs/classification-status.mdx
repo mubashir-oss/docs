@@ -18,14 +18,6 @@ Classification jobs are stored in Supabase and updated in real-time. Status chec
   The unique identifier of the classification job to check
 </ParamField>
 
-<ParamField header="api-key" type="string" required>
-  API key for authentication
-</ParamField>
-
-<ParamField header="Content-Type" type="string">
-  Set to "application/json"
-</ParamField>
-
 ## Response
 
 <ResponseField name="job_id" type="string">
@@ -372,30 +364,3 @@ During processing, the progress field will show informative messages:
   "result": null
 }
 ```
-
-## Best Practices
-
-<Tip>
-**Polling Frequency**: Use exponential backoff when polling job status to avoid overwhelming the API. Start with 1-second intervals and increase gradually.
-</Tip>
-
-<Tip>
-**Timeout Handling**: Set reasonable timeouts for classification jobs. Most jobs complete within 30-60 seconds, but complex multi-page documents may take longer.
-</Tip>
-
-<Tip>
-**Error Recovery**: Implement retry logic for transient errors and provide fallback handling for permanent failures.
-</Tip>
-
-<Tip>
-**Result Caching**: Once a job is completed, cache the results to avoid unnecessary API calls for the same job ID.
-</Tip>
-
-<Warning>
-**Rate Limits**: Status checking endpoints have rate limits. Implement proper backoff strategies to avoid hitting limits.
-</Warning>
-
-<Warning>
-**Job Retention**: Classification jobs and their results may be automatically cleaned up after a certain period. Check with your service provider for retention policies.
-</Warning>
-

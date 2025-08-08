@@ -18,10 +18,6 @@ Results are only available for completed jobs. Check job status first to ensure 
   The unique identifier of the completed job
 </ParamField>
 
-<ParamField header="X-API-Key" type="string">
-  API key for authentication (optional for some endpoints)
-</ParamField>
-
 ## Response
 
 The response structure depends on the job type (extraction, parsing, classification, etc.).
@@ -375,21 +371,3 @@ Bounding boxes use the format `[x1, y1, x2, y2]` where:
     The job ID is invalid or the job has been deleted. Verify you're using the correct job ID.
   </Accordion>
 </AccordionGroup>
-
-## Best Practices
-
-<Tip>
-**Check Status First**: Always verify job status is "COMPLETED" before requesting results to avoid unnecessary API calls.
-</Tip>
-
-<Tip>
-**Handle Errors Gracefully**: Implement proper error handling for different HTTP status codes and error scenarios.
-</Tip>
-
-<Tip>
-**Cache Results**: Store important results locally, as they may be cleaned up after 7 days.
-</Tip>
-
-<Warning>
-**Result Persistence**: Job results are automatically cleaned up after 7 days to manage storage costs.
-</Warning> 

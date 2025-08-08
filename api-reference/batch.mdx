@@ -1,6 +1,7 @@
 ---
 title: "Batch Cite"
-api: "POST /batch/cite"
+openapi: "/api-reference/openapi.json POST /batch/cite"
+playground: "simple"
 description: "Process multiple PDF documents with structured data extraction using JSON schema"
 ---
 
@@ -11,24 +12,6 @@ The Batch Cite endpoint processes multiple PDF files simultaneously, extracting 
 <Note>
 This endpoint processes files in batches and returns a batch job ID for tracking progress. Use the batch status endpoint to monitor processing and retrieve results.
 </Note>
-
-## Request
-
-<ParamField body="pdf_files" type="file[]" required>
-  Array of PDF files to process. Each file should be a valid PDF document.
-</ParamField>
-
-<ParamField body="schema_data" type="string" required>
-  JSON schema defining the structure of data to extract from the PDFs. Must be a valid JSON string.
-</ParamField>
-
-<ParamField body="batch_size" type="integer" default="10">
-  Number of PDFs to process in each batch. Must be a positive integer.
-</ParamField>
-
-<ParamField header="api-key" type="string" required>
-  API key for authentication
-</ParamField>
 
 ## Response
 

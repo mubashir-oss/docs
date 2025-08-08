@@ -1,6 +1,6 @@
 ---
 title: "Split Document"
-api: "POST /splitter/split-pdf"
+api: "POST /splitter/split-pdf-v1"
 description: "Split PDF documents by classifying pages into different categories"
 ---
 
@@ -67,9 +67,12 @@ The endpoint returns a JSON response containing information about the split PDF 
 <RequestExample>
 
 ```bash cURL
-curl -X POST "https://prod.visionapi.unsiloed.ai/splitter/split-pdf?classes=invoice,contract" \
-  -H "Content-Type: multipart/form-data" \
-  -F "file=@mixed_documents.pdf" \
+curl -X 'POST' \
+  'https://prod.visionapi.unsiloed.ai/splitter/split-pdf-v1?classes=invoice%2Creport' \
+  -H 'accept: application/json' \
+  -H 'api-key: your-api-key' \
+  -H 'Content-Type: multipart/form-data' \
+  -F 'file=@mixed_documents.pdf;type=application/pdf' \
   -F 'categories={"invoice":"Business invoices with itemized charges","contract":"Legal agreements and binding documents"}'
 ```
 
@@ -77,7 +80,7 @@ curl -X POST "https://prod.visionapi.unsiloed.ai/splitter/split-pdf?classes=invo
 import requests
 import json
 
-url = "https://prod.visionapi.unsiloed.ai/splitter/split-pdf"
+url = "https://prod.visionapi.unsiloed.ai/splitter/split-pdf-v1"
 
 # Define categories with descriptions for better accuracy
 categories = {
@@ -90,12 +93,14 @@ categories = {
 files = {"file": ("mixed_documents.pdf", open("mixed_documents.pdf", "rb"), "application/pdf")}
 params = {"classes": "invoice,contract,report,letter"}
 data = {"categories": json.dumps(categories)}
+headers = {"api-key": "your-api-key"}
 
 response = requests.post(
     url, 
     files=files, 
     params=params, 
-    data=data
+    data=data,
+    headers=headers
 )
 
 if response.status_code == 200:
@@ -129,8 +134,11 @@ const params = new URLSearchParams({
   classes: 'invoice,contract,report'
 });
 
-const response = await fetch(`https://prod.visionapi.unsiloed.ai/splitter/split-pdf?${params}`, {
+const response = await fetch(`https://prod.visionapi.unsiloed.ai/splitter/split-pdf-v1?${params}`, {
   method: 'POST',
+  headers: {
+    'api-key': 'your-api-key'
+  },
   body: formData
 });
 
@@ -208,42 +216,3 @@ if (response.ok) {
 ```
 
 </ResponseExample>
-
-## Best Practices
-
-<Tip>
-**Category Descriptions**: Always provide detailed category descriptions. This can improve classification accuracy by 20-30%.
-</Tip>
-
-<Tip>
-**File Quality**: Ensure PDFs contain readable text. Scanned documents should be OCR-processed first for better results.
-</Tip>
-
-<Tip>
-**Category Selection**: Use 3-7 categories for optimal accuracy. Too many categories can reduce precision.
-</Tip>
-
-<Warning>
-**File Size**: Large files (>50 pages) may timeout. Consider pre-processing very large documents.
-</Warning>
-
-<Warning>
-**Text Quality**: The service relies on text extraction. Poor quality scans or image-only PDFs may not classify accurately.
-</Warning>
-
-## Supported Document Types
-
-The splitting system works best with:
-
-- **Business Documents**: Invoices, receipts, purchase orders, contracts
-- **Financial Documents**: Bank statements, financial reports, tax forms  
-- **Legal Documents**: Contracts, agreements, legal notices, compliance forms
-- **Healthcare Documents**: Medical records, insurance forms, lab reports
-- **HR Documents**: Resumes, employment forms, payroll documents
-- **Academic Documents**: Research papers, reports, transcripts
-
-Classification accuracy varies by document type and quality. Documents with distinct visual layouts and clear textual content typically achieve 85-95% accuracy.
-
-## Getting Started
-
-Ready to start splitting your documents? Check out our [quickstart guide](/quickstart) or try the API in our [playground](/our-playground). 

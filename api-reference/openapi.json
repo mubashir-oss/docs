@@ -10,207 +10,334 @@
   },
   "servers": [
     {
-      "url": "https://www.unsiloed-ai.com"
+      "url": "https://prod.visionapi.unsiloed.ai",
+      "description": "Production server"
     }
   ],
   "security": [
     {
-      "bearerAuth": []
+      "apiKeyAuth": []
     }
   ],
   "paths": {
-    "/plants": {
-      "get": {
-        "description": "Returns all plants from the system that the user has access to",
-        "parameters": [
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "The maximum number of results to return",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
+    "/cite": {
+      "post": {
+        "summary": "Extract Data",
+        "description": "Extract structured data from PDF documents using custom schemas for citation and data extraction",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pdf_file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The PDF file to process for data extraction. Maximum file size: 100MB"
+                  },
+                  "schema_data": {
+                    "type": "string",
+                    "description": "JSON schema defining the structure and fields to extract from the document"
+                  }
+                },
+                "required": ["pdf_file", "schema_data"]
+              }
             }
           }
-        ],
+        },
         "responses": {
           "200": {
-            "description": "Plant response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Plant"
+                  "type": "object",
+                  "properties": {
+                    "job_id": {
+                      "type": "string",
+                      "description": "Unique identifier for the extraction job"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Initial job status (typically 'queued')"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Descriptive message about the job creation"
+                    },
+                    "quota_remaining": {
+                      "type": "number",
+                      "description": "Number of Credits remaining in your quota"
+                    }
                   }
                 }
               }
             }
-          },
-          "400": {
-            "description": "Unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
           }
-        }
-      },
-      "post": {
-        "description": "Creates a new plant in the store",
-        "requestBody": {
-          "description": "Plant to add to the store",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewPlant"
-              }
-            }
-          },
-          "required": true
         },
-        "responses": {
-          "200": {
-            "description": "plant response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Plant"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+        "security": [
+          {
+            "apiKeyAuth": []
           }
-        }
+        ]
       }
     },
-    "/plants/{id}": {
-      "delete": {
-        "description": "Deletes a single plant based on the ID supplied",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "ID of plant to delete",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Plant deleted",
-            "content": {}
-          },
-          "400": {
-            "description": "unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  "webhooks": {
-    "/plant/webhook": {
+    "/batch/cite": {
       "post": {
-        "description": "Information about a new plant added to the store",
+        "summary": "Batch Cite",
+        "description": "Process multiple PDF documents with structured data extraction using JSON schema",
         "requestBody": {
-          "description": "Plant added to the store",
+          "required": true,
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/NewPlant"
+                "type": "object",
+                "properties": {
+                  "pdf_files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    },
+                    "description": "Array of PDF files to process"
+                  },
+                  "schema_data": {
+                    "type": "string",
+                    "description": "JSON schema defining the structure of data to extract"
+                  },
+                  "batch_size": {
+                    "type": "integer",
+                    "default": 10,
+                    "description": "Number of PDFs to process in each batch"
+                  }
+                },
+                "required": ["pdf_files", "schema_data"]
+              },
+              "encoding": {
+                "pdf_files": { "contentType": "application/pdf", "explode": true, "style": "form" }
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Return a 200 status to indicate that the data was received successfully"
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "batch_id": {
+                      "type": "string",
+                      "description": "Unique identifier for the batch processing job"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Initial batch job status"
+                    },
+                    "total_files": {
+                      "type": "number",
+                      "description": "Total number of files submitted for processing"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Status message about the batch job creation"
+                    }
+                  }
+                }
+              }
+            }
           }
-        }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/tables": {
+      "post": {
+        "summary": "Extract Tables",
+        "description": "Extract and structure table data from PDF documents with advanced table detection and parsing",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pdf_file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The PDF file to process for table extraction. Maximum file size: 100MB"
+                  }
+                },
+                "required": ["pdf_file"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "job_id": {
+                      "type": "string",
+                      "description": "Unique identifier for the table extraction job"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Initial job status"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Descriptive message about the job creation"
+                    },
+                    "quota_remaining": {
+                      "type": "number",
+                      "description": "Number of credits remaining in your quota"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/parse": {
+      "post": {
+        "summary": "Parse Document",
+        "description": "Parse and chunk PDF documents into semantic sections using advanced AI-powered strategies",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "PDF file to process"
+                  },
+                  "high_resolution": {
+                    "type": "boolean",
+                    "description": "Whether to use high-resolution images for cropping and post-processing"
+                  },
+                  "segmentation_strategy": {
+                    "type": "string",
+                    "description": "Document segmentation strategy: 'LayoutAnalysis' or 'Page'"
+                  }
+                },
+                "required": ["file"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "task_id": {
+                      "type": "string",
+                      "description": "Unique identifier for the parsing task"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Initial task status"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/classify": {
+      "post": {
+        "summary": "Classify Document",
+        "description": "Classify PDF documents into predefined categories",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pdf_file": { "type": "string", "format": "binary", "description": "PDF file to classify" },
+                  "conditions": { "type": "string", "description": "JSON string list of categories e.g. ['category1', 'category2']" }
+                },
+                "required": ["pdf_file", "conditions"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted - job started",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "job_id": {"type":"string"}, "status": {"type":"string"}, "message": {"type":"string"} } } } }
+          }
+        },
+        "security": [ { "apiKeyAuth": [] } ]
+      }
+    },
+    "/splitter/split-pdf": {
+      "post": {
+        "summary": "Split Document",
+        "description": "Split PDF documents by classifying pages into categories",
+        "parameters": [
+          { "in": "query", "name": "classes", "schema": {"type": "string"}, "required": true, "description": "Comma-separated categories" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": { "type": "string", "format": "binary", "description": "PDF to split" },
+                  "categories": { "type": "string", "description": "JSON string with category descriptions" }
+                },
+                "required": ["file"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Split started", "content": { "application/json": { "schema": { "type": "object" } } } }
+        },
+        "security": [ { "apiKeyAuth": [] } ]
       }
     }
   },
   "components": {
-    "schemas": {
-      "Plant": {
-        "required": [
-          "name"
-        ],
-        "type": "object",
-        "properties": {
-          "name": {
-            "description": "The name of the plant",
-            "type": "string"
-          },
-          "tag": {
-            "description": "Tag to specify the type",
-            "type": "string"
-          }
-        }
-      },
-      "NewPlant": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/Plant"
-          },
-          {
-            "required": [
-              "id"
-            ],
-            "type": "object",
-            "properties": {
-              "id": {
-                "description": "Identification number of the plant",
-                "type": "integer",
-                "format": "int64"
-              }
-            }
-          }
-        ]
-      },
-      "Error": {
-        "required": [
-          "error",
-          "message"
-        ],
-        "type": "object",
-        "properties": {
-          "error": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "message": {
-            "type": "string"
-          }
-        }
-      }
-    },
     "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer"
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "api-key"
       }
     }
   }

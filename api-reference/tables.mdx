@@ -1,6 +1,6 @@
 ---
 title: "Extract Tables"
-api: "POST /tables"
+openapi: "/api-reference/openapi.json POST /tables"
 description: "Extract and structure table data from PDF documents with advanced table detection and parsing"
 ---
 
@@ -16,10 +16,6 @@ The endpoint returns a job ID for asynchronous processing. Use the job managemen
 
 <ParamField body="pdf_file" type="file" required>
   The PDF file to process for table extraction. Maximum file size: 100MB
-</ParamField>
-
-<ParamField header="api-key" type="string" required>
-  API key for authentication
 </ParamField>
 
 ## Response

@@ -37,8 +37,9 @@ You can split documents into various categories:
 ### Basic Request
 
 ```bash
-curl -X POST "https://prod.visionapi.unsiloed.ai/splitter/split-pdf?classes=invoice,contract,report" \
+curl -X POST "https://prod.visionapi.unsiloed.ai/splitter/split-pdf-v1?classes=invoice,contract,report" \
   -H "Content-Type: multipart/form-data" \
+  -H "api-key: your-api-key" \
   -F "file=@mixed_documents.pdf" \
   --output split_documents.zip
 ```
@@ -49,7 +50,7 @@ curl -X POST "https://prod.visionapi.unsiloed.ai/splitter/split-pdf?classes=invo
 import requests
 import json
 
-url = "https://prod.visionapi.unsiloed.ai/splitter/split-pdf"
+url = "https://prod.visionapi.unsiloed.ai/splitter/split-pdf-v1"
 
 # Define categories with descriptions for better accuracy
 categories = {
@@ -61,8 +62,9 @@ categories = {
 files = {"file": ("mixed_documents.pdf", open("mixed_documents.pdf", "rb"), "application/pdf")}
 params = {"classes": "invoice,contract,report"}
 data = {"categories": json.dumps(categories)}
+headers = {"api-key": "your-api-key"}
 
-response = requests.post(url, files=files, params=params, data=data)
+response = requests.post(url, files=files, params=params, data=data, headers=headers)
 
 if response.status_code == 200:
     with open("split_documents.zip", "wb") as f:
@@ -79,41 +81,3 @@ if response.status_code == 200:
 
 files["file"][1].close()
 ```
-
-## Best Practices
-
-<Tip>
-Category Descriptions: Always provide detailed category descriptions. This can improve classification accuracy by 20-30%.
-</Tip>
-
-<Tip>
-File Quality: Ensure PDFs contain readable text. Scanned documents should be OCR-processed first for better results.
-</Tip>
-
-<Tip>
-Category Selection: Use 3-7 categories for optimal accuracy. Too many categories can reduce precision.
-</Tip>
-
-<Warning>
-File Size: Large files (over 50 pages) may timeout. Consider pre-processing very large documents.
-</Warning>
-
-<Warning>
-Text Quality: The service relies on text extraction. Poor quality scans or image-only PDFs may not classify accurately.
-</Warning>
-
-## Accuracy and Confidence
-
-Classification accuracy varies by document type and quality:
-
-- **High Accuracy (85-95%)**: Documents with distinct visual layouts and clear textual content
-- **Medium Accuracy (70-85%)**: Mixed quality documents or similar document types
-- **Lower Accuracy (under 70%)**: Poor quality scans or very similar document categories
-
-### Confidence Score Interpretation
-
-- **0.9-1.0**: Very high confidence - Classification is very likely correct
-- **0.7-0.9**: High confidence - Classification is likely correct  
-- **0.5-0.7**: Medium confidence - May benefit from human review
-- **0.3-0.5**: Low confidence - Human review recommended
-- **0.0-0.3**: Very low confidence - Classification may be incorrect

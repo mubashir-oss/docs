@@ -1,6 +1,6 @@
 ---
 title: "Parse Document"
-api: "POST /parse"
+openapi: "/api-reference/openapi.json POST /parse"
 description: "Parse and chunk PDF documents into semantic sections using advanced AI-powered strategies with comprehensive customization options"
 ---
 
@@ -16,10 +16,6 @@ This endpoint returns a task ID for asynchronous processing. Use the GET /parse/
 
 <ParamField body="file" type="file" required>
   PDF file to process.
-</ParamField>
-
-<ParamField header="api-key" type="string" required>
-  API key for authentication
 </ParamField>
 
 <ParamField body="high_resolution" type="boolean" optional>

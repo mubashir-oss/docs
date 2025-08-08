@@ -1,6 +1,6 @@
 ---
 title: "Extract Data"
-api: "POST /cite"
+openapi: "/api-reference/openapi.json POST /cite"
 description: "Extract structured data from PDF documents using custom schemas for citation and data extraction"
 ---
 
@@ -20,10 +20,6 @@ The Extract Data endpoint processes PDF documents and extracts structured inform
 
 <ParamField body="schema_data" type="string" required>
   JSON schema defining the structure and fields to extract from the document. Must be a valid JSON Schema format with type definitions, properties, and required fields.
-</ParamField>
-
-<ParamField header="api-key" type="string" required>
-  API key for authentication
 </ParamField>
 
 ## Response
@@ -168,7 +164,6 @@ curl -X POST "https://prod.visionapi.unsiloed.ai/cite" \
   -F "schema_data={\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\",\"description\":\"Document title\"},\"authors\":{\"type\":\"array\",\"description\":\"List of authors\",\"items\":{\"type\":\"string\"}}},\"required\":[\"title\",\"authors\"],\"additionalProperties\":false}"
 ```
 
-
 ```python Python
 import requests
 import json
@@ -235,7 +230,6 @@ if response.status_code == 200:
 else:
     print("Error:", response.status_code, response.text)
 ```
-
 
 ```javascript JavaScript
 const formData = new FormData();
@@ -307,7 +301,6 @@ if (response.ok) {
   "quota_remaining": 48988
 }
 ```
-
 
 ```json Error Response
 {
@@ -777,37 +770,3 @@ For extracting lists of structured data:
 <ResponseField name="500" type="Internal Server Error">
   Server error during processing
 </ResponseField>
-
-## Best Practices
-
-<Tip>
-  **Schema Design**: Use specific, descriptive field names and descriptions. Clear descriptions improve extraction accuracy significantly.
-</Tip>
-
-<Tip>
-  **Required Fields**: Only mark fields as required if they are essential. Optional fields allow for more flexible extraction.
-</Tip>
-
-<Tip>
-  **Field Types**: Choose appropriate types - use `number` for numeric data, `string` for text, `array` for lists, and `object` for nested structures.
-</Tip>
-
-<Tip>
-  **Array Items**: Always define the `items` property for arrays to specify the structure of array elements.
-</Tip>
-
-<Tip>
-  **Batch Processing**: Use batch extraction for multiple similar documents to improve efficiency and reduce API calls.
-</Tip>
-
-<Warning>
-  **Schema Validation**: Ensure your JSON schema is valid. Invalid schemas will result in 422 errors.
-</Warning>
-
-<Warning>
-  **Processing Time**: Complex schemas and large documents take longer to process. Monitor job status regularly.
-</Warning>
-
-<Warning>
-  **Quota Management**: Check `quota_remaining` in responses to avoid hitting limits during batch operations.
-</Warning>
