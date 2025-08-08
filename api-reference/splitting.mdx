@@ -1,6 +1,6 @@
 ---
 title: "Split Document"
-api: "POST /splitter/split-pdf-v1"
+openapi: "/api-reference/openapi.json POST /splitter/split-pdf-v1"
 description: "Split PDF documents by classifying pages into different categories"
 ---
 
@@ -11,20 +11,6 @@ The Split Document endpoint analyzes PDF pages, classifies them into predefined 
 <Note>
 The endpoint returns a ZIP file containing the split documents, with classification and confidence score data provided in response headers.
 </Note>
-
-## Request
-
-<ParamField body="file" type="file" required>
-  The PDF file to split. Maximum file size: 100MB
-</ParamField>
-
-<ParamField query="classes" type="string" required>
-  Comma-separated list of classification categories (e.g., "invoice,contract,report")
-</ParamField>
-
-<ParamField body="categories" type="string">
-  JSON string with detailed category descriptions for better classification accuracy
-</ParamField>
 
 ## Response
 

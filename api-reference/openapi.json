@@ -330,6 +330,46 @@
         },
         "security": [ { "apiKeyAuth": [] } ]
       }
+    },
+    "/splitter/split-pdf-v1": {
+      "post": {
+        "summary": "Split Document (v1)",
+        "description": "Split PDF documents by classifying pages into categories",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "classes",
+            "schema": { "type": "string" },
+            "required": true,
+            "description": "Comma-separated categories (e.g., invoice,contract)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": { "type": "string", "format": "binary", "description": "PDF file to split" },
+                  "categories": { "type": "string", "description": "JSON string with category descriptions" }
+                },
+                "required": ["file"]
+              },
+              "encoding": {
+                "file": { "contentType": "application/pdf" }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Split started",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          }
+        },
+        "security": [ { "apiKeyAuth": [] } ]
+      }
     }
   },
   "components": {
