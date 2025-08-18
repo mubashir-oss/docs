@@ -1,6 +1,6 @@
 ---
 title: "Get Job Status"
-api: "GET /jobs/{job_id}"
+openapi: "/api-reference/openapi.json GET /jobs/{job_id}"
 description: "Check the status and progress of asynchronous processing jobs"
 ---
 
@@ -11,12 +11,6 @@ The Get Job Status endpoint allows you to check the current status of any asynch
 <Note>
 Jobs are stored in Supabase and updated in real-time. Status checks are lightweight and can be polled frequently.
 </Note>
-
-## Request
-
-<ParamField path="job_id" type="string" required>
-  The unique identifier of the job to check
-</ParamField>
 
 ## Response
 

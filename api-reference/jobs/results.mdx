@@ -1,6 +1,6 @@
 ---
 title: "Get Job Results"
-api: "GET /jobs/{job_id}/result"
+openapi: "/api-reference/openapi.json GET /jobs/{job_id}/result"
 description: "Retrieve the results of a completed processing job"
 ---
 
@@ -11,12 +11,6 @@ The Get Job Results endpoint retrieves the processed data from a completed job. 
 <Note>
 Results are only available for completed jobs. Check job status first to ensure processing has finished.
 </Note>
-
-## Request
-
-<ParamField path="job_id" type="string" required>
-  The unique identifier of the completed job
-</ParamField>
 
 ## Response
 

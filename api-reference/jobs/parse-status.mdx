@@ -1,6 +1,6 @@
 ---
 title: "Get Parse Task Status"
-api: "GET /parse/{task_id}"
+openapi: "/api-reference/openapi.json GET /parse/{task_id}"
 description: "Check the status and retrieve results of parsing tasks"
 ---
 
@@ -11,12 +11,6 @@ The Get Parse Task Status endpoint allows you to check the current status of par
 <Note>
 Parsing tasks are processed asynchronously. Use this endpoint to poll for completion and retrieve results when the task status is "Succeeded".
 </Note>
-
-## Request
-
-<ParamField path="task_id" type="string" required>
-  The unique identifier of the parsing task to check
-</ParamField>
 
 ## Response
 

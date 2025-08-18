@@ -1,6 +1,6 @@
 ---
 title: "Get Classification Job Status"
-api: "GET /classify/{job_id}"
+openapi: "/api-reference/openapi.json GET /classify/{job_id}"
 description: "Check the status and progress of classification jobs and retrieve results"
 ---
 
@@ -11,12 +11,6 @@ The Get Classification Job Status endpoint allows you to check the current statu
 <Note>
 Classification jobs are stored in Supabase and updated in real-time. Status checks are lightweight and can be polled frequently to monitor progress.
 </Note>
-
-## Request
-
-<ParamField path="job_id" type="string" required>
-  The unique identifier of the classification job to check
-</ParamField>
 
 ## Response
 

@@ -370,6 +370,162 @@
         },
         "security": [ { "apiKeyAuth": [] } ]
       }
+    },
+    "/parse/{task_id}": {
+      "get": {
+        "summary": "Get Parse Task Status",
+        "description": "Check the status and retrieve results of parsing tasks",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "schema": { "type": "string" },
+            "required": true,
+            "description": "The unique identifier of the parsing task to check"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "task_id": { "type": "string", "description": "Unique identifier for the parsing task" },
+                    "status": { "type": "string", "description": "Current task status: Starting, Processing, Succeeded, or Failed" },
+                    "created_at": { "type": "string", "description": "Timestamp when the task was created" },
+                    "started_at": { "type": "string", "description": "Timestamp when processing started" },
+                    "finished_at": { "type": "string", "description": "Timestamp when processing completed" },
+                    "message": { "type": "string", "description": "Status message about the task" },
+                    "total_chunks": { "type": "number", "description": "Number of chunks in the document" },
+                    "chunks": { "type": "array", "description": "Array of document chunks with detailed analysis" }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": { "type": "array" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [ { "apiKeyAuth": [] } ]
+      }
+    },
+    "/jobs/{job_id}": {
+      "get": {
+        "summary": "Get Job Status",
+        "description": "Check the status and progress of asynchronous processing jobs",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "schema": { "type": "string" },
+            "required": true,
+            "description": "The unique identifier of the job to check"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "job_id": { "type": "string", "description": "Unique identifier for the job" },
+                    "status": { "type": "string", "description": "Current job status" },
+                    "created_at": { "type": "string", "description": "Timestamp when the job was created" },
+                    "message": { "type": "string", "description": "Status message about the job" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [ { "apiKeyAuth": [] } ]
+      }
+    },
+    "/jobs/{job_id}/result": {
+      "get": {
+        "summary": "Get Job Results",
+        "description": "Retrieve the results of a completed processing job",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "schema": { "type": "string" },
+            "required": true,
+            "description": "The unique identifier of the job"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job results retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Job results object"
+                }
+              }
+            }
+          }
+        },
+        "security": [ { "apiKeyAuth": [] } ]
+      }
+    },
+    "/classify/{job_id}": {
+      "get": {
+        "summary": "Get Classification Job Status",
+        "description": "Check the status and progress of classification jobs and retrieve results",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "schema": { "type": "string" },
+            "required": true,
+            "description": "The unique identifier of the classification job"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Classification job status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Classification job status and results"
+                }
+              }
+            }
+          }
+        },
+        "security": [ { "apiKeyAuth": [] } ]
+      }
     }
   },
   "components": {
