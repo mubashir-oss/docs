@@ -239,6 +239,18 @@
                   "segmentation_strategy": {
                     "type": "string",
                     "description": "Document segmentation strategy: 'LayoutAnalysis' or 'Page'"
+                  },
+                  "ocr_engine": {
+                    "type": "string",
+                    "description": "OCR engine selection: 'UnsiloedStorm', 'UnsiloedHawk' (default: 'UnsiloedStorm')",
+                    "enum": ["UnsiloedStorm", "UnsiloedHawk"],
+                    "default": "UnsiloedStorm"
+                  },
+                  "ocr_strategy": {
+                    "type": "string",
+                    "description": "OCR processing strategy: 'All', 'Auto' (default: 'All')",
+                    "enum": ["All", "Auto"],
+                    "default": "All"
                   }
                 },
                 "required": ["file"]

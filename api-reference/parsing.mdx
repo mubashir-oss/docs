@@ -47,6 +47,10 @@ This endpoint returns a task ID for asynchronous processing. Use the GET /parse/
   OCR processing strategy: "All", "Auto"(default: "All")
 </ParamField>
 
+<ParamField body="ocr_engine" type="string" optional>
+  OCR engine selection: "UnsiloedStorm", "UnsiloedHawk" (default: "UnsiloedStorm")
+</ParamField>
+
 ## Advanced Configuration Options
 
 ### Chunk Processing Configuration
@@ -177,6 +181,27 @@ The `llm_processing` parameter configures language model processing:
 - **"All"**: Process all text elements with OCR
 - **"Auto"**: Automatically determine when to use OCR
 
+### OCR Engine Options
+
+**`ocr_engine`** (string, optional): Select the OCR engine for text recognition:
+- **"UnsiloedStorm"** (default): Fast processing, optimized for general documents
+- **"UnsiloedHawk"**: Higher accuracy, better for complex layouts and multilingual content
+
+**Engine Comparison:**
+- **UnsiloedStorm**: 
+  - Fast but noisy
+  - Faster processing time
+  - Good for standard documents
+  - Optimized for English text
+  - Lower resource usage
+
+- **UnsiloedHawk**:
+  - Slow but accurate
+  - Higher accuracy
+  - Better handling of complex layouts
+  - Superior multilingual support
+  - Longer processing time
+
 ## Response
 
 <ResponseField name="task_id" type="string">
@@ -253,7 +278,8 @@ curl -X 'POST' \
   -F 'segment_processing={"Table": {"html": "LLM", "markdown": "LLM", "extended_context": false}, "Picture": {"crop_image": "All", "html": "LLM", "markdown": "LLM", "embed_sources": ["Markdown"]}, "Formula": {"html": "LLM", "markdown": "LLM"}}' \
   -F 'error_handling=Continue' \
   -F 'segmentation_strategy=LayoutAnalysis' \
-  -F 'ocr_strategy=All'
+  -F 'ocr_strategy=All' \
+  -F 'ocr_engine=UnsiloedStorm'
 ```
 
 ```python Python
@@ -321,6 +347,7 @@ data = {
     "segmentation_strategy": "LayoutAnalysis",
     "llm_processing": json.dumps(llm_processing),
     "ocr_strategy": "All",
+    "ocr_engine": "UnsiloedStorm",
     "expires_in": None
 }
 
@@ -397,6 +424,7 @@ formData.append('error_handling', 'Continue');
 formData.append('segmentation_strategy', 'LayoutAnalysis');
 formData.append('llm_processing', JSON.stringify(llmProcessing));
 formData.append('ocr_strategy', 'All');
+formData.append('ocr_engine', 'UnsiloedStorm');
 
 const response = await fetch('https://prod.visionapi.unsiloed.ai/parse', {
   method: 'POST',
@@ -442,7 +470,8 @@ if (response.ok) {
     },
     "error_handling": "Continue",
     "segmentation_strategy": "LayoutAnalysis",
-    "ocr_strategy": "All"
+    "ocr_strategy": "All",
+    "ocr_engine": "UnsiloedStorm"
   }
 }
 ```
@@ -643,10 +672,46 @@ Each segment includes detailed metadata such as confidence scores, bounding boxe
     "Formula": {"html": "LLM", "markdown": "LLM"}
   },
   "segmentation_strategy": "LayoutAnalysis",
-  "ocr_strategy": "All"
+  "ocr_strategy": "All",
+  "ocr_engine": "UnsiloedStorm"
 }
 ```
 
+### OCR Engine Selection Guide
+
+Choose the appropriate OCR engine based on your document characteristics:
+
+**Use UnsiloedStorm when:**
+- Processing standard business documents
+- Speed is prioritized over accuracy
+- Working with primarily English text
+- Processing large volumes of documents
+- Resource efficiency is important
+- You can tolerate some noise in the output for faster processing
+
+**Use UnsiloedHawk when:**
+- High accuracy is critical
+- Working with multilingual documents
+- Quality over speed is preferred
+- You need clean, accurate text extraction
+
+**Example configurations:**
+
+```json
+// Fast processing for standard documents
+{
+  "ocr_engine": "UnsiloedStorm",
+  "ocr_strategy": "All",
+  "high_resolution": false
+}
+
+// High accuracy for complex documents
+{
+  "ocr_engine": "UnsiloedHawk", 
+  "ocr_strategy": "All",
+  "high_resolution": true
+}
+```
 
 ## Error Handling
 
