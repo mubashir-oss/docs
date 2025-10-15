@@ -9,7 +9,7 @@ description: "Parse and chunk PDF documents into semantic sections using advance
 The Parse Document endpoint processes PDF documents and breaks them into meaningful sections with detailed analysis including text extraction, image recognition, table parsing, and OCR data. This endpoint supports advanced customization options for fine-tuning the parsing behavior to match your specific use cases.
 
 <Note>
-This endpoint returns a task ID for asynchronous processing. Use the GET /parse/{task_id} endpoint to check status and retrieve results when processing is complete.
+  This endpoint returns a task ID for asynchronous processing. Use the GET /parse/task_id endpoint to check status and retrieve results when processing is complete.
 </Note>
 
 ## Request
@@ -18,36 +18,35 @@ This endpoint returns a task ID for asynchronous processing. Use the GET /parse/
   PDF file to process.
 </ParamField>
 
-<ParamField body="high_resolution" type="boolean" optional>
-    Whether to use high-resolution images for cropping and post-processing. (Latency penalty: ~7 seconds per page)
+<ParamField body="high_resolution" type="boolean">
+  Whether to use high-resolution images for cropping and post-processing. (Latency penalty: ~7 seconds per page)
 </ParamField>
 
-<ParamField body="chunk_processing" type="object" optional>
+<ParamField body="chunk_processing" type="object">
   Advanced chunking configuration options
 </ParamField>
 
-<ParamField body="segment_processing" type="object" optional>
+<ParamField body="segment_processing" type="object">
   Segment-specific processing configuration for different document elements
 </ParamField>
 
-<ParamField body="error_handling" type="string" optional>
+<ParamField body="error_handling" type="string">
   Error handling strategy: "Continue", "Fail" (default: "Continue")
 </ParamField>
 
-
-<ParamField body="segmentation_strategy" type="string" optional>
-  Document segmentation strategy: "LayoutAnalysis" or "Page" 
+<ParamField body="segmentation_strategy" type="string">
+  Document segmentation strategy: "LayoutAnalysis" or "Page"
 </ParamField>
 
-<ParamField body="llm_processing" type="object" optional>
+<ParamField body="llm_processing" type="object">
   LLM processing configuration for enhanced content analysis
 </ParamField>
 
-<ParamField body="ocr_strategy" type="string" optional>
+<ParamField body="ocr_strategy" type="string">
   OCR processing strategy: "All", "Auto"(default: "All")
 </ParamField>
 
-<ParamField body="ocr_engine" type="string" optional>
+<ParamField body="ocr_engine" type="string">
   OCR engine selection: "UnsiloedStorm", "UnsiloedHawk" (default: "UnsiloedStorm")
 </ParamField>
 
@@ -118,11 +117,10 @@ The `segment_processing` parameter allows customization of how different documen
   }
 }
 ```
+
 - **`html`** (string, optional): HTML generation method: "LLM", "Auto"
 - **`markdown`** (string, optional): Markdown generation method: "LLM", "Auto"
-
 - **`extended_context`** (boolean, optional): Use the full page image as context for LLM generation
-
 - **`crop_image`** Controls whether to crop the file's images to the segment's bounding box. The cropped image will be stored in the segment's image field. Use All to always crop, or Auto to only crop when needed for post-processing
 
 #### Available Segment Types
@@ -141,20 +139,6 @@ The `segment_processing` parameter allows customization of how different documen
 - **PageHeader**: Header processing
 
 
-### LLM Processing Configuration
-
-The `llm_processing` parameter configures language model processing:
-
-```json
-{
-  "llm_processing": {
-    "fallback_strategy": "None",
-    "max_completion_tokens": 1000,
-    "model_id": "gpt-4",
-    "temperature": 0.1
-  }
-}
-```
 
 **Parameters:**
 
@@ -166,35 +150,39 @@ The `llm_processing` parameter configures language model processing:
 ### Error Handling Strategies
 
 **`error_handling`** (string, optional): How to handle processing errors:
+
 - **"Continue"**: Continue processing and report errors
 - **"Fail"**: Stop processing on first error
 
 ### Segmentation Strategy Options
 
 **`segmentation_strategy`** (string, optional): Document segmentation approach:
+
 - **"LayoutAnalysis"**: Analyzes pages for layout elements (e.g., Table, Picture, Formula, etc.) using bounding boxes. Provides fine-grained segmentation and better chunking.
 - **"Page"**: Treats each page as a single segment. Faster processing, but without layout element detection and only simple chunking.
 
 ### OCR Strategy Options
 
 **`ocr_strategy`** (string, optional): OCR processing strategy:
+
 - **"All"**: Process all text elements with OCR
 - **"Auto"**: Automatically determine when to use OCR
 
 ### OCR Engine Options
 
 **`ocr_engine`** (string, optional): Select the OCR engine for text recognition:
+
 - **"UnsiloedStorm"** (default): Fast processing, optimized for general documents
 - **"UnsiloedHawk"**: Higher accuracy, better for complex layouts and multilingual content
 
 **Engine Comparison:**
-- **UnsiloedStorm**: 
+
+- **UnsiloedStorm**:
   - Fast but noisy
   - Faster processing time
   - Good for standard documents
   - Optimized for English text
   - Lower resource usage
-
 - **UnsiloedHawk**:
   - Slow but accurate
   - Higher accuracy
@@ -241,24 +229,31 @@ The `llm_processing` parameter configures language model processing:
 The parsing endpoint provides comprehensive document analysis including:
 
 ### Text Extraction
+
 Extracts text content with high accuracy, preserving formatting and structure.
 
 ### Image Recognition
+
 Identifies and analyzes images within documents, providing descriptions and metadata.
 
 ### Table Parsing
+
 Extracts tabular data with proper structure and formatting.
 
 ### OCR Processing
+
 Performs optical character recognition on text elements with confidence scores.
 
 ### Section Detection
+
 Automatically identifies different document sections like headers, body text, and captions.
 
 ### Bounding Box Information
+
 Provides precise coordinates for all extracted elements.
 
 ### Advanced Content Processing
+
 - **LLM-Enhanced Analysis**: Uses language models for better content understanding
 - **Multi-Format Output**: Generates HTML, Markdown, and plain text versions
 - **Context-Aware Processing**: Maintains document context across segments
@@ -281,6 +276,7 @@ curl -X 'POST' \
   -F 'ocr_strategy=All' \
   -F 'ocr_engine=UnsiloedStorm'
 ```
+
 
 ```python Python
 import requests
@@ -327,12 +323,7 @@ segment_processing = {
     }
 }
 
-llm_processing = {
-    "fallback_strategy": "None",
-    "max_completion_tokens": 1000,
-    "model_id": "gpt-4",
-    "temperature": 0.1
-}
+
 
 # Prepare file and form data
 files = {
@@ -365,6 +356,7 @@ else:
 # Close file
 files["file"][1].close()
 ```
+
 
 ```javascript JavaScript
 const formData = new FormData();
@@ -410,12 +402,6 @@ const segmentProcessing = {
   }
 };
 
-const llmProcessing = {
-  fallback_strategy: "None",
-  max_completion_tokens: 1000,
-  model_id: "gpt-4",
-  temperature: 0.1
-};
 
 formData.append('high_resolution', 'true');
 formData.append('chunk_processing', JSON.stringify(chunkProcessing));
@@ -476,6 +462,7 @@ if (response.ok) {
 }
 ```
 
+
 ```json Error Response - Validation Error
 {
   "detail": [
@@ -491,6 +478,7 @@ if (response.ok) {
 }
 ```
 
+
 ```json Error Response - File Too Large
 {
   "detail": "File size exceeds maximum limit of 100MB."
@@ -501,7 +489,7 @@ if (response.ok) {
 
 ## Retrieving Results
 
-After the task is created, use the GET /parse/{task_id} endpoint to check status and retrieve results:
+After the task is created, use the GET /parse/task_id endpoint to check status and retrieve results:
 
 ```bash cURL
 curl -X 'GET' \
@@ -628,30 +616,39 @@ When the task completes successfully, the response contains comprehensive docume
 The parsing API identifies and processes different types of document segments with enhanced processing:
 
 ### Picture
+
 Images and graphics within the document, including logos, charts, and illustrations. Enhanced with LLM-based description generation.
 
 ### SectionHeader
+
 Document headers and titles that define section boundaries. Processed with semantic understanding.
 
 ### Text
+
 Regular text content including paragraphs, sentences, and individual text elements. Enhanced with context-aware processing.
 
 ### Table
+
 Tabular data with structured rows and columns. Enhanced with LLM-based formatting and extended context options.
 
 ### Caption
+
 Text captions associated with images or figures. Processed with relationship awareness.
 
 ### Formula
+
 Mathematical equations and expressions. Enhanced with specialized formula processing.
 
 ### Title
+
 Document titles and main headings. Processed with enhanced formatting.
 
 ### Footnote
+
 Document footnotes and references. Processed with context linking.
 
 ### ListItem
+
 Bulleted and numbered list items. Processed with structure preservation.
 
 Each segment includes detailed metadata such as confidence scores, bounding boxes, OCR data, and formatted output in both HTML and Markdown with LLM enhancement.
@@ -659,6 +656,7 @@ Each segment includes detailed metadata such as confidence scores, bounding boxe
 ## Configuration Best Practices
 
 ### For High-Accuracy Processing
+
 ```json
 {
   "high_resolution": true,
@@ -682,6 +680,7 @@ Each segment includes detailed metadata such as confidence scores, bounding boxe
 Choose the appropriate OCR engine based on your document characteristics:
 
 **Use UnsiloedStorm when:**
+
 - Processing standard business documents
 - Speed is prioritized over accuracy
 - Working with primarily English text
@@ -690,6 +689,7 @@ Choose the appropriate OCR engine based on your document characteristics:
 - You can tolerate some noise in the output for faster processing
 
 **Use UnsiloedHawk when:**
+
 - High accuracy is critical
 - Working with multilingual documents
 - Quality over speed is preferred
@@ -716,6 +716,7 @@ Choose the appropriate OCR engine based on your document characteristics:
 ## Error Handling
 
 ### Common Error Scenarios
+
 1. **Invalid API Key**: Authentication failed
 2. **File Too Large**: File exceeds size limits
 3. **Invalid Configuration**: Malformed processing parameters
