@@ -12,10 +12,6 @@
     {
       "url": "https://prod.visionapi.unsiloed.ai",
       "description": "Production server"
-    },
-    {
-      "url": "https://dev.platformbackend.unsiloed.ai/api/v1",
-      "description": "Platform Backend Development"
     }
   ],
   "security": [
@@ -323,6 +319,12 @@
       "post": {
         "summary": "Edit PDF",
         "description": "Edit PDF documents by replacing text and images at specific bounding boxes with automatic re-parsing",
+        "servers": [
+          {
+            "url": "https://dev.platformbackend.unsiloed.ai/api/v1",
+            "description": "Platform Backend Development"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
