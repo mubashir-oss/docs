@@ -40,7 +40,8 @@
               "api-reference/tables",
               "api-reference/parsing",
               "api-reference/splitting",
-              "api-reference/classification"
+              "api-reference/classification",
+              "api-reference/pdf-editor"
             ]
           },
           {
