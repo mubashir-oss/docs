@@ -12,6 +12,10 @@
     {
       "url": "https://prod.visionapi.unsiloed.ai",
       "description": "Production server"
+    },
+    {
+      "url": "https://dev.platformbackend.unsiloed.ai/api/v1",
+      "description": "Platform Backend Development"
     }
   ],
   "security": [
@@ -313,6 +317,108 @@
           }
         },
         "security": [ { "apiKeyAuth": [] } ]
+      }
+    },
+    "/pdf-editor/edit/reparse": {
+      "post": {
+        "summary": "Edit PDF",
+        "description": "Edit PDF documents by replacing text and images at specific bounding boxes with automatic re-parsing",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "PDF file to edit"
+                  },
+                  "edit_request": {
+                    "type": "string",
+                    "description": "JSON string containing list of edit items with bounding box coordinates and replacement content"
+                  },
+                  "image_files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    },
+                    "description": "Optional list of image files to upload and use for image replacements"
+                  }
+                },
+                "required": ["file", "edit_request"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "PDF edited successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the PDF edit operation was successful"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Status message about the edit operation"
+                    },
+                    "pdf_url": {
+                      "type": "string",
+                      "description": "URL of the edited PDF file (if upload_to_storage is true)"
+                    },
+                    "original_size": {
+                      "type": "number",
+                      "description": "Size of the original PDF file in bytes"
+                    },
+                    "edited_size": {
+                      "type": "number",
+                      "description": "Size of the edited PDF file in bytes"
+                    },
+                    "items_processed": {
+                      "type": "number",
+                      "description": "Number of edit items that were processed"
+                    },
+                    "reparsed": {
+                      "type": "boolean",
+                      "description": "Whether the edited PDF was submitted for re-parsing"
+                    },
+                    "new_task_id": {
+                      "type": "string",
+                      "description": "New task ID for monitoring the re-parsing progress (if task_id was provided)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid file or edit request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
       }
     },
     "/splitter/split-pdf": {
