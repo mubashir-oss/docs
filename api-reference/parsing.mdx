@@ -9,7 +9,7 @@ description: "Parse and chunk PDF documents into semantic sections using advance
 The Parse Document endpoint processes PDF documents and breaks them into meaningful sections with detailed analysis including text extraction, image recognition, table parsing, and OCR data. This endpoint supports advanced customization options for fine-tuning the parsing behavior to match your specific use cases.
 
 <Note>
-  This endpoint returns a task ID for asynchronous processing. Use the GET /parse/task_id endpoint to check status and retrieve results when processing is complete.
+  This endpoint returns a job ID for asynchronous processing. Use the GET PARSE JOB STATUS endpoint to check status and retrieve results when processing is complete.
 </Note>
 
 ## Request
@@ -18,159 +18,49 @@ The Parse Document endpoint processes PDF documents and breaks them into meaning
   PDF file to process.
 </ParamField>
 
-<ParamField body="high_resolution" type="boolean">
-  Whether to use high-resolution images for cropping and post-processing. (Latency penalty: ~7 seconds per page)
+<ParamField body="use_high_resolution" type="boolean">
+  Whether to use high-resolution images for cropping and post-processing. (Latency penalty: ~7 seconds per page). Default: false
 </ParamField>
 
-<ParamField body="chunk_processing" type="object">
-  Advanced chunking configuration options
+<ParamField body="segmentation_method" type="string">
+  Document segmentation strategy:
+  - `"Smart Layout Detection"` (default): Analyzes pages for layout elements using bounding boxes
+  - `"Page-by-Page Processing"`: Treats each page as a single segment
 </ParamField>
 
-<ParamField body="segment_processing" type="object">
-  Segment-specific processing configuration for different document elements
-</ParamField>
-
-<ParamField body="error_handling" type="string">
-  Error handling strategy: "Continue", "Fail" (default: "Continue")
-</ParamField>
-
-<ParamField body="segmentation_strategy" type="string">
-  Document segmentation strategy: "LayoutAnalysis" or "Page"
-</ParamField>
-
-<ParamField body="llm_processing" type="object">
-  LLM processing configuration for enhanced content analysis
-</ParamField>
-
-<ParamField body="ocr_strategy" type="string">
-  OCR processing strategy: "All", "Auto"(default: "All")
+<ParamField body="OCR_Mode" type="string">
+  OCR processing strategy:
+  - `"Automatic Detection"` (default): Automatically determine when to use OCR
+  - `"Process All Content"`: Process all text elements with OCR
 </ParamField>
 
 <ParamField body="ocr_engine" type="string">
-  OCR engine selection: "UnsiloedStorm", "UnsiloedHawk" (default: "UnsiloedStorm")
+  OCR engine selection:
+  - `"UnsiloedHawk"` (default): Higher accuracy, better for complex layouts
+  - `"UnsiloedStorm"`: Fast processing, optimized for general documents
 </ParamField>
 
-## Advanced Configuration Options
+## Parameter Details
 
-### Chunk Processing Configuration
+### Segmentation Method
 
-The `chunk_processing` parameter allows fine-tuning of how document content is chunked:
+The `segmentation_method` parameter controls how the document is analyzed and segmented:
 
-```json
-{
-  "chunk_processing": {
-    "ignore_headers_and_footers": false,
-    "target_length": 512,
-    "tokenizer": {
-      "Enum": "Word"
-    }
-  }
-}
-```
+- **"Smart Layout Detection"** (default): Analyzes pages for layout elements (e.g., Table, Picture, Formula, etc.) using bounding boxes. Provides fine-grained segmentation and better chunking for complex documents.
+  
+- **"Page-by-Page Processing"**: Treats each page as a single segment. Faster processing, ideal for simple documents without complex layouts.
 
-**Parameters:**
+### OCR Mode
 
-- **`ignore_headers_and_footers`** (boolean, optional): Whether to exclude headers and footers from chunking.
-- **`target_length`** (number, optional): Target chunk length in tokens (default: 512)
-- **`tokenizer`** (object, optional): Tokenization strategy configuration with Enum values: "Word", "Cl100kBase", "XlmRobertaBase", "BertBaseUncased"
+The `OCR_Mode` parameter controls optical character recognition processing:
 
-### Segment Processing Configuration
+- **"Automatic Detection"** (default): Intelligently determines when OCR is needed based on the document content. Balances accuracy and performance.
+  
+- **"Process All Content"**: Applies OCR to all text elements in the document. Use this for scanned documents or when maximum text extraction is required.
 
-The `segment_processing` parameter allows customization of how different document segments are processed. Each segment type can be configured individually:
+### OCR Engine Selection
 
-```json
-{
-  "segment_processing": {
-    "Table": {
-      "html": "LLM",
-      "markdown": "LLM",
-      "extended_context": false
-    },
-    "Picture": {
-      "crop_image": "All",
-      "html": "LLM",
-      "markdown": "LLM",
-      "embed_sources": ["Markdown"]
-    },
-    "Formula": {
-      "html": "LLM",
-      "markdown": "LLM"
-    },
-    "Text": {
-      "html": "LLM",
-      "markdown": "LLM"
-    },
-    "SectionHeader": {
-      "html": "LLM",
-      "markdown": "LLM"
-    },
-    "Title": {
-      "html": "LLM",
-      "markdown": "LLM"
-    },
-    "Caption": null,
-    "Footnote": null,
-    "ListItem": null,
-    "Page": null,
-    "PageFooter": null,
-    "PageHeader": null
-  }
-}
-```
-
-- **`html`** (string, optional): HTML generation method: "LLM", "Auto"
-- **`markdown`** (string, optional): Markdown generation method: "LLM", "Auto"
-- **`extended_context`** (boolean, optional): Use the full page image as context for LLM generation
-- **`crop_image`** Controls whether to crop the file's images to the segment's bounding box. The cropped image will be stored in the segment's image field. Use All to always crop, or Auto to only crop when needed for post-processing
-
-#### Available Segment Types
-
-- **Table**: Tabular data processing
-- **Picture**: Image and graphic processing
-- **Formula**: Mathematical expression processing
-- **Text**: Regular text content processing
-- **SectionHeader**: Section heading processing
-- **Title**: Document title processing
-- **Caption**: Image/table caption processing
-- **Footnote**: Footnote processing
-- **ListItem**: List item processing
-- **Page**: Page-level processing
-- **PageFooter**: Footer processing
-- **PageHeader**: Header processing
-
-
-
-**Parameters:**
-
-- **`fallback_strategy`** (string, optional): Fallback strategy when LLM processing fails: "None",
-- **`max_completion_tokens`** (number, optional): Maximum tokens for LLM completion (default: 1000)
-- **`model_id`** (string, optional): LLM model identifier to use for processing
-- **`temperature`** (number, optional): Temperature setting for LLM processing (0.0 to 1.0)
-
-### Error Handling Strategies
-
-**`error_handling`** (string, optional): How to handle processing errors:
-
-- **"Continue"**: Continue processing and report errors
-- **"Fail"**: Stop processing on first error
-
-### Segmentation Strategy Options
-
-**`segmentation_strategy`** (string, optional): Document segmentation approach:
-
-- **"LayoutAnalysis"**: Analyzes pages for layout elements (e.g., Table, Picture, Formula, etc.) using bounding boxes. Provides fine-grained segmentation and better chunking.
-- **"Page"**: Treats each page as a single segment. Faster processing, but without layout element detection and only simple chunking.
-
-### OCR Strategy Options
-
-**`ocr_strategy`** (string, optional): OCR processing strategy:
-
-- **"All"**: Process all text elements with OCR
-- **"Auto"**: Automatically determine when to use OCR
-
-### OCR Engine Options
-
-**`ocr_engine`** (string, optional): Select the OCR engine for text recognition:
+Select the OCR engine for text recognition:
 
 - **"UnsiloedStorm"** (default): Fast processing, optimized for general documents
 - **"UnsiloedHawk"**: Higher accuracy, better for complex layouts and multilingual content
@@ -178,13 +68,13 @@ The `segment_processing` parameter allows customization of how different documen
 **Engine Comparison:**
 
 - **UnsiloedStorm**:
-  - Fast but noisy
+  - Fast but less accurate
   - Faster processing time
   - Good for standard documents
   - Optimized for English text
   - Lower resource usage
 - **UnsiloedHawk**:
-  - Slow but accurate
+  - Slow but more accurate
   - Higher accuracy
   - Better handling of complex layouts
   - Superior multilingual support
@@ -192,12 +82,12 @@ The `segment_processing` parameter allows customization of how different documen
 
 ## Response
 
-<ResponseField name="task_id" type="string">
-  Unique identifier for the processing task
+<ResponseField name="job_id" type="string">
+  Unique identifier for the parsing job
 </ResponseField>
 
 <ResponseField name="status" type="string">
-  Initial task status (typically "Starting")
+  Initial job status (typically "Starting")
 </ResponseField>
 
 <ResponseField name="file_name" type="string">
@@ -205,23 +95,19 @@ The `segment_processing` parameter allows customization of how different documen
 </ResponseField>
 
 <ResponseField name="created_at" type="string">
-  Timestamp when the task was created
+  Timestamp when the job was created
 </ResponseField>
 
 <ResponseField name="message" type="string">
-  Status message about the task creation
+  Status message about the job creation
 </ResponseField>
 
-<ResponseField name="configuration" type="object">
-  Complete configuration used for processing
+<ResponseField name="quota_remaining" type="number">
+  Remaining page quota for the API key
 </ResponseField>
 
-<ResponseField name="expires_at" type="string">
-  Timestamp when the task expires (if expiration is set)
-</ResponseField>
-
-<ResponseField name="task_url" type="string">
-  URL for accessing task status and results
+<ResponseField name="merge_tables" type="boolean">
+  Whether table merging is enabled
 </ResponseField>
 
 ## Document Analysis Features
@@ -268,19 +154,15 @@ curl -X 'POST' \
   -H 'api-key: your-api-key' \
   -H 'Content-Type: multipart/form-data' \
   -F 'file=@document.pdf;type=application/pdf' \
-  -F 'high_resolution=true' \
-  -F 'chunk_processing={"ignore_headers_and_footers": false, "target_length": 512, "tokenizer": {"Enum": "Word"}}' \
-  -F 'segment_processing={"Table": {"html": "LLM", "markdown": "LLM", "extended_context": false}, "Picture": {"crop_image": "All", "html": "LLM", "markdown": "LLM", "embed_sources": ["Markdown"]}, "Formula": {"html": "LLM", "markdown": "LLM"}}' \
-  -F 'error_handling=Continue' \
-  -F 'segmentation_strategy=LayoutAnalysis' \
-  -F 'ocr_strategy=All' \
-  -F 'ocr_engine=UnsiloedStorm'
+  -F 'use_high_resolution=true' \
+  -F 'segmentation_method=Smart Layout Detection' \
+  -F 'OCR_Mode=Automatic Detection' \
+  -F 'ocr_engine=UnsiloedHawk'
 ```
 
 
 ```python Python
 import requests
-import json
 
 url = "https://prod.visionapi.unsiloed.ai/parse"
 headers = {
@@ -288,65 +170,23 @@ headers = {
     "api-key": "your-api-key"
 }
 
-# Advanced configuration
-chunk_processing = {
-    "ignore_headers_and_footers": False,
-    "target_length": 512,
-    "tokenizer": {
-        "Enum": "Word"
-    }
-}
-
-segment_processing = {
-    "Table": {
-        "html": "LLM",
-        "markdown": "LLM",
-        "extended_context": False
-    },
-    "Picture": {
-        "crop_image": "All",
-        "html": "LLM",
-        "markdown": "LLM",
-        "embed_sources": ["Markdown"]
-    },
-    "Formula": {
-        "html": "LLM",
-        "markdown": "LLM"
-    },
-    "Text": {
-        "html": "LLM",
-        "markdown": "LLM"
-    },
-    "SectionHeader": {
-        "html": "LLM",
-        "markdown": "LLM"
-    }
-}
-
-
-
 # Prepare file and form data
 files = {
     "file": ("document.pdf", open("document.pdf", "rb"), "application/pdf")
 }
 
 data = {
-    "high_resolution": True,
-    "chunk_processing": json.dumps(chunk_processing),
-    "segment_processing": json.dumps(segment_processing),
-    "error_handling": "Continue",
-    "segmentation_strategy": "LayoutAnalysis",
-    "llm_processing": json.dumps(llm_processing),
-    "ocr_strategy": "All",
-    "ocr_engine": "UnsiloedStorm",
-    "expires_in": None
+    "use_high_resolution": "true",
+    "segmentation_method": "Smart Layout Detection",
+    "OCR_Mode": "Automatic Detection",
+    "ocr_engine": "UnsiloedHawk"
 }
 
 response = requests.post(url, headers=headers, files=files, data=data)
 
 if response.status_code == 200:
     result = response.json()
-    print(f"Task ID: {result['task_id']}")
+    print(f"Job ID: {result['job_id']}")
     print(f"Status: {result['status']}")
     print(f"File Name: {result['file_name']}")
     print(f"Message: {result['message']}")
@@ -367,50 +207,11 @@ if (fileInput.files[0]) {
   formData.append('file', fileInput.files[0]);
 }
 
-// Advanced configuration
-const chunkProcessing = {
-  ignore_headers_and_footers: false,
-  target_length: 512,
-  tokenizer: {
-    Enum: "Word"
-  }
-};
-
-const segmentProcessing = {
-  Table: {
-    html: "LLM",
-    markdown: "LLM",
-    extended_context: false
-  },
-  Picture: {
-    crop_image: "All",
-    html: "LLM",
-    markdown: "LLM",
-    embed_sources: ["Markdown"]
-  },
-  Formula: {
-    html: "LLM",
-    markdown: "LLM"
-  },
-  Text: {
-    html: "LLM",
-    markdown: "LLM"
-  },
-  SectionHeader: {
-    html: "LLM",
-    markdown: "LLM"
-  }
-};
-
-
-formData.append('high_resolution', 'true');
-formData.append('chunk_processing', JSON.stringify(chunkProcessing));
-formData.append('segment_processing', JSON.stringify(segmentProcessing));
-formData.append('error_handling', 'Continue');
-formData.append('segmentation_strategy', 'LayoutAnalysis');
-formData.append('llm_processing', JSON.stringify(llmProcessing));
-formData.append('ocr_strategy', 'All');
-formData.append('ocr_engine', 'UnsiloedStorm');
+// Add configuration parameters
+formData.append('use_high_resolution', 'true');
+formData.append('segmentation_method', 'Smart Layout Detection');
+formData.append('OCR_Mode', 'Automatic Detection');
+formData.append('ocr_engine', 'UnsiloedHawk');
 
 const response = await fetch('https://prod.visionapi.unsiloed.ai/parse', {
   method: 'POST',
@@ -423,7 +224,7 @@ const response = await fetch('https://prod.visionapi.unsiloed.ai/parse', {
 
 if (response.ok) {
   const result = await response.json();
-  console.log(`Task ID: ${result.task_id}`);
+  console.log(`Job ID: ${result.job_id}`);
   console.log(`Status: ${result.status}`);
   console.log(`File Name: ${result.file_name}`);
   console.log(`Message: ${result.message}`);
@@ -438,27 +239,13 @@ if (response.ok) {
 
 ```json Success Response
 {
-  "task_id": "e77a5c42-4dc1-44d0-a30e-ed191e8a8908",
+  "job_id": "e77a5c42-4dc1-44d0-a30e-ed191e8a8908",
   "status": "Starting",
   "file_name": "document.pdf",
   "created_at": "2025-07-18T10:42:10.545832520Z",
-  "expires_at": "2025-07-18T11:42:10.545832520Z",
-  "message": "Task created successfully. Use GET /parse/{task_id} to check status and retrieve results.",
-  "task_url": "https://prod.visionapi.unsiloed.ai/parse/e77a5c42-4dc1-44d0-a30e-ed191e8a8908",
-  "configuration": {
-    "high_resolution": true,
-    "chunk_processing": {
-      "ignore_headers_and_footers": false,
-      "target_length": 512,
-      "tokenizer": {
-        "Enum": "Word"
-      }
-    },
-    "error_handling": "Continue",
-    "segmentation_strategy": "LayoutAnalysis",
-    "ocr_strategy": "All",
-    "ocr_engine": "UnsiloedStorm"
-  }
+  "message": "Job created successfully. Use GET /parse/{job_id} to check status and retrieve results.",
+  "quota_remaining": 23700,
+  "merge_tables": false
 }
 ```
 
@@ -489,11 +276,11 @@ if (response.ok) {
 
 ## Retrieving Results
 
-After the task is created, use the GET /parse/task_id endpoint to check status and retrieve results:
+After the job is created, use the GET /parse/{job_id} endpoint to check status and retrieve results:
 
 ```bash cURL
 curl -X 'GET' \
-  'https://prod.visionapi.unsiloed.ai/parse/{task_id}' \
+  'https://prod.visionapi.unsiloed.ai/parse/{job_id}' \
   -H 'accept: application/json' \
   -H 'api-key: your-api-key'
 ```
@@ -502,11 +289,11 @@ curl -X 'GET' \
 import requests
 import time
 
-def get_parse_results(task_id, api_key):
-    """Monitor task and retrieve results when complete"""
+def get_parse_results(job_id, api_key):
+    """Monitor job and retrieve results when complete"""
     
     headers = {"api-key": api_key}
-    status_url = f"https://prod.visionapi.unsiloed.ai/parse/{task_id}"
+    status_url = f"https://prod.visionapi.unsiloed.ai/parse/{job_id}"
     
     # Poll for completion
     while True:
@@ -514,48 +301,47 @@ def get_parse_results(task_id, api_key):
         
         if response.status_code == 200:
             status_data = response.json()
-            print(f"Task Status: {status_data['status']}")
+            print(f"Job Status: {status_data['status']}")
             
             if status_data['status'] == 'Succeeded':
                 return status_data  # Results are included in the same response
                     
             elif status_data['status'] == 'Failed':
-                raise Exception(f"Task failed: {status_data.get('message', 'Unknown error')}")
+                raise Exception(f"Job failed: {status_data.get('message', 'Unknown error')}")
                 
         time.sleep(5)  # Check every 5 seconds
 
 # Usage
-task_id = "e77a5c42-4dc1-44d0-a30e-ed191e8a8908"
-results = get_parse_results(task_id, "your-api-key")
+job_id = "e77a5c42-4dc1-44d0-a30e-ed191e8a8908"
+results = get_parse_results(job_id, "your-api-key")
 ```
 
 ## Expected Results Structure
 
-When the task completes successfully, the response contains comprehensive document analysis with enhanced processing:
+When the job completes successfully, the response contains comprehensive document analysis with enhanced processing:
 
 ```json
 {
-  "task_id": "e77a5c42-4dc1-44d0-a30e-ed191e8a8908",
+  "job_id": "04a7a6d8-5ef7-465a-b22a-8a98e7104dd9",
   "status": "Succeeded",
-  "created_at": "2025-07-18T10:42:10.545832Z",
-  "started_at": "2025-07-18T10:42:10.666328Z",
-  "finished_at": "2025-07-18T10:42:23.560572Z",
-  "message": "Task succeeded",
-  "total_chunks": 2,
+  "created_at": "2025-10-22T06:51:16.870302Z",
+  "started_at": "2025-10-22T06:51:16.966136Z",
+  "finished_at": "2025-10-22T06:57:19.821541Z",
+  "total_chunks": 25,
   "chunks": [
     {
       "segments": [
         {
-          "segment_type": "Picture",
-          "content": "eternal",
-          "image": "https://s3.us-east-1.amazonaws.com/unsiloed-bucket/...",
+          "segment_type": "Title",
+          "content": "Disinvestment of IFCI's entire stake in Assets Care & Reconstruction Enterprise Ltd (ACRE)",
+          "image": null,
           "page_number": 1,
-          "segment_id": "1c60ecbd-b6da-493c-b3f6-6849337a981f",
-          "confidence": 0.6062846,
+          "segment_id": "cc5f8dff-31be-4ccf-885d-4f9062fcee17",
+          "confidence": 0.90187776,
           "page_width": 1191.0,
           "page_height": 1684.0,
-          "html": "<p>The image displays a logo...</p>",
-          "markdown": "Eternal Logo\n\nThe image displays a logo...",
+          "html": "<h1>Disinvestment of IFCI's entire stake in Assets Care & Reconstruction Enterprise Ltd (ACRE)</h1>",
+          "markdown": "# Disinvestment of IFCI's entire stake in Assets Care & Reconstruction Enterprise Ltd (ACRE)",
           "bbox": {
             "left": 72.92226,
             "top": 62.030334,
@@ -570,22 +356,22 @@ When the task completes successfully, the response contains comprehensive docume
                 "width": 164.45312,
                 "height": 42.757812
               },
-              "text": "eternal",
+              "text": "Disinvestment",
               "confidence": 0.9999992
             }
           ]
         },
         {
-          "segment_type": "SectionHeader",
-          "content": "Tax Invoice ORIGINAL For Recipient",
+          "segment_type": "Text",
+          "content": "Background and context information about the disinvestment process...",
           "image": null,
           "page_number": 1,
           "segment_id": "9d60e48b-77ba-4a23-a0ac-95ee13c615ec",
-          "confidence": 0.46558982,
+          "confidence": 0.88558982,
           "page_width": 1191.0,
           "page_height": 1684.0,
-          "html": "<h2>Tax Invoice ORIGINAL For Recipient</h2>",
-          "markdown": "## Tax Invoice ORIGINAL For Recipient",
+          "html": "<p>Background and context information about the disinvestment process...</p>",
+          "markdown": "Background and context information about the disinvestment process...",
           "bbox": {
             "left": 486.9685,
             "top": 139.61847,
@@ -600,7 +386,7 @@ When the task completes successfully, the response contains comprehensive docume
                 "width": 46.046875,
                 "height": 19.734375
               },
-              "text": "Tax",
+              "text": "Background",
               "confidence": 0.99999654
             }
           ]
@@ -657,20 +443,26 @@ Each segment includes detailed metadata such as confidence scores, bounding boxe
 
 ### For High-Accuracy Processing
 
+Use this configuration when accuracy is critical:
+
 ```json
 {
-  "high_resolution": true,
-  "chunk_processing": {
-    "ignore_headers_and_footers": false,
-    "target_length": 512
-  },
-  "segment_processing": {
-    "Table": {"html": "LLM", "markdown": "LLM"},
-    "Picture": {"crop_image": "All", "html": "LLM"},
-    "Formula": {"html": "LLM", "markdown": "LLM"}
-  },
-  "segmentation_strategy": "LayoutAnalysis",
-  "ocr_strategy": "All",
+  "use_high_resolution": true,
+  "segmentation_method": "Smart Layout Detection",
+  "OCR_Mode": "Process All Content",
+  "ocr_engine": "UnsiloedHawk"
+}
+```
+
+### For Fast Processing
+
+Use this configuration when speed is prioritized:
+
+```json
+{
+  "use_high_resolution": false,
+  "segmentation_method": "Page-by-Page Processing",
+  "OCR_Mode": "Automatic Detection",
   "ocr_engine": "UnsiloedStorm"
 }
 ```
@@ -692,26 +484,9 @@ Choose the appropriate OCR engine based on your document characteristics:
 
 - High accuracy is critical
 - Working with multilingual documents
+- Processing complex layouts
 - Quality over speed is preferred
 - You need clean, accurate text extraction
-
-**Example configurations:**
-
-```json
-// Fast processing for standard documents
-{
-  "ocr_engine": "UnsiloedStorm",
-  "ocr_strategy": "All",
-  "high_resolution": false
-}
-
-// High accuracy for complex documents
-{
-  "ocr_engine": "UnsiloedHawk", 
-  "ocr_strategy": "All",
-  "high_resolution": true
-}
-```
 
 ## Error Handling
 

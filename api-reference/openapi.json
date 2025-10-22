@@ -232,25 +232,28 @@
                     "format": "binary",
                     "description": "PDF file to process"
                   },
-                  "high_resolution": {
+                  "use_high_resolution": {
                     "type": "boolean",
-                    "description": "Whether to use high-resolution images for cropping and post-processing"
+                    "description": "Whether to use high-resolution images for cropping and post-processing (default: false)",
+                    "default": false
                   },
-                  "segmentation_strategy": {
+                  "segmentation_method": {
                     "type": "string",
-                    "description": "Document segmentation strategy: 'LayoutAnalysis' or 'Page'"
+                    "description": "Document segmentation strategy",
+                    "enum": ["Smart Layout Detection", "Page-by-Page Processing"],
+                    "default": "Smart Layout Detection"
+                  },
+                  "OCR_Mode": {
+                    "type": "string",
+                    "description": "OCR processing strategy",
+                    "enum": ["Automatic Detection", "Process All Content"],
+                    "default": "Automatic Detection"
                   },
                   "ocr_engine": {
                     "type": "string",
-                    "description": "OCR engine selection: 'UnsiloedStorm', 'UnsiloedHawk' (default: 'UnsiloedStorm')",
-                    "enum": ["UnsiloedStorm", "UnsiloedHawk"],
-                    "default": "UnsiloedStorm"
-                  },
-                  "ocr_strategy": {
-                    "type": "string",
-                    "description": "OCR processing strategy: 'All', 'Auto' (default: 'All')",
-                    "enum": ["All", "Auto"],
-                    "default": "All"
+                    "description": "OCR engine selection: 'UnsiloedHawk' (higher accuracy) or 'UnsiloedStorm' (faster processing)",
+                    "enum": ["UnsiloedHawk", "UnsiloedStorm"],
+                    "default": "UnsiloedHawk"
                   }
                 },
                 "required": ["file"]
@@ -266,13 +269,33 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "task_id": {
+                    "job_id": {
                       "type": "string",
-                      "description": "Unique identifier for the parsing task"
+                      "description": "Unique identifier for the parsing job"
                     },
                     "status": {
                       "type": "string",
-                      "description": "Initial task status"
+                      "description": "Initial job status (typically 'Starting')"
+                    },
+                    "file_name": {
+                      "type": "string",
+                      "description": "Name of the uploaded file"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "description": "Timestamp when the job was created"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Status message about the job creation"
+                    },
+                    "quota_remaining": {
+                      "type": "number",
+                      "description": "Remaining page quota for the API key"
+                    },
+                    "merge_tables": {
+                      "type": "boolean",
+                      "description": "Whether table merging is enabled"
                     }
                   }
                 }
@@ -391,9 +414,9 @@
                       "type": "boolean",
                       "description": "Whether the edited PDF was submitted for re-parsing"
                     },
-                    "new_task_id": {
+                    "new_job_id": {
                       "type": "string",
-                      "description": "New task ID for monitoring the re-parsing progress (if task_id was provided)"
+                      "description": "New job ID for monitoring the re-parsing progress (if job_id was provided)"
                     }
                   }
                 }
@@ -491,33 +514,32 @@
         "security": [ { "apiKeyAuth": [] } ]
       }
     },
-    "/parse/{task_id}": {
+    "/parse/{job_id}": {
       "get": {
-        "summary": "Get Parse Task Status",
-        "description": "Check the status and retrieve results of parsing tasks",
+        "summary": "Get Parse Job Status",
+        "description": "Check the status and retrieve results of parsing jobs",
         "parameters": [
           {
             "in": "path",
-            "name": "task_id",
+            "name": "job_id",
             "schema": { "type": "string" },
             "required": true,
-            "description": "The unique identifier of the parsing task to check"
+            "description": "The unique identifier of the parsing job to check"
           }
         ],
         "responses": {
           "200": {
-            "description": "Task status retrieved successfully",
+            "description": "Job status retrieved successfully",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "task_id": { "type": "string", "description": "Unique identifier for the parsing task" },
-                    "status": { "type": "string", "description": "Current task status: Starting, Processing, Succeeded, or Failed" },
-                    "created_at": { "type": "string", "description": "Timestamp when the task was created" },
+                    "job_id": { "type": "string", "description": "Unique identifier for the parsing job" },
+                    "status": { "type": "string", "description": "Current job status: Starting, Processing, Succeeded, or Failed" },
+                    "created_at": { "type": "string", "description": "Timestamp when the job was created" },
                     "started_at": { "type": "string", "description": "Timestamp when processing started" },
                     "finished_at": { "type": "string", "description": "Timestamp when processing completed" },
-                    "message": { "type": "string", "description": "Status message about the task" },
                     "total_chunks": { "type": "number", "description": "Number of chunks in the document" },
                     "chunks": { "type": "array", "description": "Array of document chunks with detailed analysis" }
                   }
@@ -526,7 +548,7 @@
             }
           },
           "404": {
-            "description": "Task not found",
+            "description": "Job not found",
             "content": {
               "application/json": {
                 "schema": {
