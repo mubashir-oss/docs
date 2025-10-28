@@ -52,6 +52,12 @@
               "api-reference/jobs/parse-status",
               "api-reference/jobs/classification-status"
             ]
+          },
+          {
+            "group": "Organization",
+            "pages": [
+              "api-reference/usage"
+            ]
           }
         ]
       }

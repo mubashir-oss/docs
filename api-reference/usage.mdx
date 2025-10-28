@@ -1,0 +1,45 @@
+---
+title: "Get Organization Usage"
+openapi: "/api-reference/openapi.json GET /org/get_usage"
+description: "Check your organization's current usage, limits, and remaining quota"
+---
+
+## Overview
+
+The Get Organization Usage endpoint allows you to check your organization's current API usage, monthly limits, and remaining quota. This endpoint uses API key authentication and automatically handles billing cycle resets when applicable.
+
+<Note>
+  This endpoint requires a valid API key in the request header. The usage information is specific to the organization associated with the API key.
+</Note>
+
+## Authentication
+
+<ParamField header="api-key" type="string" required>
+  Your organization's API key for authentication. Format: `unsiloed_[hash]`
+</ParamField>
+
+## Response
+
+<ResponseField name="org_id" type="string">
+  Unique identifier for your organization
+</ResponseField>
+
+<ResponseField name="org_name" type="string">
+  Name of your organization
+</ResponseField>
+
+<ResponseField name="current_usage" type="number">
+  Number of credits used in the current billing cycle
+</ResponseField>
+
+<ResponseField name="usage_limit" type="number">
+  Total monthly usage limit (credits) for your organization
+</ResponseField>
+
+<ResponseField name="remaining_quota" type="number">
+  Number of credits remaining in the current billing cycle. Calculated as: `usage_limit - current_usage`
+</ResponseField>
+
+<ResponseField name="last_billed_date" type="string">
+  Date of the last billing cycle reset in ISO 8601 format (YYYY-MM-DD). Usage resets automatically every 30 days.
+</ResponseField>

@@ -668,6 +668,90 @@
         },
         "security": [ { "apiKeyAuth": [] } ]
       }
+    },
+    "/org/get_usage": {
+      "get": {
+        "summary": "Get Organization Usage",
+        "description": "Get organization usage information including current usage, monthly limit, and remaining quota",
+        "servers": [
+          {
+            "url": "https://dev.platformbackend.unsiloed.ai/api/v1",
+            "description": "Platform Backend"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage information retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "org_id": {
+                      "type": "string",
+                      "description": "Unique identifier for your organization"
+                    },
+                    "org_name": {
+                      "type": "string",
+                      "description": "Name of your organization"
+                    },
+                    "current_usage": {
+                      "type": "number",
+                      "description": "Number of credits used in the current billing cycle"
+                    },
+                    "usage_limit": {
+                      "type": "number",
+                      "description": "Total  usage limit (credits) for your organization"
+                    },
+                    "remaining_quota": {
+                      "type": "number",
+                      "description": "Number of credits remaining in the current billing cycle"
+                    },
+                    "last_billed_date": {
+                      "type": "string",
+                      "format": "date",
+                      "description": "Date of the last billing cycle reset (YYYY-MM-DD)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "API key is required. Please provide 'api-key' in the request header."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "Organization not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [ { "apiKeyAuth": [] } ]
+      }
     }
   },
   "components": {
