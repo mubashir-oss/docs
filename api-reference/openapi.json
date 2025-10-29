@@ -243,7 +243,7 @@
                     "enum": ["Smart Layout Detection", "Page-by-Page Processing"],
                     "default": "Smart Layout Detection"
                   },
-                  "OCR_Mode": {
+                  "ocr_mode": {
                     "type": "string",
                     "description": "OCR processing strategy",
                     "enum": ["Automatic Detection", "Process All Content"],
@@ -254,6 +254,22 @@
                     "description": "OCR engine selection: 'UnsiloedHawk' (higher accuracy) or 'UnsiloedStorm' (faster processing)",
                     "enum": ["UnsiloedHawk", "UnsiloedStorm"],
                     "default": "UnsiloedHawk"
+                  },
+                  "segment_analysis": {
+                    "type": "object",
+                    "description": "Segment analysis configuration",
+                    "properties": {
+                      "table": {
+                        "type": "object"
+                      },
+                      "picture": {
+                        "type": "object"
+                      },
+                      "formula": {
+                        "type": "object"
+                      }
+                    },
+                    "required": ["table", "picture", "formula"]
                   }
                 },
                 "required": ["file"]
