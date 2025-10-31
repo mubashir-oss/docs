@@ -24,14 +24,14 @@ The Parse Document endpoint processes PDF documents and breaks them into meaning
 
 <ParamField body="segmentation_method" type="string">
   Document segmentation strategy:
-  - `"Smart Layout Detection"` (default): Analyzes pages for layout elements using bounding boxes
-  - `"Page-by-Page Processing"`: Treats each page as a single segment
+  - `"smart_layout_detection"` (default): Analyzes pages for layout elements using bounding boxes
+  - `"page_by_page"`: Treats each page as a single segment
 </ParamField>
 
-<ParamField body="OCR_Mode" type="string">
+<ParamField body="ocr_mode" type="string">
   OCR processing strategy:
-  - `"Automatic Detection"` (default): Automatically determine when to use OCR
-  - `"Process All Content"`: Process all text elements with OCR
+  - `"auto_ocr"` (default): Automatically determine when to use OCR
+  - `"full_ocr"`: Process all text elements with OCR
 </ParamField>
 
 <ParamField body="ocr_engine" type="string">
@@ -46,17 +46,17 @@ The Parse Document endpoint processes PDF documents and breaks them into meaning
 
 The `segmentation_method` parameter controls how the document is analyzed and segmented:
 
-- **"Smart Layout Detection"** (default): Analyzes pages for layout elements (e.g., Table, Picture, Formula, etc.) using bounding boxes. Provides fine-grained segmentation and better chunking for complex documents.
+- **`"smart_layout_detection"`** (default): Analyzes pages for layout elements (e.g., Table, Picture, Formula, etc.) using bounding boxes. Provides fine-grained segmentation and better chunking for complex documents.
   
-- **"Page-by-Page Processing"**: Treats each page as a single segment. Faster processing, ideal for simple documents without complex layouts.
+- **`"page_by_page"`**: Treats each page as a single segment. Faster processing, ideal for simple documents without complex layouts.
 
 ### OCR Mode
 
-The `OCR_Mode` parameter controls optical character recognition processing:
+The `ocr_mode` parameter controls optical character recognition processing:
 
-- **"Automatic Detection"** (default): Intelligently determines when OCR is needed based on the document content. Balances accuracy and performance.
+- **`"auto_ocr"`** (default): Intelligently determines when OCR is needed based on the document content. Balances accuracy and performance.
   
-- **"Process All Content"**: Applies OCR to all text elements in the document. Use this for scanned documents or when maximum text extraction is required.
+- **`"full_ocr"`**: Applies OCR to all text elements in the document. Use this for scanned documents or when maximum text extraction is required.
 
 ### OCR Engine Selection
 
@@ -155,8 +155,8 @@ curl -X 'POST' \
   -H 'Content-Type: multipart/form-data' \
   -F 'file=@document.pdf;type=application/pdf' \
   -F 'use_high_resolution=true' \
-  -F 'segmentation_method=Smart Layout Detection' \
-  -F 'OCR_Mode=Automatic Detection' \
+  -F 'segmentation_method=smart_layout_detection' \
+  -F 'ocr_mode=auto_ocr' \
   -F 'ocr_engine=UnsiloedHawk'
 ```
 
@@ -177,8 +177,8 @@ files = {
 
 data = {
     "use_high_resolution": "true",
-    "segmentation_method": "Smart Layout Detection",
-    "OCR_Mode": "Automatic Detection",
+    "segmentation_method": "smart_layout_detection",
+    "ocr_mode": "auto_ocr",
     "ocr_engine": "UnsiloedHawk"
 }
 
@@ -209,8 +209,8 @@ if (fileInput.files[0]) {
 
 // Add configuration parameters
 formData.append('use_high_resolution', 'true');
-formData.append('segmentation_method', 'Smart Layout Detection');
-formData.append('OCR_Mode', 'Automatic Detection');
+formData.append('segmentation_method', 'smart_layout_detection');
+formData.append('ocr_mode', 'auto_ocr');
 formData.append('ocr_engine', 'UnsiloedHawk');
 
 const response = await fetch('https://prod.visionapi.unsiloed.ai/parse', {
@@ -448,8 +448,8 @@ Use this configuration when accuracy is critical:
 ```json
 {
   "use_high_resolution": true,
-  "segmentation_method": "Smart Layout Detection",
-  "OCR_Mode": "Process All Content",
+  "segmentation_method": "smart_layout_detection",
+  "ocr_mode": "full_ocr",
   "ocr_engine": "UnsiloedHawk"
 }
 ```
@@ -461,8 +461,8 @@ Use this configuration when speed is prioritized:
 ```json
 {
   "use_high_resolution": false,
-  "segmentation_method": "Page-by-Page Processing",
-  "OCR_Mode": "Automatic Detection",
+  "segmentation_method": "page_by_page",
+  "ocr_mode": "auto_ocr",
   "ocr_engine": "UnsiloedStorm"
 }
 ```
