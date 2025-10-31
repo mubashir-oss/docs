@@ -240,14 +240,14 @@
                   "segmentation_method": {
                     "type": "string",
                     "description": "Document segmentation strategy",
-                    "enum": ["Smart Layout Detection", "Page-by-Page Processing"],
-                    "default": "Smart Layout Detection"
+                    "enum": ["smart_layout_detection", "page_by_page"],
+                    "default": "smart_layout_detection"
                   },
-                  "OCR_Mode": {
+                  "ocr_mode": {
                     "type": "string",
                     "description": "OCR processing strategy",
-                    "enum": ["Automatic Detection", "Process All Content"],
-                    "default": "Automatic Detection"
+                    "enum": ["auto_ocr", "full_ocr"],
+                    "default": "auto_ocr"
                   },
                   "ocr_engine": {
                     "type": "string",
