@@ -219,7 +219,7 @@
     "/parse": {
       "post": {
         "summary": "Parse Document",
-        "description": "Parse and chunk PDF documents into semantic sections using advanced AI-powered strategies",
+        "description": "Parse and chunk PDF, Image (PNG, JPEG, TIFF, BMP) and Office Documents (DOCX, XLSX, PPTX) documents into semantic sections using advanced AI-powered strategies",
         "requestBody": {
           "required": true,
           "content": {
@@ -230,7 +230,7 @@
                   "file": {
                     "type": "string",
                     "format": "binary",
-                    "description": "PDF file to process"
+                    "description": "Supported file types: PDFs, Images (PNG, JPEG, TIFF, BMP) and Office Documents (DOCX, XLSX, PPTX)"
                   },
                   "use_high_resolution": {
                     "type": "boolean",
