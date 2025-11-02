@@ -1,12 +1,12 @@
 ---
 title: "Parse Document"
 openapi: "/api-reference/openapi.json POST /parse"
-description: "Parse and chunk PDF documents into semantic sections using advanced AI-powered strategies with comprehensive customization options"
+description: "Parse and segment PDFs, images, and Office files into meaningful sections using advanced AI models with flexible customization options."
 ---
 
 ## Overview
 
-The Parse Document endpoint processes PDF documents and breaks them into meaningful sections with detailed analysis including text extraction, image recognition, table parsing, and OCR data. This endpoint supports advanced customization options for fine-tuning the parsing behavior to match your specific use cases.
+The Parse Document endpoint processes PDFs, images (PNG, JPEG, TIFF), and office files (PPT, DOCX, XLSX) documents and breaks them into meaningful sections with detailed analysis including text extraction, image recognition, table parsing, and OCR data. This endpoint supports advanced customization options for fine-tuning the parsing behavior to match your specific use cases.
 
 <Note>
   This endpoint returns a job ID for asynchronous processing. Use the GET PARSE JOB STATUS endpoint to check status and retrieve results when processing is complete.
@@ -15,7 +15,7 @@ The Parse Document endpoint processes PDF documents and breaks them into meaning
 ## Request
 
 <ParamField body="file" type="file" required>
-  PDF file to process.
+  Document file to process. Supported formats: PDF, images (PNG, JPEG, TIFF), and office documents (PPT, PPTX, DOC, DOCX, XLS, XLSX).
 </ParamField>
 
 <ParamField body="use_high_resolution" type="boolean">
