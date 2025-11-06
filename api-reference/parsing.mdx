@@ -40,6 +40,14 @@ The Parse Document endpoint processes PDFs, images (PNG, JPEG, TIFF), and office
   - `"UnsiloedStorm"`: Fast processing, optimized for general documents
 </ParamField>
 
+<ParamField body="output_fields" type="string">
+  JSON configuration object to control which fields are included in the response. By default, all fields are included. Set fields to `false` to exclude them and reduce response size. Example: `{"html": false, "markdown": true, "ocr": false}`. Available fields: `html`, `markdown`, `ocr`, `image`, `llm`, `content`, `bbox`, `confidence`, `embed`.
+</ParamField>
+
+<ParamField body="segment_analysis" type="string">
+  JSON configuration object to customize how different segment types are processed. Allows you to control HTML/Markdown generation strategies and specify which field should populate the `content` field for each segment type. Example: `{"Table": {"html": "LLM", "markdown": "LLM", "content_source": "HTML"}}`.
+</ParamField>
+
 ## Parameter Details
 
 ### Segmentation Method
@@ -79,6 +87,123 @@ Select the OCR engine for text recognition:
   - Better handling of complex layouts
   - Superior multilingual support
   - Longer processing time
+
+### Output Fields Configuration
+
+The `output_fields` parameter allows you to control which fields are included in the API response. This is useful for reducing response size, improving performance, and optimizing bandwidth usage when you don't need all available data.
+
+**Available Fields:**
+
+- **`html`** (default: `true`): Include HTML representation of segments
+- **`markdown`** (default: `true`): Include Markdown representation of segments
+- **`ocr`** (default: `true`): Include OCR results with bounding boxes and confidence scores
+- **`image`** (default: `true`): Include cropped segment images (base64 encoded)
+- **`llm`** (default: `true`): Include LLM-generated content and descriptions
+- **`content`** (default: `true`): Include text content of segments
+- **`bbox`** (default: `true`): Include bounding box coordinates
+- **`confidence`** (default: `true`): Include confidence scores for segments
+- **`embed`** (default: `true`): Include embed text in chunk responses
+
+**Usage:**
+
+Set fields to `false` to exclude them from the response. Fields not specified default to `true` for backward compatibility.
+
+**Example Configuration:**
+
+```json
+{
+  "html": false,
+  "markdown": true,
+  "ocr": false,
+  "image": false,
+  "llm": false,
+  "content": true,
+  "bbox": true,
+  "confidence": false,
+  "embed": true
+}
+```
+
+**Benefits:**
+
+- **Reduced Response Size**: Excluding large fields like `image` and `html` can significantly reduce payload size
+- **Faster Processing**: Less data to serialize and transfer
+- **Cost Optimization**: Smaller responses reduce bandwidth costs
+- **Selective Data**: Only retrieve the fields you need for your use case
+
+**When to Use:**
+
+- **Minimal Response**: Set most fields to `false` when you only need basic content
+- **Text-Only Processing**: Exclude `image`, `ocr`, and `llm` when processing text content
+- **Embedding Generation**: Include only `content` and `embed` when generating embeddings
+- **Full Analysis**: Keep all fields enabled (default) for comprehensive document analysis
+
+### Segment Analysis Configuration
+
+The `segment_analysis` parameter allows you to customize how different segment types are processed, including HTML/Markdown generation strategies and which field should populate the `content` field.
+
+**Available Segment Types:**
+
+You can configure processing for any of the following segment types:
+- `Table`: Tabular data segments
+- `Picture`: Image and graphic segments
+- `Formula`: Mathematical equations
+- `Title`: Document titles
+- `SectionHeader`: Section headers
+- `Text`: Regular text content
+- `ListItem`: List items
+- `Caption`: Image captions
+- `Footnote`: Footnotes
+- `PageHeader`: Page headers
+- `PageFooter`: Page footers
+- `Page`: Full page segments
+
+**Configuration Options:**
+
+For each segment type, you can specify:
+
+- **`html`**: Generation strategy for HTML representation
+  - `"Auto"` (default): Automatically determine the best method
+  - `"LLM"`: Use LLM to generate HTML
+- **`markdown`**: Generation strategy for Markdown representation
+  - `"Auto"` (default): Automatically determine the best method
+  - `"LLM"`: Use LLM to generate Markdown
+- **`content_source`**: Defines which field should populate the `content` field in the response
+  - `"OCR"` (default): Use OCR text for content
+  - `"HTML"`: Use HTML representation as content
+  - `"Markdown"`: Use Markdown representation as content
+
+**Example Configuration:**
+
+```json
+{
+  "Table": {
+    "html": "LLM",
+    "markdown": "LLM",
+    "content_source": "HTML"
+  },
+  "Picture": {
+    "html": "LLM",
+    "markdown": "LLM",
+    "content_source": "Markdown"
+  }
+}
+```
+
+**How `content_source` Works:**
+
+The `content_source` parameter determines which field's value will be used to populate the `content` field in the segment response:
+
+- When `content_source` is set to `"HTML"`, the `content` field will contain the HTML representation, and the separate `html` and `markdown` fields will be empty
+- When `content_source` is set to `"Markdown"`, the `content` field will contain the Markdown representation, and the separate `html` and `markdown` fields will be empty
+- When `content_source` is set to `"OCR"` (default), the `content` field contains OCR text, and `html` and `markdown` fields are populated separately
+- When `content_source` is set to `"LLM"`, the `content` field contains LLM-generated content
+
+**Use Cases:**
+
+- **HTML as Content**: Set `content_source: "HTML"` for Table segments when you want HTML-formatted table data directly in the `content` field
+- **Markdown as Content**: Set `content_source: "Markdown"` for Picture segments when you want Markdown-formatted descriptions in the `content` field
+- **LLM-Enhanced Content**: Use `"LLM"` for both `html`/`markdown` generation strategies and set `content_source: "LLM"` to get AI-enhanced content in the `content` field
 
 ## Response
 
@@ -231,6 +356,55 @@ if (response.ok) {
 } else {
   console.error('Parsing failed:', response.status, await response.text());
 }
+```
+
+**Example with Segment Analysis:**
+
+```python Python
+import requests
+import json
+
+url = "https://prod.visionapi.unsiloed.ai/parse"
+headers = {
+    "accept": "application/json",
+    "api-key": "your-api-key"
+}
+
+files = {
+    "file": ("document.pdf", open("document.pdf", "rb"), "application/pdf")
+}
+
+# Configure segment analysis to use HTML for Table content and Markdown for Picture content
+segment_analysis_config = {
+    "Table": {
+        "html": "LLM",
+        "markdown": "LLM",
+        "content_source": "HTML"
+    },
+    "Picture": {
+        "html": "LLM",
+        "markdown": "LLM",
+        "content_source": "Markdown"
+    }
+}
+
+data = {
+    "use_high_resolution": "true",
+    "segmentation_method": "smart_layout_detection",
+    "ocr_mode": "auto_ocr",
+    "ocr_engine": "UnsiloedHawk",
+    "segment_analysis": json.dumps(segment_analysis_config)
+}
+
+response = requests.post(url, headers=headers, files=files, data=data)
+
+if response.status_code == 200:
+    result = response.json()
+    print(f"Job ID: {result['job_id']}")
+else:
+    print("Error:", response.status_code, response.text)
+
+files["file"][1].close()
 ```
 
 </RequestExample>
@@ -487,6 +661,50 @@ Choose the appropriate OCR engine based on your document characteristics:
 - Processing complex layouts
 - Quality over speed is preferred
 - You need clean, accurate text extraction
+
+### Output Fields Optimization (Optional)
+
+Optimize response size and performance by selectively including only the fields you need:
+
+**For Minimal Response Size:**
+
+```json
+{
+  "output_fields": {
+    "html": false,
+    "markdown": false,
+    "ocr": false,
+    "image": false,
+    "llm": false,
+    "content": true,
+    "bbox": false,
+    "confidence": false,
+    "embed": true
+  }
+}
+```
+
+**For Text-Only Processing:**
+
+```json
+{
+  "output_fields": {
+    "html": false,
+    "markdown": true,
+    "ocr": false,
+    "image": false,
+    "llm": false,
+    "content": true,
+    "bbox": true,
+    "confidence": false,
+    "embed": true
+  }
+}
+```
+
+**For Full Analysis (Default):**
+
+Omit `output_fields` or set all fields to `true` to include all available data.
 
 ## Error Handling
 
