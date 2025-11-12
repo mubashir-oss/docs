@@ -45,7 +45,7 @@ The Parse Document endpoint processes PDFs, images (PNG, JPEG, TIFF), and office
 </ParamField>
 
 <ParamField body="segment_analysis" type="string">
-  JSON configuration object to customize how different segment types are processed. Allows you to control HTML/Markdown generation strategies and specify which field should populate the `content` field for each segment type. Example: `{"Table": {"html": "LLM", "markdown": "LLM", "content_source": "HTML"}}`.
+  JSON configuration object to customize how different segment types are processed. Allows you to control HTML/Markdown generation strategies, specify which field should populate the `content` field for each segment type, and configure the AI model for table processing. Example: `{"Table": {"html": "LLM", "markdown": "LLM", "content_source": "HTML", "model_id": "us_table_v2"}}`.
 </ParamField>
 
 ## Parameter Details
@@ -172,6 +172,9 @@ For each segment type, you can specify:
   - `"OCR"` (default): Use OCR text for content
   - `"HTML"`: Use HTML representation as content
   - `"Markdown"`: Use Markdown representation as content
+- **`model_id`** (Table segments only): Specifies which AI model to use for table processing
+  - `"us_table_v1"`: Standard table processing model
+  - `"us_table_v2"`: Enhanced table processing model with improved accuracy
 
 **Example Configuration:**
 
@@ -180,7 +183,8 @@ For each segment type, you can specify:
   "Table": {
     "html": "LLM",
     "markdown": "LLM",
-    "content_source": "HTML"
+    "content_source": "HTML",
+    "model_id": "us_table_v2"
   },
   "Picture": {
     "html": "LLM",
@@ -282,12 +286,14 @@ curl -X 'POST' \
   -F 'use_high_resolution=true' \
   -F 'segmentation_method=smart_layout_detection' \
   -F 'ocr_mode=auto_ocr' \
-  -F 'ocr_engine=UnsiloedHawk'
+  -F 'ocr_engine=UnsiloedHawk' \
+  -F 'segment_analysis={"Table":{"html":"LLM","markdown":"LLM","extended_context":true,"crop_image":"All","model_id":"us_table_v2"}}'
 ```
 
 
 ```python Python
 import requests
+import json
 
 url = "https://prod.visionapi.unsiloed.ai/parse"
 headers = {
@@ -304,7 +310,16 @@ data = {
     "use_high_resolution": "true",
     "segmentation_method": "smart_layout_detection",
     "ocr_mode": "auto_ocr",
-    "ocr_engine": "UnsiloedHawk"
+    "ocr_engine": "UnsiloedHawk",
+    "segment_analysis": json.dumps({
+        "Table": {
+            "html": "LLM",
+            "markdown": "LLM",
+            "extended_context": True,
+            "crop_image": "All",
+            "model_id": "us_table_v2"
+        }
+    })
 }
 
 response = requests.post(url, headers=headers, files=files, data=data)
@@ -337,6 +352,15 @@ formData.append('use_high_resolution', 'true');
 formData.append('segmentation_method', 'smart_layout_detection');
 formData.append('ocr_mode', 'auto_ocr');
 formData.append('ocr_engine', 'UnsiloedHawk');
+formData.append('segment_analysis', JSON.stringify({
+  Table: {
+    html: 'LLM',
+    markdown: 'LLM',
+    extended_context: true,
+    crop_image: 'All',
+    model_id: 'us_table_v2'
+  }
+}));
 
 const response = await fetch('https://prod.visionapi.unsiloed.ai/parse', {
   method: 'POST',
@@ -379,7 +403,8 @@ segment_analysis_config = {
     "Table": {
         "html": "LLM",
         "markdown": "LLM",
-        "content_source": "HTML"
+        "content_source": "HTML",
+        "model_id": "us_table_v2"
     },
     "Picture": {
         "html": "LLM",
@@ -589,7 +614,10 @@ Regular text content including paragraphs, sentences, and individual text elemen
 
 ### Table
 
-Tabular data with structured rows and columns. Enhanced with LLM-based formatting and extended context options.
+Tabular data with structured rows and columns. Enhanced with LLM-based formatting and extended context options. You can configure the table processing model using `model_id` in the `segment_analysis` parameter:
+
+- **`us_table_v1`**: Standard table processing model
+- **`us_table_v2`**: Enhanced table processing model with improved accuracy
 
 ### Caption
 
@@ -624,7 +652,16 @@ Use this configuration when accuracy is critical:
   "use_high_resolution": true,
   "segmentation_method": "smart_layout_detection",
   "ocr_mode": "full_ocr",
-  "ocr_engine": "UnsiloedHawk"
+  "ocr_engine": "UnsiloedHawk",
+  "segment_analysis": {
+    "Table": {
+      "html": "LLM",
+      "markdown": "LLM",
+      "extended_context": true,
+      "crop_image": "All",
+      "model_id": "us_table_v2"
+    }
+  }
 }
 ```
 
