@@ -6,7 +6,7 @@ description: "Parse and segment PDFs, images, and Office files into meaningful s
 
 ## Overview
 
-The Parse Document endpoint processes PDFs, images (PNG, JPEG, TIFF), and office files (PPT, DOCX, XLSX) documents and breaks them into meaningful sections with detailed analysis including text extraction, image recognition, table parsing, and OCR data. This endpoint supports advanced customization options for fine-tuning the parsing behavior to match your specific use cases.
+The Parse Document endpoint processes PDFs, images (PNG, JPEG, TIFF), and office files (PPT, DOCX, XLSX) documents and breaks them into meaningful sections with detailed analysis including text extraction, image recognition, table parsing, and OCR data. You can provide documents either by direct file upload or by presigned URL. This endpoint supports advanced customization options for fine-tuning the parsing behavior to match your specific use cases.
 
 <Note>
   This endpoint returns a job ID for asynchronous processing. Use the GET PARSE JOB STATUS endpoint to check status and retrieve results when processing is complete.
@@ -14,8 +14,16 @@ The Parse Document endpoint processes PDFs, images (PNG, JPEG, TIFF), and office
 
 ## Request
 
-<ParamField body="file" type="file" required>
-  Document file to process. Supported formats: PDF, images (PNG, JPEG, TIFF), and office documents (PPT, PPTX, DOC, DOCX, XLS, XLSX).
+<Note>
+  You must provide either `file` or `url` parameter. Both cannot be provided simultaneously.
+</Note>
+
+<ParamField body="file" type="file">
+  Document file to process. Supported formats: PDF, images (PNG, JPEG, TIFF), and office documents (PPT, PPTX, DOC, DOCX, XLS, XLSX). Required if `url` is not provided.
+</ParamField>
+
+<ParamField body="url" type="string">
+  Presigned URL of the document to process. The URL must be publicly accessible or a valid presigned URL from cloud storage (S3, GCS, Azure Blob, etc.). Supported formats: PDF, images (PNG, JPEG, TIFF), and office documents (PPT, PPTX, DOC, DOCX, XLS, XLSX). Required if `file` is not provided.
 </ParamField>
 
 <ParamField body="use_high_resolution" type="boolean">
@@ -49,6 +57,26 @@ The Parse Document endpoint processes PDFs, images (PNG, JPEG, TIFF), and office
 </ParamField>
 
 ## Parameter Details
+
+### File Input Options
+
+The API supports two methods for providing the document to process:
+
+1. **Direct File Upload** (`file` parameter): Upload the document file directly as multipart/form-data
+2. **Presigned URL** (`url` parameter): Provide a publicly accessible URL or presigned URL to the document
+
+**Important Notes:**
+- You must provide **either** `file` or `url`, but not both
+- When using `url`, the document will be downloaded from the provided URL before processing
+- Presigned URLs are ideal for documents already stored in cloud storage (S3, GCS, Azure Blob, etc.)
+- The URL must be publicly accessible or include necessary authentication parameters (e.g., S3 presigned URLs with signatures)
+- Supported formats are the same for both methods: PDF, images (PNG, JPEG, TIFF), and office documents (PPT, PPTX, DOC, DOCX, XLS, XLSX)
+
+**Use Cases for Presigned URLs:**
+- Documents already stored in cloud storage
+- Avoiding duplicate file uploads
+- Integration with existing document management systems
+- Processing large files without upload overhead
 
 ### Segmentation Method
 
@@ -276,7 +304,7 @@ Provides precise coordinates for all extracted elements.
 
 <RequestExample>
 
-```bash cURL
+```bash cURL (File Upload)
 curl -X 'POST' \
   'https://prod.visionapi.unsiloed.ai/parse' \
   -H 'accept: application/json' \
@@ -290,8 +318,22 @@ curl -X 'POST' \
   -F 'segment_analysis={"Table":{"html":"LLM","markdown":"LLM","extended_context":true,"crop_image":"All","model_id":"us_table_v2"}}'
 ```
 
+```bash cURL (Presigned URL)
+curl -X 'POST' \
+  'https://prod.visionapi.unsiloed.ai/parse' \
+  -H 'accept: application/json' \
+  -H 'api-key: your-api-key' \
+  -H 'Content-Type: multipart/form-data' \
+  -F 'url=https://your-bucket.s3.amazonaws.com/document.pdf?signature=...' \
+  -F 'use_high_resolution=true' \
+  -F 'segmentation_method=smart_layout_detection' \
+  -F 'ocr_mode=auto_ocr' \
+  -F 'ocr_engine=UnsiloedHawk' \
+  -F 'segment_analysis={"Table":{"html":"LLM","markdown":"LLM","extended_context":true,"crop_image":"All","model_id":"us_table_v2"}}'
+```
 
-```python Python
+
+```python Python (File Upload)
 import requests
 import json
 
@@ -337,8 +379,47 @@ else:
 files["file"][1].close()
 ```
 
+```python Python (Presigned URL)
+import requests
+import json
 
-```javascript JavaScript
+url = "https://prod.visionapi.unsiloed.ai/parse"
+headers = {
+    "accept": "application/json",
+    "api-key": "your-api-key"
+}
+
+# Use presigned URL instead of file upload
+data = {
+    "url": "https://your-bucket.s3.amazonaws.com/document.pdf?signature=...",
+    "use_high_resolution": "true",
+    "segmentation_method": "smart_layout_detection",
+    "ocr_mode": "auto_ocr",
+    "ocr_engine": "UnsiloedHawk",
+    "segment_analysis": json.dumps({
+        "Table": {
+            "html": "LLM",
+            "markdown": "LLM",
+            "extended_context": True,
+            "crop_image": "All",
+            "model_id": "us_table_v2"
+        }
+    })
+}
+
+response = requests.post(url, headers=headers, data=data)
+
+if response.status_code == 200:
+    result = response.json()
+    print(f"Job ID: {result['job_id']}")
+    print(f"Status: {result['status']}")
+    print(f"Message: {result['message']}")
+else:
+    print("Error:", response.status_code, response.text)
+```
+
+
+```javascript JavaScript (File Upload)
 const formData = new FormData();
 
 // Add document file
@@ -376,6 +457,46 @@ if (response.ok) {
   console.log(`Job ID: ${result.job_id}`);
   console.log(`Status: ${result.status}`);
   console.log(`File Name: ${result.file_name}`);
+  console.log(`Message: ${result.message}`);
+} else {
+  console.error('Parsing failed:', response.status, await response.text());
+}
+```
+
+```javascript JavaScript (Presigned URL)
+const formData = new FormData();
+
+// Use presigned URL instead of file upload
+formData.append('url', 'https://your-bucket.s3.amazonaws.com/document.pdf?signature=...');
+
+// Add configuration parameters
+formData.append('use_high_resolution', 'true');
+formData.append('segmentation_method', 'smart_layout_detection');
+formData.append('ocr_mode', 'auto_ocr');
+formData.append('ocr_engine', 'UnsiloedHawk');
+formData.append('segment_analysis', JSON.stringify({
+  Table: {
+    html: 'LLM',
+    markdown: 'LLM',
+    extended_context: true,
+    crop_image: 'All',
+    model_id: 'us_table_v2'
+  }
+}));
+
+const response = await fetch('https://prod.visionapi.unsiloed.ai/parse', {
+  method: 'POST',
+  headers: {
+    'accept': 'application/json',
+    'api-key': 'your-api-key'
+  },
+  body: formData
+});
+
+if (response.ok) {
+  const result = await response.json();
+  console.log(`Job ID: ${result.job_id}`);
+  console.log(`Status: ${result.status}`);
   console.log(`Message: ${result.message}`);
 } else {
   console.error('Parsing failed:', response.status, await response.text());
@@ -752,3 +873,7 @@ Omit `output_fields` or set all fields to `true` to include all available data.
 3. **Invalid Configuration**: Malformed processing parameters
 4. **Server Error**: Internal processing error
 5. **Processing Timeout**: Task took too long to complete
+6. **Missing File or URL**: Neither `file` nor `url` parameter provided
+7. **Both File and URL Provided**: Cannot provide both `file` and `url` simultaneously
+8. **Invalid URL**: URL is not accessible or malformed
+9. **URL Download Failed**: Unable to download document from provided URL
