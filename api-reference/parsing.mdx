@@ -48,6 +48,27 @@ The Parse Document endpoint processes PDFs, images (PNG, JPEG, TIFF), and office
   - `"UnsiloedStorm"`: Fast processing, optimized for general documents
 </ParamField>
 
+<ParamField body="merge_tables" type="boolean">
+  Whether to merge tables that span across multiple pages into a single unified table structure. When enabled, consecutive table segments with matching headers will be consolidated. Default: false
+</ParamField>
+
+<ParamField body="keep_segment_types" type="string">
+  Filter output to include only specific segment types. Accepts a comma-separated list of segment types or "all" to include everything. Examples: `"table"`, `"picture"`, `"table,picture"`, `"table,formula"`. Default: "all"
+  
+  Available segment types:
+  - `table`: Tabular data segments
+  - `picture`: Image and graphic segments
+  - `formula`: Mathematical equations
+  - `text`: Regular text content
+  - `sectionheader`: Section headers
+  - `title`: Document titles
+  - `listitem`: List items
+  - `caption`: Image captions
+  - `footnote`: Footnotes
+  - `pageheader`: Page headers
+  - `pagefooter`: Page footers
+</ParamField>
+
 <ParamField body="output_fields" type="string">
   JSON configuration object to control which fields are included in the response. By default, all fields are included. Set fields to `false` to exclude them and reduce response size. Example: `{"html": false, "markdown": true, "ocr": false}`. Available fields: `html`, `markdown`, `ocr`, `image`, `llm`, `content`, `bbox`, `confidence`, `embed`.
 </ParamField>
@@ -115,6 +136,82 @@ Select the OCR engine for text recognition:
   - Better handling of complex layouts
   - Superior multilingual support
   - Longer processing time
+
+### Table Merging
+
+The `merge_tables` parameter enables intelligent merging of tables that span across multiple pages:
+
+**How It Works:**
+
+- Analyzes consecutive table segments across pages
+- Identifies tables with matching column headers
+- Merges them into a single unified table structure
+- Preserves table formatting and data integrity
+
+**When to Use:**
+
+- **Multi-Page Financial Statements**: Consolidate P&L statements or balance sheets spanning multiple pages
+- **Large Data Tables**: Merge inventory lists, transaction records, or data sets split across pages
+- **Reports with Continuation Tables**: Automatically combine tables marked with "continued on next page"
+
+**Example:**
+
+```json
+{
+  "merge_tables": true
+}
+```
+
+**Benefits:**
+
+- **Simplified Data Processing**: Work with complete tables instead of fragments
+- **Better Context**: Maintain full table context for analysis and extraction
+- **Reduced Post-Processing**: Eliminates need for manual table stitching
+
+### Content Type Filtering
+
+The `keep_segment_types` parameter allows you to filter the output to include only specific segment types, reducing response size and focusing on relevant content:
+
+**How It Works:**
+
+- Accepts a comma-separated list of segment types (case-insensitive)
+- Filters segments after processing is complete
+- Removes chunks that have no segments after filtering
+
+**Available Options:**
+
+- `"all"` (default): Include all segment types
+- `"table"`: Only table segments
+- `"picture"`: Only image/graphic segments
+- `"table,picture"`: Tables and pictures only
+- `"table,formula"`: Tables and formulas only
+- Custom combinations using any segment type
+
+**Supported Segment Types:**
+
+- `table`, `picture`, `formula`, `text`, `sectionheader`, `title`, `listitem`, `caption`, `footnote`, `pageheader`, `pagefooter`
+
+**Example Usage:**
+
+```json
+{
+  "keep_segment_types": "table,picture"
+}
+```
+
+**Use Cases:**
+
+- **Tables Only**: Extract only tabular data from financial documents
+- **Pictures Only**: Extract charts, graphs, and diagrams for visual analysis
+- **Tables + Pictures**: Get structured data and visualizations, skip text content
+- **Custom Combinations**: Mix any segment types based on your needs
+
+**Benefits:**
+
+- **Reduced Response Size**: Filter out unwanted content before receiving results
+- **Faster Processing**: Less data to transfer and parse
+- **Focused Extraction**: Get only the content types you need
+- **Cost Optimization**: Smaller responses reduce bandwidth usage
 
 ### Output Fields Configuration
 
@@ -264,7 +361,11 @@ The `content_source` parameter determines which field's value will be used to po
 </ResponseField>
 
 <ResponseField name="merge_tables" type="boolean">
-  Whether table merging is enabled
+  Whether table merging is enabled for this job
+</ResponseField>
+
+<ResponseField name="keep_segment_types" type="string">
+  Segment types filter applied to this job (stored in metadata)
 </ResponseField>
 
 ## Document Analysis Features
@@ -315,6 +416,8 @@ curl -X 'POST' \
   -F 'segmentation_method=smart_layout_detection' \
   -F 'ocr_mode=auto_ocr' \
   -F 'ocr_engine=UnsiloedHawk' \
+  -F 'merge_tables=true' \
+  -F 'keep_segment_types=all' \
   -F 'segment_analysis={"Table":{"html":"LLM","markdown":"LLM","extended_context":true,"crop_image":"All","model_id":"us_table_v2"}}'
 ```
 
@@ -329,6 +432,8 @@ curl -X 'POST' \
   -F 'segmentation_method=smart_layout_detection' \
   -F 'ocr_mode=auto_ocr' \
   -F 'ocr_engine=UnsiloedHawk' \
+  -F 'merge_tables=true' \
+  -F 'keep_segment_types=all' \
   -F 'segment_analysis={"Table":{"html":"LLM","markdown":"LLM","extended_context":true,"crop_image":"All","model_id":"us_table_v2"}}'
 ```
 
@@ -353,6 +458,8 @@ data = {
     "segmentation_method": "smart_layout_detection",
     "ocr_mode": "auto_ocr",
     "ocr_engine": "UnsiloedHawk",
+    "merge_tables": "true",
+    "keep_segment_types": "all",
     "segment_analysis": json.dumps({
         "Table": {
             "html": "LLM",
@@ -396,6 +503,8 @@ data = {
     "segmentation_method": "smart_layout_detection",
     "ocr_mode": "auto_ocr",
     "ocr_engine": "UnsiloedHawk",
+    "merge_tables": "true",
+    "keep_segment_types": "all",
     "segment_analysis": json.dumps({
         "Table": {
             "html": "LLM",
@@ -433,6 +542,8 @@ formData.append('use_high_resolution', 'true');
 formData.append('segmentation_method', 'smart_layout_detection');
 formData.append('ocr_mode', 'auto_ocr');
 formData.append('ocr_engine', 'UnsiloedHawk');
+formData.append('merge_tables', 'true');
+formData.append('keep_segment_types', 'all');
 formData.append('segment_analysis', JSON.stringify({
   Table: {
     html: 'LLM',
@@ -474,6 +585,8 @@ formData.append('use_high_resolution', 'true');
 formData.append('segmentation_method', 'smart_layout_detection');
 formData.append('ocr_mode', 'auto_ocr');
 formData.append('ocr_engine', 'UnsiloedHawk');
+formData.append('merge_tables', 'true');
+formData.append('keep_segment_types', 'all');
 formData.append('segment_analysis', JSON.stringify({
   Table: {
     html: 'LLM',
@@ -501,6 +614,40 @@ if (response.ok) {
 } else {
   console.error('Parsing failed:', response.status, await response.text());
 }
+```
+
+**Example with Tables Only:**
+
+```python Python
+import requests
+
+url = "https://prod.visionapi.unsiloed.ai/parse"
+headers = {
+    "accept": "application/json",
+    "api-key": "your-api-key"
+}
+
+files = {
+    "file": ("financial_report.pdf", open("financial_report.pdf", "rb"), "application/pdf")
+}
+
+# Extract only tables with merging enabled
+data = {
+    "merge_tables": "true",
+    "keep_segment_types": "table",
+    "segmentation_method": "smart_layout_detection",
+    "ocr_mode": "auto_ocr"
+}
+
+response = requests.post(url, headers=headers, files=files, data=data)
+
+if response.status_code == 200:
+    result = response.json()
+    print(f"Job ID: {result['job_id']}")
+else:
+    print("Error:", response.status_code, response.text)
+
+files["file"][1].close()
 ```
 
 **Example with Segment Analysis:**
@@ -539,6 +686,8 @@ data = {
     "segmentation_method": "smart_layout_detection",
     "ocr_mode": "auto_ocr",
     "ocr_engine": "UnsiloedHawk",
+    "merge_tables": "true",
+    "keep_segment_types": "table,picture",
     "segment_analysis": json.dumps(segment_analysis_config)
 }
 
@@ -774,6 +923,7 @@ Use this configuration when accuracy is critical:
   "segmentation_method": "smart_layout_detection",
   "ocr_mode": "full_ocr",
   "ocr_engine": "UnsiloedHawk",
+  "merge_tables": true,
   "segment_analysis": {
     "Table": {
       "html": "LLM",
@@ -796,6 +946,46 @@ Use this configuration when speed is prioritized:
   "segmentation_method": "page_by_page",
   "ocr_mode": "auto_ocr",
   "ocr_engine": "UnsiloedStorm"
+}
+```
+
+### For Financial Documents (Tables + Charts)
+
+Extract only tables and charts from financial reports:
+
+```json
+{
+  "merge_tables": true,
+  "keep_segment_types": "table,picture",
+  "segmentation_method": "smart_layout_detection",
+  "ocr_engine": "UnsiloedHawk",
+  "segment_analysis": {
+    "Table": {
+      "html": "LLM",
+      "markdown": "LLM",
+      "model_id": "us_table_v2"
+    }
+  }
+}
+```
+
+### For Data Extraction Only (Tables)
+
+Extract only tabular data with minimal response size:
+
+```json
+{
+  "merge_tables": true,
+  "keep_segment_types": "table",
+  "output_fields": {
+    "html": true,
+    "markdown": false,
+    "ocr": false,
+    "image": false,
+    "content": true,
+    "bbox": false,
+    "confidence": false
+  }
 }
 ```
 
