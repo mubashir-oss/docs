@@ -254,6 +254,16 @@
                     "description": "OCR engine selection: 'UnsiloedHawk' (higher accuracy) or 'UnsiloedStorm' (faster processing)",
                     "enum": ["UnsiloedHawk", "UnsiloedStorm"],
                     "default": "UnsiloedHawk"
+                  },
+                  "merge_tables": {
+                    "type": "boolean",
+                    "description": "Whether to merge adjacent table segments (default: false)",
+                    "default": false
+                  },
+                  "keep_segment_types": {
+                    "type": "string",
+                    "description": "Filter output to include only specific segment types. Accepts comma-separated list (e.g., 'table', 'picture', 'table,picture') or 'all' for everything (default: 'all')",
+                    "default": "all"
                   }
                 },
                 "required": ["file"]
