@@ -157,65 +157,6 @@
         ]
       }
     },
-    "/tables": {
-      "post": {
-        "summary": "Extract Tables",
-        "description": "Extract and structure table data from PDF documents with advanced table detection and parsing",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "pdf_file": {
-                    "type": "string",
-                    "format": "binary",
-                    "description": "The PDF file to process for table extraction. Maximum file size: 100MB"
-                  }
-                },
-                "required": ["pdf_file"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "job_id": {
-                      "type": "string",
-                      "description": "Unique identifier for the table extraction job"
-                    },
-                    "status": {
-                      "type": "string",
-                      "description": "Initial job status"
-                    },
-                    "message": {
-                      "type": "string",
-                      "description": "Descriptive message about the job creation"
-                    },
-                    "quota_remaining": {
-                      "type": "number",
-                      "description": "Number of credits remaining in your quota"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "apiKeyAuth": []
-          }
-        ]
-      }
-    },
     "/parse": {
       "post": {
         "summary": "Parse Document",

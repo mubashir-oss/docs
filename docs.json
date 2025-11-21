@@ -37,7 +37,6 @@
             "group": "Core Endpoints",
             "pages": [
               "api-reference/extraction",
-              "api-reference/tables",
               "api-reference/parsing",
               "api-reference/splitting",
               "api-reference/classification",
