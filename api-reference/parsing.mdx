@@ -42,12 +42,6 @@ The Parse Document endpoint processes PDFs, images (PNG, JPEG, TIFF), and office
   - `"full_ocr"`: Process all text elements with OCR
 </ParamField>
 
-<ParamField body="ocr_engine" type="string">
-  OCR engine selection:
-  - `"UnsiloedHawk"` (default): Higher accuracy, better for complex layouts
-  - `"UnsiloedStorm"`: Fast processing, optimized for general documents
-</ParamField>
-
 <ParamField body="merge_tables" type="boolean">
   Whether to merge tables that span across multiple pages into a single unified table structure. When enabled, consecutive table segments with matching headers will be consolidated. Default: false
 </ParamField>
@@ -114,28 +108,6 @@ The `ocr_mode` parameter controls optical character recognition processing:
 - **`"auto_ocr"`** (default): Intelligently determines when OCR is needed based on the document content. Balances accuracy and performance.
   
 - **`"full_ocr"`**: Applies OCR to all text elements in the document. Use this for scanned documents or when maximum text extraction is required.
-
-### OCR Engine Selection
-
-Select the OCR engine for text recognition:
-
-- **"UnsiloedStorm"** (default): Fast processing, optimized for general documents
-- **"UnsiloedHawk"**: Higher accuracy, better for complex layouts and multilingual content
-
-**Engine Comparison:**
-
-- **UnsiloedStorm**:
-  - Fast but less accurate
-  - Faster processing time
-  - Good for standard documents
-  - Optimized for English text
-  - Lower resource usage
-- **UnsiloedHawk**:
-  - Slow but more accurate
-  - Higher accuracy
-  - Better handling of complex layouts
-  - Superior multilingual support
-  - Longer processing time
 
 ### Table Merging
 
@@ -415,7 +387,6 @@ curl -X 'POST' \
   -F 'use_high_resolution=true' \
   -F 'segmentation_method=smart_layout_detection' \
   -F 'ocr_mode=auto_ocr' \
-  -F 'ocr_engine=UnsiloedHawk' \
   -F 'merge_tables=true' \
   -F 'keep_segment_types=all' \
   -F 'segment_analysis={"Table":{"html":"LLM","markdown":"LLM","extended_context":true,"crop_image":"All","model_id":"us_table_v2"}}'
@@ -431,7 +402,6 @@ curl -X 'POST' \
   -F 'use_high_resolution=true' \
   -F 'segmentation_method=smart_layout_detection' \
   -F 'ocr_mode=auto_ocr' \
-  -F 'ocr_engine=UnsiloedHawk' \
   -F 'merge_tables=true' \
   -F 'keep_segment_types=all' \
   -F 'segment_analysis={"Table":{"html":"LLM","markdown":"LLM","extended_context":true,"crop_image":"All","model_id":"us_table_v2"}}'
@@ -457,7 +427,6 @@ data = {
     "use_high_resolution": "true",
     "segmentation_method": "smart_layout_detection",
     "ocr_mode": "auto_ocr",
-    "ocr_engine": "UnsiloedHawk",
     "merge_tables": "true",
     "keep_segment_types": "all",
     "segment_analysis": json.dumps({
@@ -502,7 +471,6 @@ data = {
     "use_high_resolution": "true",
     "segmentation_method": "smart_layout_detection",
     "ocr_mode": "auto_ocr",
-    "ocr_engine": "UnsiloedHawk",
     "merge_tables": "true",
     "keep_segment_types": "all",
     "segment_analysis": json.dumps({
@@ -541,7 +509,6 @@ if (fileInput.files[0]) {
 formData.append('use_high_resolution', 'true');
 formData.append('segmentation_method', 'smart_layout_detection');
 formData.append('ocr_mode', 'auto_ocr');
-formData.append('ocr_engine', 'UnsiloedHawk');
 formData.append('merge_tables', 'true');
 formData.append('keep_segment_types', 'all');
 formData.append('segment_analysis', JSON.stringify({
@@ -584,7 +551,6 @@ formData.append('url', 'https://your-bucket.s3.amazonaws.com/document.pdf?signat
 formData.append('use_high_resolution', 'true');
 formData.append('segmentation_method', 'smart_layout_detection');
 formData.append('ocr_mode', 'auto_ocr');
-formData.append('ocr_engine', 'UnsiloedHawk');
 formData.append('merge_tables', 'true');
 formData.append('keep_segment_types', 'all');
 formData.append('segment_analysis', JSON.stringify({
@@ -685,7 +651,6 @@ data = {
     "use_high_resolution": "true",
     "segmentation_method": "smart_layout_detection",
     "ocr_mode": "auto_ocr",
-    "ocr_engine": "UnsiloedHawk",
     "merge_tables": "true",
     "keep_segment_types": "table,picture",
     "segment_analysis": json.dumps(segment_analysis_config)
@@ -922,7 +887,6 @@ Use this configuration when accuracy is critical:
   "use_high_resolution": true,
   "segmentation_method": "smart_layout_detection",
   "ocr_mode": "full_ocr",
-  "ocr_engine": "UnsiloedHawk",
   "merge_tables": true,
   "segment_analysis": {
     "Table": {
@@ -944,8 +908,7 @@ Use this configuration when speed is prioritized:
 {
   "use_high_resolution": false,
   "segmentation_method": "page_by_page",
-  "ocr_mode": "auto_ocr",
-  "ocr_engine": "UnsiloedStorm"
+  "ocr_mode": "auto_ocr"
 }
 ```
 
@@ -958,7 +921,6 @@ Extract only tables and charts from financial reports:
   "merge_tables": true,
   "keep_segment_types": "table,picture",
   "segmentation_method": "smart_layout_detection",
-  "ocr_engine": "UnsiloedHawk",
   "segment_analysis": {
     "Table": {
       "html": "LLM",
@@ -988,27 +950,6 @@ Extract only tabular data with minimal response size:
   }
 }
 ```
-
-### OCR Engine Selection Guide
-
-Choose the appropriate OCR engine based on your document characteristics:
-
-**Use UnsiloedStorm when:**
-
-- Processing standard business documents
-- Speed is prioritized over accuracy
-- Working with primarily English text
-- Processing large volumes of documents
-- Resource efficiency is important
-- You can tolerate some noise in the output for faster processing
-
-**Use UnsiloedHawk when:**
-
-- High accuracy is critical
-- Working with multilingual documents
-- Processing complex layouts
-- Quality over speed is preferred
-- You need clean, accurate text extraction
 
 ### Output Fields Optimization (Optional)
 

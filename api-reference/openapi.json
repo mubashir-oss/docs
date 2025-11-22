@@ -190,12 +190,6 @@
                     "enum": ["auto_ocr", "full_ocr"],
                     "default": "auto_ocr"
                   },
-                  "ocr_engine": {
-                    "type": "string",
-                    "description": "OCR engine selection: 'UnsiloedHawk' (higher accuracy) or 'UnsiloedStorm' (faster processing)",
-                    "enum": ["UnsiloedHawk", "UnsiloedStorm"],
-                    "default": "UnsiloedHawk"
-                  },
                   "merge_tables": {
                     "type": "boolean",
                     "description": "Whether to merge adjacent table segments (default: false)",
