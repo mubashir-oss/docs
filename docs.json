@@ -34,28 +34,42 @@
         "tab": "API Reference",
         "groups": [
           {
-            "group": "Core Endpoints",
+            "group": "Parser",
             "pages": [
-              "api-reference/extraction",
-              "api-reference/parsing",
-              "api-reference/splitting",
-              "api-reference/classification",
-              "api-reference/pdf-editor"
+              "api-reference/parser/parse-document",
+              "api-reference/parser/get-parse-job-status"
             ]
           },
           {
-            "group": "Job Management",
+            "group": "Extraction",
             "pages": [
-              "api-reference/jobs/status",
-              "api-reference/jobs/results",
-              "api-reference/jobs/parse-status",
-              "api-reference/jobs/classification-status"
+              "api-reference/extraction/extract-data",
+              "api-reference/jobs/results"
+            ]
+          },
+          {
+            "group": "Classification",
+            "pages": [
+              "api-reference/classification/classify-document",
+              "api-reference/classification/get-classification-status"
+            ]
+          },
+          {
+            "group": "Splitting",
+            "pages": [
+              "api-reference/splitting/split-document"
+            ]
+          },
+          {
+            "group": "PDF Editor",
+            "pages": [
+              "api-reference/pdf-editor/edit-pdf"
             ]
           },
           {
             "group": "Organization",
             "pages": [
-              "api-reference/usage"
+              "api-reference/organization/usage"
             ]
           }
         ]
