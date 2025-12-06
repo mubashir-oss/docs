@@ -34,7 +34,7 @@
         "tab": "API Reference",
         "groups": [
           {
-            "group": "Parser",
+            "group": "Parsing",
             "pages": [
               "api-reference/parser/parse-document",
               "api-reference/parser/get-parse-job-status"

@@ -199,6 +199,11 @@
                     "type": "string",
                     "description": "Filter output to include only specific segment types. Accepts comma-separated list (e.g., 'table', 'picture', 'table,picture') or 'all' for everything (default: 'all')",
                     "default": "all"
+                  },
+                  "validate_table_segments": {
+                    "type": "boolean",
+                    "description": "Whether to validate and correct table segment types using VLM (default: false)",
+                    "default": false
                   }
                 },
                 "required": ["file"]
