@@ -67,6 +67,10 @@ The Parse Document endpoint processes PDFs, images (PNG, JPEG, TIFF), and office
   - `pagefooter`: Page footers
 </ParamField>
 
+<ParamField body="xml_citation" type="boolean">
+  Enable citation extraction from PDF documents. When enabled, the API extracts structured bibliography information and in-text citation references, hyperlinking them in the markdown output. Only applicable to PDF files. Default: false
+</ParamField>
+
 <ParamField body="output_fields" type="string">
   JSON configuration object to control which fields are included in the response. By default, all fields are included. Set fields to `false` to exclude them and reduce response size. Example: `{"html": false, "markdown": true, "ocr": false}`. Available fields: `html`, `markdown`, `ocr`, `image`, `llm`, `content`, `bbox`, `confidence`, `embed`.
 </ParamField>
@@ -143,6 +147,66 @@ The `merge_tables` parameter enables intelligent merging of tables that span acr
 - **Simplified Data Processing**: Work with complete tables instead of fragments
 - **Better Context**: Maintain full table context for analysis and extraction
 - **Reduced Post-Processing**: Eliminates need for manual table stitching
+
+### Citation Extraction (Research Papers)
+
+<Note>
+  This is a specialized feature for academic and research PDF documents. Not needed for general document parsing.
+</Note>
+
+The `xml_citation` parameter enables automatic extraction and linking of citations from research papers, academic articles, and scientific documents.
+
+**How It Works:**
+
+- Extracts structured bibliography from the document
+- Identifies in-text citation references (e.g., "Chen et al., 2021")
+- Hyperlinks citations in the markdown output to their bibliography entries
+- Returns structured citation metadata in the response
+
+**Example:**
+
+```json
+{
+  "xml_citation": true
+}
+```
+
+**Response Metadata:**
+
+When enabled, the response includes a `metadata` field with structured citation data:
+
+```json
+{
+  "metadata": {
+    "citations": [
+      {
+        "id": 1,
+        "title": "Deep Learning for NLP",
+        "authors": ["John Smith", "Jane Doe"],
+        "year": "2021",
+        "journal": "Nature",
+        "volume": "15",
+        "pages": "123-145",
+        "doi": "10.1000/example"
+      }
+    ],
+    "document_metadata": {
+      "title": "Document Title",
+      "authors": ["Author Name"]
+    }
+  }
+}
+```
+
+**Markdown Enhancement:**
+
+In-text citations are automatically hyperlinked:
+- Original: `"As shown by Chen et al. (2021)..."`
+- Enhanced: `"As shown by [Chen et al. (2021)](#ref-5)..."`
+
+<Warning>
+  Only available for PDF documents. This parameter is ignored for other file types (images, Office documents).
+</Warning>
 
 ### Content Type Filtering
 
@@ -631,6 +695,40 @@ else:
 files["file"][1].close()
 ```
 
+**Example with Citation Extraction (Academic Papers):**
+
+```python Python
+import requests
+
+url = "https://prod.visionapi.unsiloed.ai/parse"
+headers = {
+    "accept": "application/json",
+    "api-key": "your-api-key"
+}
+
+files = {
+    "file": ("research_paper.pdf", open("research_paper.pdf", "rb"), "application/pdf")
+}
+
+# Enable citation extraction for academic documents
+data = {
+    "use_high_resolution": "true",
+    "segmentation_method": "smart_layout_detection",
+    "ocr_mode": "auto_ocr",
+    "xml_citation": "true"
+}
+
+response = requests.post(url, headers=headers, files=files, data=data)
+
+if response.status_code == 200:
+    result = response.json()
+    print(f"Job ID: {result['job_id']}")
+else:
+    print("Error:", response.status_code, response.text)
+
+files["file"][1].close()
+```
+
 **Example with Segment Analysis:**
 
 ```python Python
@@ -964,6 +1062,19 @@ Extract only tabular data with minimal response size:
     "bbox": false,
     "confidence": false
   }
+}
+```
+
+### For Academic Documents (With Citations)
+
+Extract content with structured citations from research papers:
+
+```json
+{
+  "use_high_resolution": true,
+  "segmentation_method": "smart_layout_detection",
+  "ocr_mode": "auto_ocr",
+  "xml_citation": true
 }
 ```
 
