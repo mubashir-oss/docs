@@ -5,16 +5,17 @@ description: "Technical questions and answers about Unsiloed AI's API integratio
 
 # API FAQ
 
-Technical questions and answers for developers integrating with Unsiloed AI's APIs.
+Technical questions and answers for developers integrating with Unsiloed AI's APIs for ingesting multimodal unstructured data and converting it into structured Markdown and JSON.
 
 ## Getting Started with the API
 
 ### How do I get API access?
 
-1. **Create an account** at [unsiloed-ai.com](https://www.unsiloed-ai.com)
-2. **Navigate to your dashboard** after signing up
+1. **Create an account** at [unsiloed.ai](https://www.unsiloed.ai/login)
+2. **Navigate to your platform dashboard** after signing up
 3. **Generate API keys** in the API section
 4. **Start making requests** using our endpoints
+5. **Monitor usage** and track quota in your dashboard
 
 ### What is the base URL for the API?
 
@@ -26,6 +27,14 @@ https://prod.visionapi.unsiloed.ai
 ### How do I authenticate API requests?
 
 We use API key authentication. Include your API key in the request headers:
+
+```bash
+curl -H "api-key: YOUR_API_KEY" \
+     -H "Content-Type: application/json" \
+     https://prod.visionapi.unsiloed.ai/endpoint
+```
+
+Or for some endpoints that use Bearer tokens:
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
@@ -41,13 +50,16 @@ Keep your API keys secure and never expose them in client-side code or public re
 
 ### What are the main API endpoints?
 
-Our core endpoints include:
+Our core endpoints for converting unstructured data to structured formats:
 
-- **Document Extraction**: `/extraction` - Extract text and data from documents
-- **Document Parsing**: `/parsing` - Parse and structure document content
-- **Document Splitting**: `/splitter/split-pdf` - Split documents by classification
-- **Document Classification**: `/classification` - Classify document types
-- **Batch Processing**: `/batch` - Process multiple documents
+- **Extraction**: `POST /extract` - Extract structured data using JSON schemas, returns job_id
+- **Extraction Status**: `GET /extract/{job_id}` - Get extraction results with confidence scores
+- **Parsing**: `POST /parse` - Parse documents into structured chunks with metadata
+- **Parsing Status**: `GET /parse/{job_id}` - Get parsed content with element types
+- **Classification**: `POST /classify` - Classify documents into categories
+- **Classification Status**: `GET /classify/{job_id}` - Get classification with confidence
+- **Splitting**: `POST /splitter` - Split multi-document PDFs by category
+- **Splitting Status**: `GET /splitter/{job_id}` - Get split results
 
 ### What HTTP methods are supported?
 

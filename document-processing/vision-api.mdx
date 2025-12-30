@@ -24,16 +24,6 @@ This API provides powerful document processing capabilities using Vision models 
   </Card>
 </CardGroup>
 
-## How It Works
-
-The Vision API processes documents through several stages:
-
-1. **PDF Rendering**: Converts PDF pages to high-quality images
-2. **Vision Analysis**: Uses Vision models to understand document structure
-3. **Data Extraction**: Extracts information based on provided JSON schemas
-4. **Bounding Box Detection**: Identifies locations of extracted elements
-5. **Result Compilation**: Returns structured data with confidence scores and metadata
-
 ## JSON Schema Format
 
 All extraction schemas must follow the JSON Schema specification:
@@ -102,7 +92,7 @@ data = {
 
 # Make the extraction request
 response = requests.post(
-    'https://prod.visionapi.unsiloed.ai/cite',
+    'https://prod.visionapi.unsiloed.ai/extract',
     files=files,
     data=data,
     headers={'api-key': 'your-api-key'}
@@ -144,7 +134,7 @@ files = {'pdf_file': open('financial_report.pdf', 'rb')}
 data = {'schema_data': json.dumps(financial_schema)}
 
 response = requests.post(
-    'https://prod.visionapi.unsiloed.ai/cite',
+    'https://prod.visionapi.unsiloed.ai/extract',
     files=files,
     data=data,
     headers={'api-key': 'your-api-key'}
@@ -162,7 +152,7 @@ For large documents or batch processing, use the async endpoints:
 ```python
 # Start async extraction job
 response = requests.post(
-    'https://prod.visionapi.unsiloed.ai/cite',
+    'https://prod.visionapi.unsiloed.ai/extract',
     files=files,
     data=data,
     headers={'api-key': 'your-api-key'}
@@ -170,20 +160,12 @@ response = requests.post(
 
 job_id = response.json()['job_id']
 
-# Check job status
-status_response = requests.get(
-    f'https://prod.visionapi.unsiloed.ai/jobs/{job_id}',
+# Check job status and get results
+result_response = requests.get(
+    f'https://prod.visionapi.unsiloed.ai/extract/{job_id}',
     headers={'api-key': 'your-api-key'}
 )
-print(status_response.json())
-
-# Get results when completed
-if status_response.json()['status'] == 'completed':
-    result_response = requests.get(
-        f'https://prod.visionapi.unsiloed.ai/jobs/{job_id}/results',
-        headers={'api-key': 'your-api-key'}
-    )
-    results = result_response.json()
+print(result_response.json())
 ```
 
 ### Complex Schema Definition

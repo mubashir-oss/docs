@@ -1,6 +1,6 @@
 ---
 title: "Split Document"
-openapi: "/api-reference/openapi.json POST /splitter/split-pdf-v1"
+openapi: "/api-reference/openapi.json POST /splitter"
 description: "Split PDF documents by classifying pages into different categories"
 ---
 
@@ -54,7 +54,7 @@ The endpoint returns a JSON response containing information about the split PDF 
 
 ```bash cURL
 curl -X 'POST' \
-  'https://prod.visionapi.unsiloed.ai/splitter/split-pdf-v1?classes=invoice%2Creport' \
+  'https://prod.visionapi.unsiloed.ai/splitter?classes=invoice%2Creport' \
   -H 'accept: application/json' \
   -H 'api-key: your-api-key' \
   -H 'Content-Type: multipart/form-data' \
@@ -66,7 +66,7 @@ curl -X 'POST' \
 import requests
 import json
 
-url = "https://prod.visionapi.unsiloed.ai/splitter/split-pdf-v1"
+url = "https://prod.visionapi.unsiloed.ai/splitter"
 
 # Define categories with descriptions for better accuracy
 categories = {
@@ -120,7 +120,7 @@ const params = new URLSearchParams({
   classes: 'invoice,contract,report'
 });
 
-const response = await fetch(`https://prod.visionapi.unsiloed.ai/splitter/split-pdf-v1?${params}`, {
+const response = await fetch(`https://prod.visionapi.unsiloed.ai/splitter?${params}`, {
   method: 'POST',
   headers: {
     'api-key': 'your-api-key'

@@ -1,0 +1,36 @@
+/* OVERRIDE ALL LOGO STYLES - Maximum specificity */
+
+/* Target the nav-logo class with ALL its Tailwind classes including px-1 */
+img.nav-logo.h-6.w-auto.relative.object-contain.block.px-1,
+img.nav-logo.px-1,
+img.nav-logo.h-6.px-1,
+img.nav-logo.h-6.w-auto.relative.object-contain.block,
+img.nav-logo.h-6.w-auto,
+img.nav-logo.h-6,
+.nav-logo.h-6,
+img.h-6[src*="unsiloed"],
+img[class*="nav-logo"],
+img.dark\:hidden[src*="unsiloed"],
+img.hidden[src*="unsiloed"],
+img[src*="unsiloed_light"],
+img[src*="unsiloed_dark"] {
+  height: 80px !important;
+  max-height: 80px !important;
+  min-height: 80px !important;
+  width: auto !important;
+  padding: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin: 0 !important;
+}
+
+/* Target parent link */
+a[href*="unsiloed-ai.com"] {
+  padding: 0 !important;
+  margin: 0 !important;
+  margin-right: 24px !important;
+  display: inline-block !important;
+}
+

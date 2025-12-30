@@ -8,7 +8,7 @@ description: "Intelligent document parsing and structure analysis through advanc
 Document parsing in our Vision API is achieved through intelligent chunking strategies that analyze document structure using advanced AI and vision language models. The parsing functionality identifies different document elements like text blocks, tables, images, headers, and footers while maintaining proper reading order and extracting content with high accuracy.
 
 <Note>
-Parsing capabilities are accessed through the `/chunking` endpoint, which combines structure detection with content extraction and intelligent segmentation.
+Parsing capabilities are accessed through the `/parse` endpoint, which combines structure detection with content extraction and intelligent segmentation.
 </Note>
 
 ## Key Features
@@ -47,15 +47,12 @@ The parsing system can identify and process the following element types through 
 - **Picture**: Images, charts, and diagrams
 - **Formula**: Mathematical equations and expressions
 
-## Parsing Through Chunking Strategies
-
-### Semantic Parsing with Chunking
+## Quick Start
 
 ```python
 import requests
 
-# Parse and chunk document semantically
-url = "https://prod.visionapi.unsiloed.ai/chunking"
+url = "https://prod.visionapi.unsiloed.ai/parse"
 headers = {
     "accept": "application/json",
     "X-API-Key": "your-api-key"
@@ -65,107 +62,83 @@ files = {
     "document_file": ("document.pdf", open("document.pdf", "rb"), "application/pdf")
 }
 
-data = {
-    "strategy": "semantic",  # Uses AI for intelligent parsing
-    "chunk_size": 1000,
-    "overlap": 100
-}
+# Create parsing job
+response = requests.post(url, headers=headers, files=files)
+job_id = response.json()['job_id']
 
-response = requests.post(url, headers=headers, files=files, data=data)
-job_info = response.json()
-
-print(f"Parsing job started: {job_info['job_id']}")
-
-# Check job status
-status_url = f"https://prod.visionapi.unsiloed.ai/jobs/{job_info['job_id']}"
-status_response = requests.get(status_url, headers=headers)
-print(f"Status: {status_response.json()['status']}")
+# Get results
+result = requests.get(f"{url}/{job_id}", headers=headers)
+print(result.json())
 ```
 
-## Parsing Strategies
-
-### Semantic Parsing (Recommended)
-Uses advanced AI to intelligently identify and group document elements. Best for maintaining semantic context and understanding document structure.
-
-### Hybrid Parsing
-Multi-modal processing that combines table extraction, image analysis, and enhanced metadata extraction. Most comprehensive parsing option.
-
-### Heading-Based Parsing
-Analyzes document structure based on detected headings and section hierarchy. Ideal for structured documents with clear heading patterns.
-
-### Page-Based Parsing
-Processes documents page by page, maintaining page boundaries. Useful for documents where page structure is important.
+<Note>
+For detailed API parameters and configuration options, see the [Parse API Reference](/api-reference/parser/parse-document).
+</Note>
 
 ## Response Format
 
-### Chunked Parsing Results
-
-When using chunking strategies (`/chunking`), you get parsed content organized into meaningful chunks:
+Parsed content is organized into chunks with segments containing rich metadata, bounding boxes, and extracted content:
 
 ```json
 {
-  "job_id": "b2094b38-e432-44b6-a5d0-67bed07d5de1",
-  "status": "completed",
-  "result": {
-    "chunks": [
-      {
-        "content": "Annual Financial Report 2023\n\nExecutive Summary\n\nThis report presents our financial performance for the fiscal year 2023...",
-        "metadata": {
-          "chunk_index": 0,
-          "page_numbers": [1],
-          "element_types": ["Title", "Section-header", "Text"],
-          "reading_order": [0, 1, 2],
-          "confidence_scores": [0.95, 0.92, 0.88]
+  "job_id": "04a7a6d8-5ef7-465a-b22a-8a98e7104dd9",
+  "status": "Succeeded",
+  "created_at": "2025-10-22T06:51:16.870302Z",
+  "started_at": "2025-10-22T06:51:16.966136Z",
+  "finished_at": "2025-10-22T06:57:19.821541Z",
+  "total_chunks": 25,
+  "chunks": [
+    {
+      "segments": [
+        {
+          "segment_type": "Picture",
+          "content": "eternal",
+          "image": "https://s3.us-east-1.amazonaws.com/unsiloed-bucket/...",
+          "page_number": 1,
+          "segment_id": "1c60ecbd-b6da-493c-b3f6-6849337a981f",
+          "confidence": 0.6062846,
+          "page_width": 1191.0,
+          "page_height": 1684.0,
+          "html": "<p>The image displays a logo...</p>",
+          "markdown": "Eternal Logo\n\nThe image displays a logo...",
+          "bbox": {
+            "left": 72.92226,
+            "top": 62.030334,
+            "width": 230.36308,
+            "height": 55.395317
+          },
+          "ocr": [
+            {
+              "bbox": {
+                "left": 63.753525,
+                "top": 5.395447,
+                "width": 164.45312,
+                "height": 42.757812
+              },
+              "text": "eternal",
+              "confidence": 0.9999992
+            }
+          ]
         }
-      },
-      {
-        "content": "Financial Performance\n\n| Quarter | Revenue | Profit |\n|---------|---------|--------|\n| Q1 | $1.2M | $200K |\n| Q2 | $1.4M | $280K |",
-        "metadata": {
-          "chunk_index": 1,
-          "page_numbers": [1, 2],
-          "element_types": ["Section-header", "Table"],
-          "reading_order": [3, 4],
-          "confidence_scores": [0.91, 0.92]
-        }
-      }
-    ],
-    "total_chunks": 2,
-    "processing_metadata": {
-      "strategy_used": "semantic",
-      "total_pages": 2,
-      "total_elements_detected": 8,
-      "processing_time": 4.2
+      ]
     }
-  }
+  ]
 }
 ```
 
-## Advanced Parsing Features
+### Response Fields
 
-### Multi-Format Support
+- **`chunks`**: Array of content chunks, each containing multiple segments
+- **`segments`**: Document elements with type, content, and positioning data
+- **`segment_type`**: Element classification (Title, Text, Table, Picture, etc.)
+- **`bbox`**: Bounding box coordinates for spatial location
+- **`ocr`**: OCR results with text, confidence, and word-level bounding boxes
+- **`html`** / **`markdown`**: Multi-format content representations
+- **`confidence`**: AI model confidence score for element detection
 
-The parsing system supports multiple document formats:
+## Use Cases
 
-```python
-# Parse different document types
-document_types = [
-    ("document.pdf", "application/pdf"),
-    ("presentation.pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"),
-    ("report.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-]
-    
-for filename, content_type in document_types:
-    files = {"document_file": (filename, open(filename, "rb"), content_type)}
-    response = requests.post(chunking_url, headers=headers, files=files, data=data)
-    print(f"Parsed {filename}: {response.json()['job_id']}")
-```
-
-### Element-Specific Processing
-
-Different element types are processed with specialized methods:
-
-- **Text Elements**: OCR with post-processing for clarity
-- **Tables**: Structured extraction maintaining column/row relationships  
-- **Images**: Vision analysis for content description
-- **Formulas**: Mathematical expression recognition
-- **Headers/Footers**: Context-aware text extraction
+- **Document Q&A**: Extract structured content for RAG applications
+- **Content Migration**: Parse and convert documents to markdown or HTML
+- **Data Extraction**: Identify and extract specific document sections
+- **Archive Processing**: Batch process large document collections

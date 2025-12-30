@@ -20,7 +20,7 @@
     }
   ],
   "paths": {
-    "/cite": {
+    "/extract": {
       "post": {
         "summary": "Extract Data",
         "description": "Extract structured data from PDF documents using custom schemas for citation and data extraction",
@@ -41,7 +41,10 @@
                     "description": "JSON schema defining the structure and fields to extract from the document"
                   }
                 },
-                "required": ["pdf_file", "schema_data"]
+                "required": [
+                  "pdf_file",
+                  "schema_data"
+                ]
               }
             }
           }
@@ -112,10 +115,17 @@
                     "description": "Number of PDFs to process in each batch"
                   }
                 },
-                "required": ["pdf_files", "schema_data"]
+                "required": [
+                  "pdf_files",
+                  "schema_data"
+                ]
               },
               "encoding": {
-                "pdf_files": { "contentType": "application/pdf", "explode": true, "style": "form" }
+                "pdf_files": {
+                  "contentType": "application/pdf",
+                  "explode": true,
+                  "style": "form"
+                }
               }
             }
           }
@@ -181,13 +191,19 @@
                   "segmentation_method": {
                     "type": "string",
                     "description": "Document segmentation strategy",
-                    "enum": ["smart_layout_detection", "page_by_page"],
+                    "enum": [
+                      "smart_layout_detection",
+                      "page_by_page"
+                    ],
                     "default": "smart_layout_detection"
                   },
                   "ocr_mode": {
                     "type": "string",
                     "description": "OCR processing strategy",
-                    "enum": ["auto_ocr", "full_ocr"],
+                    "enum": [
+                      "auto_ocr",
+                      "full_ocr"
+                    ],
                     "default": "auto_ocr"
                   },
                   "merge_tables": {
@@ -211,7 +227,9 @@
                     "default": false
                   }
                 },
-                "required": ["file"]
+                "required": [
+                  "file"
+                ]
               }
             }
           }
@@ -276,10 +294,20 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "pdf_file": { "type": "string", "format": "binary", "description": "PDF file to classify" },
-                  "conditions": { "type": "string", "description": "JSON string list of categories e.g. ['category1', 'category2']" }
+                  "pdf_file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "PDF file to classify"
+                  },
+                  "conditions": {
+                    "type": "string",
+                    "description": "JSON string list of categories e.g. ['category1', 'category2']"
+                  }
                 },
-                "required": ["pdf_file", "conditions"]
+                "required": [
+                  "pdf_file",
+                  "conditions"
+                ]
               }
             }
           }
@@ -287,10 +315,31 @@
         "responses": {
           "202": {
             "description": "Accepted - job started",
-            "content": { "application/json": { "schema": { "type": "object", "properties": { "job_id": {"type":"string"}, "status": {"type":"string"}, "message": {"type":"string"} } } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "job_id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
-        "security": [ { "apiKeyAuth": [] } ]
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
       }
     },
     "/pdf-editor/edit/reparse": {
@@ -328,7 +377,10 @@
                     "description": "Optional list of image files to upload and use for image replacements"
                   }
                 },
-                "required": ["file", "edit_request"]
+                "required": [
+                  "file",
+                  "edit_request"
+                ]
               }
             }
           }
@@ -406,40 +458,14 @@
         "summary": "Split Document",
         "description": "Split PDF documents by classifying pages into categories",
         "parameters": [
-          { "in": "query", "name": "classes", "schema": {"type": "string"}, "required": true, "description": "Comma-separated categories" }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": { "type": "string", "format": "binary", "description": "PDF to split" },
-                  "categories": { "type": "string", "description": "JSON string with category descriptions" }
-                },
-                "required": ["file"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": { "description": "Split started", "content": { "application/json": { "schema": { "type": "object" } } } }
-        },
-        "security": [ { "apiKeyAuth": [] } ]
-      }
-    },
-    "/splitter/split-pdf-v1": {
-      "post": {
-        "summary": "Split Document (v1)",
-        "description": "Split PDF documents by classifying pages into categories",
-        "parameters": [
           {
             "in": "query",
             "name": "classes",
-            "schema": { "type": "string" },
+            "schema": {
+              "type": "string"
+            },
             "required": true,
-            "description": "Comma-separated categories (e.g., invoice,contract)"
+            "description": "Comma-separated categories"
           }
         ],
         "requestBody": {
@@ -449,13 +475,19 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "file": { "type": "string", "format": "binary", "description": "PDF file to split" },
-                  "categories": { "type": "string", "description": "JSON string with category descriptions" }
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "PDF to split"
+                  },
+                  "categories": {
+                    "type": "string",
+                    "description": "JSON string with category descriptions"
+                  }
                 },
-                "required": ["file"]
-              },
-              "encoding": {
-                "file": { "contentType": "application/pdf" }
+                "required": [
+                  "file"
+                ]
               }
             }
           }
@@ -463,10 +495,20 @@
         "responses": {
           "200": {
             "description": "Split started",
-            "content": { "application/json": { "schema": { "type": "object" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
           }
         },
-        "security": [ { "apiKeyAuth": [] } ]
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
       }
     },
     "/parse/{job_id}": {
@@ -477,7 +519,9 @@
           {
             "in": "path",
             "name": "job_id",
-            "schema": { "type": "string" },
+            "schema": {
+              "type": "string"
+            },
             "required": true,
             "description": "The unique identifier of the parsing job to check"
           }
@@ -490,13 +534,34 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "job_id": { "type": "string", "description": "Unique identifier for the parsing job" },
-                    "status": { "type": "string", "description": "Current job status: Starting, Processing, Succeeded, or Failed" },
-                    "created_at": { "type": "string", "description": "Timestamp when the job was created" },
-                    "started_at": { "type": "string", "description": "Timestamp when processing started" },
-                    "finished_at": { "type": "string", "description": "Timestamp when processing completed" },
-                    "total_chunks": { "type": "number", "description": "Number of chunks in the document" },
-                    "chunks": { "type": "array", "description": "Array of document chunks with detailed analysis" }
+                    "job_id": {
+                      "type": "string",
+                      "description": "Unique identifier for the parsing job"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Current job status: Starting, Processing, Succeeded, or Failed"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "description": "Timestamp when the job was created"
+                    },
+                    "started_at": {
+                      "type": "string",
+                      "description": "Timestamp when processing started"
+                    },
+                    "finished_at": {
+                      "type": "string",
+                      "description": "Timestamp when processing completed"
+                    },
+                    "total_chunks": {
+                      "type": "number",
+                      "description": "Number of chunks in the document"
+                    },
+                    "chunks": {
+                      "type": "array",
+                      "description": "Array of document chunks with detailed analysis"
+                    }
                   }
                 }
               }
@@ -509,7 +574,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "detail": { "type": "string" }
+                    "detail": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -522,14 +589,20 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "detail": { "type": "array" }
+                    "detail": {
+                      "type": "array"
+                    }
                   }
                 }
               }
             }
           }
         },
-        "security": [ { "apiKeyAuth": [] } ]
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
       }
     },
     "/jobs/{job_id}": {
@@ -540,7 +613,9 @@
           {
             "in": "path",
             "name": "job_id",
-            "schema": { "type": "string" },
+            "schema": {
+              "type": "string"
+            },
             "required": true,
             "description": "The unique identifier of the job to check"
           }
@@ -553,17 +628,33 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "job_id": { "type": "string", "description": "Unique identifier for the job" },
-                    "status": { "type": "string", "description": "Current job status" },
-                    "created_at": { "type": "string", "description": "Timestamp when the job was created" },
-                    "message": { "type": "string", "description": "Status message about the job" }
+                    "job_id": {
+                      "type": "string",
+                      "description": "Unique identifier for the job"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Current job status"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "description": "Timestamp when the job was created"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Status message about the job"
+                    }
                   }
                 }
               }
             }
           }
         },
-        "security": [ { "apiKeyAuth": [] } ]
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
       }
     },
     "/jobs/{job_id}/result": {
@@ -574,7 +665,9 @@
           {
             "in": "path",
             "name": "job_id",
-            "schema": { "type": "string" },
+            "schema": {
+              "type": "string"
+            },
             "required": true,
             "description": "The unique identifier of the job"
           }
@@ -592,7 +685,11 @@
             }
           }
         },
-        "security": [ { "apiKeyAuth": [] } ]
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
       }
     },
     "/classify/{job_id}": {
@@ -603,7 +700,9 @@
           {
             "in": "path",
             "name": "job_id",
-            "schema": { "type": "string" },
+            "schema": {
+              "type": "string"
+            },
             "required": true,
             "description": "The unique identifier of the classification job"
           }
@@ -621,7 +720,11 @@
             }
           }
         },
-        "security": [ { "apiKeyAuth": [] } ]
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
       }
     },
     "/org/get_usage": {
@@ -705,7 +808,144 @@
             }
           }
         },
-        "security": [ { "apiKeyAuth": [] } ]
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/extract/{job_id}": {
+      "get": {
+        "summary": "Get Extraction Job Status",
+        "description": "Check the status and retrieve results of extraction jobs",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "The unique identifier of the extraction job"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Extraction job status and results retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Extraction job status and results"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/splitter": {
+      "post": {
+        "summary": "Split Document (v1)",
+        "description": "Split PDF documents by classifying pages into categories",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "classes",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Comma-separated categories (e.g., invoice,contract)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "PDF file to split"
+                  },
+                  "categories": {
+                    "type": "string",
+                    "description": "JSON string with category descriptions"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              },
+              "encoding": {
+                "file": {
+                  "contentType": "application/pdf"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Split started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/splitter/{job_id}": {
+      "get": {
+        "summary": "Get Split Status",
+        "description": "Check the status and retrieve results of document splitting jobs",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "The unique identifier of the splitting job"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Split job status and results retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Split job status and results"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
       }
     }
   },

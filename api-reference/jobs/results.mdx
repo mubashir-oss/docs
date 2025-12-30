@@ -1,6 +1,6 @@
 ---
 title: "Get Extraction Job Status"
-openapi: "/api-reference/openapi.json GET /jobs/{job_id}/result"
+openapi: "/api-reference/openapi.json GET /extract/{job_id}"
 description: "Retrieve the results of a completed processing job"
 ---
 
@@ -41,7 +41,7 @@ The response structure depends on the job type (extraction, parsing, classificat
 <RequestExample>
 
 ```bash cURL
-curl -X GET "https://prod.visionapi.unsiloed.ai/jobs/b2094b38-e432-44b6-a5d0-67bed07d5de1/result" \
+curl -X GET "https://prod.visionapi.unsiloed.ai/extract/b2094b38-e432-44b6-a5d0-67bed07d5de1" \
   -H "X-API-Key: your-api-key"
 ```
 
@@ -49,7 +49,7 @@ curl -X GET "https://prod.visionapi.unsiloed.ai/jobs/b2094b38-e432-44b6-a5d0-67b
 import requests
 
 job_id = "b2094b38-e432-44b6-a5d0-67bed07d5de1"
-url = f"https://prod.visionapi.unsiloed.ai/jobs/{job_id}/result"
+url = f"https://prod.visionapi.unsiloed.ai/extract/{job_id}"
 headers = {"X-API-Key": "your-api-key"}
 
 response = requests.get(url, headers=headers)
@@ -75,7 +75,7 @@ else:
 
 ```javascript JavaScript
 const jobId = 'b2094b38-e432-44b6-a5d0-67bed07d5de1';
-const response = await fetch(`https://prod.visionapi.unsiloed.ai/jobs/${jobId}/result`, {
+const response = await fetch(`https://prod.visionapi.unsiloed.ai/extract/${jobId}`, {
   headers: {
     'X-API-Key': 'your-api-key'
   }
@@ -259,7 +259,7 @@ def process_document_with_results(file_path, schema, api_key):
     data = {"schema_data": json.dumps(schema)}
     
     response = requests.post(
-        "https://prod.visionapi.unsiloed.ai/cite",
+        "https://prod.visionapi.unsiloed.ai/extract",
         files=files,
         data=data,
         headers=headers
@@ -274,7 +274,7 @@ def process_document_with_results(file_path, schema, api_key):
     # Step 2: Poll for completion
     while True:
         status_response = requests.get(
-            f"https://prod.visionapi.unsiloed.ai/jobs/{job_id}",
+            f"https://prod.visionapi.unsiloed.ai/extract/{job_id}",
             headers=headers
         )
         
@@ -294,7 +294,7 @@ def process_document_with_results(file_path, schema, api_key):
     
     # Step 3: Get results
     results_response = requests.get(
-        f"https://prod.visionapi.unsiloed.ai/jobs/{job_id}/result",
+        f"https://prod.visionapi.unsiloed.ai/extract/{job_id}",
         headers=headers
     )
     

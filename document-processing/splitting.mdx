@@ -8,7 +8,7 @@ description: "Split PDF documents by classifying pages into different categories
 The Document Splitting feature analyzes PDF pages, classifies them into predefined categories, and creates separate PDF files for each category. This is ideal for processing mixed document batches like scanned files containing invoices, contracts, and reports.
 
 <Note>
-The splitting process returns a ZIP file containing the split documents, with classification and confidence score data provided in response headers.
+Splitting jobs are processed asynchronously. Submit a splitting job and poll the status endpoint to retrieve results when complete.
 </Note>
 
 ## How It Works
@@ -34,50 +34,87 @@ You can split documents into various categories:
 
 ## API Usage
 
-### Basic Request
-
-```bash
-curl -X POST "https://prod.visionapi.unsiloed.ai/splitter/split-pdf-v1?classes=invoice,contract,report" \
-  -H "Content-Type: multipart/form-data" \
-  -H "api-key: your-api-key" \
-  -F "file=@mixed_documents.pdf" \
-  --output split_documents.zip
-```
-
-### With Category Descriptions
+### Submit Split Job with File Upload
 
 ```python
 import requests
 import json
 
-url = "https://prod.visionapi.unsiloed.ai/splitter/split-pdf-v1"
-
-# Define categories with descriptions for better accuracy
-categories = {
-    "invoice": "Business invoices with itemized charges and payment terms",
-    "contract": "Legal agreements, terms of service, and binding documents", 
-    "report": "Analytical reports, summaries, and data presentations"
-}
-
-files = {"file": ("mixed_documents.pdf", open("mixed_documents.pdf", "rb"), "application/pdf")}
-params = {"classes": "invoice,contract,report"}
-data = {"categories": json.dumps(categories)}
+url = "https://prod.visionapi.unsiloed.ai/splitter"
 headers = {"api-key": "your-api-key"}
 
-response = requests.post(url, files=files, params=params, data=data, headers=headers)
+# Define categories with optional descriptions for better accuracy
+categories = [
+    {"name": "Invoice", "description": "Financial invoices with itemized charges"},
+    {"name": "Receipt", "description": "Purchase receipts"},
+    {"name": "Contract"}  # Description is optional
+]
+
+files = {"file": ("mixed_documents.pdf", open("mixed_documents.pdf", "rb"), "application/pdf")}
+data = {"categories": json.dumps(categories)}
+
+response = requests.post(url, files=files, data=data, headers=headers)
 
 if response.status_code == 200:
-    with open("split_documents.zip", "wb") as f:
-        f.write(response.content)
-    
-    # Get classification results
-    classifications = json.loads(response.headers.get("X-Classifications", "{}"))
-    confidence_scores = json.loads(response.headers.get("X-Confidence-Scores", "{}"))
-    
-    print("Split completed successfully!")
-    for page, category in classifications.items():
-        confidence = confidence_scores.get(page, 0)
-        print(f"Page {page}: {category} (confidence: {confidence:.2f})")
+    result = response.json()
+    job_id = result['job_id']
+    print(f"Split job created: {job_id}")
+    print(f"Status: {result['status']}")
+    print(f"Quota remaining: {result['quota_remaining']}")
+else:
+    print(f"Error: {response.status_code}")
+    print(response.text)
 
 files["file"][1].close()
+```
+
+### Submit Split Job with File URL
+
+```python
+import requests
+import json
+
+url = "https://prod.visionapi.unsiloed.ai/splitter"
+headers = {"api-key": "your-api-key"}
+
+categories = [
+    {"name": "Invoice", "description": "Financial invoices"},
+    {"name": "Receipt", "description": "Purchase receipts"}
+]
+
+data = {
+    "file_url": "https://example.com/document.pdf",
+    "categories": json.dumps(categories)
+}
+
+response = requests.post(url, data=data, headers=headers)
+
+if response.status_code == 200:
+    result = response.json()
+    print(f"Split job created: {result['job_id']}")
+else:
+    print(f"Error: {response.status_code}")
+```
+
+### Check Split Job Status
+
+```python
+import requests
+
+url = "https://prod.visionapi.unsiloed.ai/splitter"
+job_id = "550e8400-e29b-41d4-a716-446655440000"
+headers = {"api-key": "your-api-key"}
+
+response = requests.get(f"{url}/{job_id}", headers=headers)
+
+if response.status_code == 200:
+    job = response.json()
+    print(f"Status: {job['status']}")
+    print(f"Progress: {job['progress']}")
+
+    if job['status'] == 'completed' and 'result' in job:
+        split_results = job['result']['split_results']
+        print(f"Documents split into {len(split_results)} categories")
+else:
+    print(f"Error: {response.status_code}")
 ```

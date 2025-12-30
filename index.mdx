@@ -1,32 +1,141 @@
 ---
 title: Introduction
-description: 'Welcome to Unsiloed AI - Transform Unstructured  Data with AI-Powered Document Processing'
+description: 'Unsiloed AI is the unstructured data interface for LLMs and AI agents, turning complex documents into structured Markdown and JSON.'
 ---
 
-<img
-  className="block dark:hidden"
-  src="/UnsiloedAILogo.webp"
-  alt="Unsiloed AI Logo"
-/>
-<img
-  className="hidden dark:block"
-  src="/UnsiloedAILogo.webp"
-  alt="Unsiloed AI Logo"
-/>
+# Welcome to Unsiloed AI
 
-## What is Unsiloed AI?
+AI teams spend 6+ months building document workflows, yet fewer than 10% ever reach production. Generic LLM parsers and OCR collapse on multimodal documents with text, tables, images, and charts. Poor parsing and suboptimal chunking cripple RAG pipelines and downstream automation.
 
-Unsiloed AI is a cutting-edge platform that transforms unstructured  documents into structured, actionable data using advanced AI agents. Our platform specializes in processing complex financial documents like annual reports, earnings statements, regulatory filings, and investment documents with unprecedented accuracy and speed.
+Unsiloed AI has built state-of-the-art vision models that serve as the infrastructure layer for turning unstructured data into structured, queryable, and LLM-ready assets. Our APIs are already parsing hundreds of thousands of documents for startups and NASDAQ-listed enterprises, powering vertical AI solutions across industries.
 
-### API Endpoints
-<CardGroup cols={2}>
+On public benchmarks, Unsiloed AI consistently outperforms solutions from LlamaIndex, Gemini, Mistral, and Unstructured.io.
+
+## Quick Access
+
+<CardGroup cols={3}>
   <Card
-    title="Api reference"
-    icon="eye"
-    href="/api-reference/extraction"
+    title="Demo"
+    icon="play"
+    href="https://www.unsiloed.ai/demo"
   >
-    Api reference
+    Demo UI for visualizing bounding boxes and Unsiloed API output
   </Card>
- 
+  <Card
+    title="Platform"
+    icon="cube"
+    href="https://www.unsiloed.ai/login"
+  >
+    Manage API keys, configure webhooks, monitor usage, and track jobs
+  </Card>
+  <Card
+    title="API Reference"
+    icon="book-open"
+    href="/api-reference/extraction/extract-data"
+  >
+    Explore our complete API documentation with interactive examples
+  </Card>
 </CardGroup>
 
+## Core Capabilities
+
+<CardGroup cols={2}>
+  <Card
+    title="Intelligent Extraction"
+    icon="database"
+  >
+    Extract structured data from documents using custom JSON schemas. Define exactly what you need, and our Vision API will locate and extract it with confidence scores and bounding boxes.
+  </Card>
+  <Card
+    title="Advanced Parsing"
+    icon="file-text"
+  >
+    Parse documents into structured chunks with semantic understanding. Identify headers, tables, images, formulas, and maintain proper reading order using AI-powered analysis.
+  </Card>
+  <Card
+    title="Document Classification"
+    icon="tags"
+  >
+    Automatically classify documents by type with high accuracy. Route different document types to appropriate processing pipelines.
+  </Card>
+  <Card
+    title="Smart Splitting"
+    icon="scissors"
+  >
+    Intelligently split multi-document PDFs into individual documents. Perfect for processing batches of scanned documents or merged files.
+  </Card>
+</CardGroup>
+
+## Why Unsiloed AI?
+
+<CardGroup cols={2}>
+  <Card
+    title="Production-Ready Performance"
+    icon="bolt"
+  >
+    - Asynchronous job processing for large documents
+    - High confidence scores with bounding box precision
+    - Multi-format support (PDF, DOCX, PPTX, images)
+    - Scalable infrastructure for enterprise workloads
+  </Card>
+  <Card
+    title="Developer-Friendly API"
+    icon="laptop-code"
+  >
+    - RESTful API with clear documentation
+    - JSON Schema-based extraction for flexibility
+    - Comprehensive error handling and validation
+    - Interactive API playground for testing
+  </Card>
+</CardGroup>
+
+## Common Use Cases
+
+- **Financial Document Processing**: Extract data from annual reports, earnings statements, shareholding patterns, and regulatory filings
+- **Invoice & Receipt Processing**: Parse invoices, receipts, and purchase orders into structured formats
+- **Contract Analysis**: Extract key terms, dates, parties, and obligations from legal documents
+- **Document Workflow Automation**: Classify, route, and process documents automatically
+- **Research & Compliance**: Parse and analyze large volumes of documents for specific information
+
+### Getting Started
+
+<Steps>
+  <Step title="Get API Access">
+    Sign up at [unsiloed.ai](https://www.unsiloed.ai/login) and generate your API key from the dashboard.
+  </Step>
+  <Step title="Make Your First Request">
+    Use our API to extract data from a document. Check out the [extraction guide](/document-processing/vision-api) to get started.
+  </Step>
+  <Step title="Explore Advanced Features">
+    Learn about parsing strategies, classification, splitting, and batch processing to build powerful document workflows.
+  </Step>
+</Steps>
+
+## API Base URL
+
+All API requests should be made to:
+
+```
+https://prod.visionapi.unsiloed.ai
+```
+
+Authentication is required using your API key in the `api-key` header.
+
+## Need Help?
+
+<CardGroup cols={2}>
+  <Card
+    title="Documentation"
+    icon="book"
+    href="/document-processing/vision-api"
+  >
+    Explore our comprehensive guides and API reference
+  </Card>
+  <Card
+    title="Support"
+    icon="envelope"
+    href="mailto:hello@unsiloed-ai.com"
+  >
+    Contact our team at hello@unsiloed-ai.com
+  </Card>
+</CardGroup>

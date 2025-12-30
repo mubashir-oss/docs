@@ -29,7 +29,32 @@
   },
   "navigation": {
     "tabs": [
-    
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "index"
+            ]
+          },
+          {
+            "group": "Document Processing",
+            "pages": [
+              "document-processing/vision-api",
+              "document-processing/parsing",
+              "document-processing/classification",
+              "document-processing/splitting"
+            ]
+          },
+          {
+            "group": "FAQ",
+            "pages": [
+              "faq/general"
+            ]
+          }
+        ]
+      },
       {
         "tab": "API Reference",
         "groups": [
@@ -57,7 +82,8 @@
           {
             "group": "Splitting",
             "pages": [
-              "api-reference/splitting/split-document"
+              "api-reference/splitting/split-document",
+              "api-reference/splitting/get-split-status"
             ]
           },
           {
@@ -77,12 +103,16 @@
     ]
   },
   "logo": {
-    "light": "/UnsiloedAILogo.webp",
-    "dark": "/UnsiloedAILogo.webp",
+    "light": "/unsiloed_light.png",
+    "dark": "/unsiloed_dark.png",
     "href": "https://www.unsiloed-ai.com"
   },
   "navbar": {
     "links": [
+      {
+        "label": "Login",
+        "href": "https://www.unsiloed.ai/login"
+      },
       {
         "label": "Support",
         "href": "mailto:hello@unsiloed-ai.com"
@@ -90,8 +120,8 @@
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
-      "href": "https://www.unsiloed-ai.com/dashboard"
+      "label": "Demo",
+      "href": "https://www.unsiloed.ai/demo"
     }
   },
   "footer": {
@@ -100,5 +130,6 @@
       "github": "https://github.com/unsiloed-ai",
       "linkedin": "https://linkedin.com/company/unsiloed-ai"
     }
-  }
+  },
+  "customCSS": "/custom.css"
 }

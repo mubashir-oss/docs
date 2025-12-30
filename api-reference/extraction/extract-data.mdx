@@ -1,6 +1,6 @@
 ---
 title: "Extract Data"
-openapi: "/api-reference/openapi.json POST /cite"
+openapi: "/api-reference/openapi.json POST /extract"
 description: "Extract structured data from PDF documents using custom schemas for citation and data extraction"
 ---
 
@@ -156,7 +156,7 @@ For a simple financial document schema:
 <RequestExample>
 
 ```bash cURL
-curl -X POST "https://prod.visionapi.unsiloed.ai/cite" \
+curl -X POST "https://prod.visionapi.unsiloed.ai/extract" \
   -H "accept: application/json" \
   -H "api-key: your-api-key" \
   -H "Content-Type: multipart/form-data" \
@@ -168,7 +168,7 @@ curl -X POST "https://prod.visionapi.unsiloed.ai/cite" \
 import requests
 import json
 
-url = "https://prod.visionapi.unsiloed.ai/cite"
+url = "https://prod.visionapi.unsiloed.ai/extract"
 headers = {
     "accept": "application/json",
     "api-key": "your-api-key"
@@ -267,7 +267,7 @@ const schema = {
 
 formData.append('schema_data', JSON.stringify(schema));
 
-const response = await fetch('https://prod.visionapi.unsiloed.ai/cite', {
+const response = await fetch('https://prod.visionapi.unsiloed.ai/extract', {
   method: 'POST',
   headers: {
     'accept': 'application/json',
@@ -620,10 +620,10 @@ import requests
 
 def wait_for_extraction_completion(job_id, api_key):
     """Poll job status until completion"""
-    
+
     headers = {"api-key": api_key}
-    status_url = f"https://prod.visionapi.unsiloed.ai/jobs/{job_id}"
-    
+    status_url = f"https://prod.visionapi.unsiloed.ai/extract/{job_id}"
+
     while True:
         response = requests.get(status_url, headers=headers)
         
@@ -632,15 +632,9 @@ def wait_for_extraction_completion(job_id, api_key):
             print(f"Job status: {status_data['status']}")
             
             if status_data['status'] == 'completed':
-                # Get results
-                results_url = f"https://prod.visionapi.unsiloed.ai/jobs/{job_id}/results"
-                results_response = requests.get(results_url, headers=headers)
-                
-                if results_response.status_code == 200:
-                    return results_response.json()
-                else:
-                    raise Exception(f"Failed to get results: {results_response.text}")
-                    
+                # Results are already in the status response
+                return status_data
+
             elif status_data['status'] == 'failed':
                 raise Exception(f"Job failed: {status_data.get('error', 'Unknown error')}")
                 

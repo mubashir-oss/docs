@@ -1,0 +1,181 @@
+---
+title: "Get Split Status"
+openapi: "/api-reference/openapi.json GET /splitter/{job_id}"
+description: "Check the status and retrieve results of document splitting jobs"
+---
+
+## Overview
+
+The Get Split Status endpoint retrieves the status and results of a document splitting job. Use this endpoint to check if splitting is complete and download the resulting split documents.
+
+<Note>
+Splitting jobs are processed asynchronously. Poll this endpoint to check completion status.
+</Note>
+
+## Response
+
+<ResponseField name="job_id" type="string">
+  Unique identifier for the splitting job
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Current job status: "Starting", "Processing", "Succeeded", or "Failed"
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  Timestamp when the job was created
+</ResponseField>
+
+<ResponseField name="finished_at" type="string">
+  Timestamp when processing completed (only present when status is "Succeeded" or "Failed")
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  Split documents and classification data (only present when status is "Succeeded")
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X GET "https://prod.visionapi.unsiloed.ai/splitter/04a7a6d8-5ef7-465a-b22a-8a98e7104dd9" \
+  -H "accept: application/json" \
+  -H "api-key: your-api-key"
+```
+
+```python Python
+import requests
+
+def get_split_status(job_id, api_key):
+    """Get the status of a splitting job"""
+
+    url = f"https://prod.visionapi.unsiloed.ai/splitter/{job_id}"
+    headers = {"api-key": api_key}
+
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        job = response.json()
+        print(f"Job Status: {job['status']}")
+
+        if job['status'] == 'Succeeded':
+            print("Split completed successfully!")
+            return job
+        elif job['status'] == 'Failed':
+            print(f"Job failed: {job.get('message', 'Unknown error')}")
+            return None
+        elif job['status'] in ['Starting', 'Processing']:
+            print("Job is currently being processed...")
+            return job
+    else:
+        print("Error:", response.status_code, response.text)
+        return None
+
+# Usage
+job_id = "04a7a6d8-5ef7-465a-b22a-8a98e7104dd9"
+result = get_split_status(job_id, "your-api-key")
+```
+
+```javascript JavaScript
+async function getSplitStatus(jobId, apiKey) {
+  const response = await fetch(`https://prod.visionapi.unsiloed.ai/splitter/${jobId}`, {
+    headers: {
+      'accept': 'application/json',
+      'api-key': apiKey
+    }
+  });
+
+  if (response.ok) {
+    const job = await response.json();
+    console.log('Job Status:', job.status);
+
+    switch (job.status) {
+      case 'Succeeded':
+        console.log('Split completed successfully!');
+        return job;
+      case 'Failed':
+        console.log('Job failed:', job.message || 'Unknown error');
+        return null;
+      case 'Starting':
+      case 'Processing':
+        console.log('Job is currently being processed...');
+        return job;
+      default:
+        console.log('Unknown status:', job.status);
+        return job;
+    }
+  } else {
+    console.error('Failed to get job status:', await response.text());
+    return null;
+  }
+}
+
+// Usage
+const jobId = '04a7a6d8-5ef7-465a-b22a-8a98e7104dd9';
+const result = await getSplitStatus(jobId, 'your-api-key');
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json Succeeded Job
+{
+  "job_id": "04a7a6d8-5ef7-465a-b22a-8a98e7104dd9",
+  "status": "Succeeded",
+  "created_at": "2025-10-22T06:51:16.870302Z",
+  "finished_at": "2025-10-22T06:57:19.821541Z",
+  "results": {
+    "classifications": {
+      "1": "invoice",
+      "2": "invoice",
+      "3": "contract",
+      "4": "contract",
+      "5": "report"
+    },
+    "confidence_scores": {
+      "1": 0.95,
+      "2": 0.93,
+      "3": 0.89,
+      "4": 0.91,
+      "5": 0.87
+    },
+    "split_documents": [
+      {
+        "category": "invoice",
+        "pages": [1, 2],
+        "file_url": "https://s3.amazonaws.com/..."
+      },
+      {
+        "category": "contract",
+        "pages": [3, 4],
+        "file_url": "https://s3.amazonaws.com/..."
+      },
+      {
+        "category": "report",
+        "pages": [5],
+        "file_url": "https://s3.amazonaws.com/..."
+      }
+    ]
+  }
+}
+```
+
+```json Processing Job
+{
+  "job_id": "04a7a6d8-5ef7-465a-b22a-8a98e7104dd9",
+  "status": "Processing",
+  "created_at": "2025-10-22T06:51:16.870302Z"
+}
+```
+
+```json Failed Job
+{
+  "job_id": "04a7a6d8-5ef7-465a-b22a-8a98e7104dd9",
+  "status": "Failed",
+  "created_at": "2025-10-22T06:51:16.870302Z",
+  "finished_at": "2025-10-22T06:51:25.123456Z",
+  "message": "Failed to process document: Invalid PDF format"
+}
+```
+
+</ResponseExample>
