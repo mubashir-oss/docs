@@ -1,0 +1,624 @@
+---
+title: "Document Splitting"
+description: "Split multi-document files by page categories using the Unsiloed Python SDK"
+---
+
+# Document Splitting
+
+The Split API intelligently separates multi-document PDF files into individual documents based on page categories. Perfect for processing scanned document batches, mixed file uploads, or consolidated reports.
+
+## Basic Usage
+
+### Synchronous
+
+```python
+from unsiloed_sdk import UnsiloedClient, Category
+
+categories = [
+    Category(name="Cover Page", description="Document cover or title page"),
+    Category(name="Main Content", description="Primary document content")
+]
+
+with UnsiloedClient(api_key="your-api-key") as client:
+    result = client.split_and_wait(
+        file="report.pdf",
+        categories=categories
+    )
+
+    if result.result['success']:
+        print(f"✓ {result.result['message']}")
+
+        for file_info in result.result['files']:
+            print(f"\nFile: {file_info['name']}")
+            print(f"  Pages: {file_info['page_numbers']}")
+            print(f"  Confidence: {file_info['confidence_score']:.2%}")
+            print(f"  Download: {file_info['full_path']}")
+```
+
+### Async
+
+```python
+import asyncio
+from unsiloed_sdk import AsyncUnsiloedClient, Category
+
+async def main():
+    categories = [
+        Category("Invoice", "Invoice documents"),
+        Category("Receipt", "Receipt documents")
+    ]
+
+    async with AsyncUnsiloedClient(api_key="your-api-key") as client:
+        result = await client.split_and_wait(
+            file="mixed_docs.pdf",
+            categories=categories
+        )
+
+        if result.result['success']:
+            print(f"Split into {len(result.result['files'])} files")
+
+asyncio.run(main())
+```
+
+## Split Methods
+
+### 1. split_and_wait() - Automatic Polling (Recommended)
+
+```python
+result = client.split_and_wait(
+    file="document.pdf",
+    categories=categories,
+    poll_interval=2.0,
+    max_wait=1800.0  # 30 minutes (splits can take longer)
+)
+```
+
+<Note>
+  Document splitting can take longer than other operations, especially for large files. The default timeout is 30 minutes.
+</Note>
+
+### 2. split() - Start Job
+
+```python
+response = client.split(
+    file="document.pdf",
+    categories=categories
+)
+
+print(f"Job ID: {response.job_id}")
+```
+
+### 3. get_split_result() - Check Status
+
+```python
+result = client.get_split_result(job_id="your-job-id")
+
+if result.status == "completed":
+    print("Split complete!")
+    print(result.result)
+elif result.status == "failed":
+    print(f"Split failed: {result.error}")
+```
+
+## Categories
+
+Categories define how to split the document. Each page is classified into one of the provided categories, and consecutive pages of the same category are grouped together.
+
+### Using Category Objects (Recommended)
+
+```python
+from unsiloed_sdk import Category
+
+categories = [
+    Category(
+        name="Invoice",
+        description="Invoice pages with billing information"
+    ),
+    Category(
+        name="Receipt",
+        description="Receipt pages showing payment confirmation"
+    ),
+    Category(
+        name="Statement",
+        description="Account statement pages"
+    )
+]
+
+result = client.split_and_wait(
+    file="batch.pdf",
+    categories=categories
+)
+```
+
+### Using Strings
+
+```python
+categories = ["Invoice", "Receipt", "Contract"]
+
+result = client.split_and_wait(
+    file="batch.pdf",
+    categories=categories
+)
+```
+
+<Tip>
+  Using `Category` objects with descriptions significantly improves splitting accuracy.
+</Tip>
+
+## Input Options
+
+### From File Path
+
+```python
+result = client.split_and_wait(
+    file="batch.pdf",
+    categories=categories
+)
+```
+
+<Warning>
+  The Split API requires PDF files. Other formats are not supported.
+</Warning>
+
+### From File Bytes
+
+```python
+with open("batch.pdf", "rb") as f:
+    file_bytes = f.read()
+
+result = client.split_and_wait(
+    file=file_bytes,
+    categories=categories
+)
+```
+
+### From URL
+
+```python
+result = client.split_and_wait(
+    file_url="https://example.com/batch.pdf",
+    categories=categories
+)
+```
+
+## Response Structure
+
+### SplitResponse Object
+
+```python
+@dataclass
+class SplitResponse:
+    job_id: str                    # Unique job identifier
+    status: str                    # "completed", "failed", "processing"
+    progress: Optional[str]        # Progress information
+    file_url: Optional[str]        # Original file URL
+    file_name: Optional[str]       # Original file name
+    parameters: Optional[Dict]     # Split parameters used
+    result: Optional[Dict]         # Split results
+    error: Optional[str]           # Error message if failed
+    quota_remaining: Optional[int] # Remaining API quota
+```
+
+### Result Structure
+
+```python
+{
+    "success": True,
+    "message": "Document split successfully into 3 files",
+    "files": [
+        {
+            "name": "Invoice_pages_1-2.pdf",
+            "category": "Invoice",
+            "page_numbers": [1, 2],
+            "confidence_score": 0.95,
+            "full_path": "https://s3.../Invoice_pages_1-2.pdf"
+        },
+        {
+            "name": "Receipt_pages_3-4.pdf",
+            "category": "Receipt",
+            "page_numbers": [3, 4],
+            "confidence_score": 0.92,
+            "full_path": "https://s3.../Receipt_pages_3-4.pdf"
+        }
+    ]
+}
+```
+
+## Real-World Examples
+
+### Splitting Scanned Mail
+
+```python
+from unsiloed_sdk import UnsiloedClient, Category
+
+categories = [
+    Category("Letter", "Personal or business letters"),
+    Category("Invoice", "Bills and invoices"),
+    Category("Statement", "Bank or credit card statements"),
+    Category("Advertisement", "Marketing materials and ads"),
+    Category("Other", "Miscellaneous documents")
+]
+
+with UnsiloedClient(api_key="your-api-key") as client:
+    result = client.split_and_wait(
+        file="scanned_mail.pdf",
+        categories=categories
+    )
+
+    if result.result['success']:
+        print(f"Split {result.file_name} into {len(result.result['files'])} documents")
+
+        for file_info in result.result['files']:
+            print(f"\n{file_info['category']}: Pages {file_info['page_numbers']}")
+            print(f"  Confidence: {file_info['confidence_score']:.2%}")
+            print(f"  Download: {file_info['full_path']}")
+```
+
+### Splitting Medical Records
+
+```python
+categories = [
+    Category("Patient Info", "Patient demographic and contact information"),
+    Category("Medical History", "Patient medical history and past conditions"),
+    Category("Lab Results", "Laboratory test results"),
+    Category("Prescription", "Medication prescriptions"),
+    Category("Doctor Notes", "Physician notes and observations"),
+    Category("Insurance", "Insurance information and claims")
+]
+
+result = client.split_and_wait(
+    file="patient_records.pdf",
+    categories=categories
+)
+```
+
+### Splitting Legal Filings
+
+```python
+categories = [
+    Category("Cover Sheet", "Filing cover sheets"),
+    Category("Complaint", "Legal complaint documents"),
+    Category("Evidence", "Evidence and exhibits"),
+    Category("Motion", "Legal motions"),
+    Category("Correspondence", "Letters and correspondence")
+]
+
+result = client.split_and_wait(
+    file="court_filing.pdf",
+    categories=categories
+)
+```
+
+### Splitting Financial Reports
+
+```python
+categories = [
+    Category("Executive Summary", "High-level overview and summary"),
+    Category("Balance Sheet", "Financial position statements"),
+    Category("Income Statement", "Revenue and expense statements"),
+    Category("Cash Flow", "Cash flow statements"),
+    Category("Notes", "Footnotes and additional information")
+]
+
+result = client.split_and_wait(
+    file="annual_report.pdf",
+    categories=categories
+)
+```
+
+## Downloading Split Files
+
+The split files are returned as URLs. Here's how to download them:
+
+```python
+import requests
+from pathlib import Path
+
+def download_split_files(result, output_dir="output"):
+    """Download all split files from result"""
+    output_path = Path(output_dir)
+    output_path.mkdir(exist_ok=True)
+
+    if not result.result['success']:
+        print(f"Split failed: {result.result['message']}")
+        return []
+
+    downloaded_files = []
+
+    for file_info in result.result['files']:
+        file_name = file_info['name']
+        file_url = file_info['full_path']
+
+        print(f"Downloading {file_name}...")
+
+        response = requests.get(file_url)
+        if response.status_code == 200:
+            file_path = output_path / file_name
+            file_path.write_bytes(response.content)
+            downloaded_files.append(str(file_path))
+            print(f"  Saved to {file_path}")
+        else:
+            print(f"  Failed to download: {response.status_code}")
+
+    return downloaded_files
+
+# Use the function
+result = client.split_and_wait(file="batch.pdf", categories=categories)
+files = download_split_files(result, output_dir="split_documents")
+```
+
+## Batch Splitting
+
+Process multiple documents concurrently:
+
+```python
+import asyncio
+from unsiloed_sdk import AsyncUnsiloedClient, Category
+
+async def split_batch():
+    categories = [
+        Category("Invoice", "Invoice documents"),
+        Category("Receipt", "Receipt documents"),
+        Category("Statement", "Statement documents")
+    ]
+
+    async with AsyncUnsiloedClient(api_key="your-api-key") as client:
+        files = ["batch1.pdf", "batch2.pdf", "batch3.pdf"]
+
+        tasks = [
+            client.split_and_wait(file=f, categories=categories)
+            for f in files
+        ]
+
+        results = await asyncio.gather(*tasks)
+
+        for file, result in zip(files, results):
+            if result.result['success']:
+                num_splits = len(result.result['files'])
+                print(f"{file}: Split into {num_splits} documents")
+            else:
+                print(f"{file}: Failed - {result.result['message']}")
+
+asyncio.run(split_batch())
+```
+
+## Analyzing Split Results
+
+### Count Documents by Category
+
+```python
+from collections import Counter
+
+def analyze_split_results(result):
+    if not result.result['success']:
+        print("Split failed")
+        return
+
+    categories = [f['category'] for f in result.result['files']]
+    category_counts = Counter(categories)
+
+    print(f"Total documents: {len(categories)}")
+    print("\nBreakdown by category:")
+    for category, count in category_counts.items():
+        print(f"  {category}: {count}")
+
+    # Calculate average confidence
+    confidences = [f['confidence_score'] for f in result.result['files']]
+    avg_confidence = sum(confidences) / len(confidences)
+    print(f"\nAverage confidence: {avg_confidence:.2%}")
+
+    # Flag low confidence splits
+    low_confidence = [
+        f for f in result.result['files']
+        if f['confidence_score'] < 0.7
+    ]
+
+    if low_confidence:
+        print(f"\nLow confidence splits ({len(low_confidence)}):")
+        for file_info in low_confidence:
+            print(f"  {file_info['name']}: {file_info['confidence_score']:.2%}")
+
+result = client.split_and_wait(file="batch.pdf", categories=categories)
+analyze_split_results(result)
+```
+
+### Export Split Metadata
+
+```python
+import json
+import pandas as pd
+
+def export_split_metadata(result, format="json"):
+    """Export split results metadata"""
+    if not result.result['success']:
+        return None
+
+    metadata = []
+    for file_info in result.result['files']:
+        metadata.append({
+            "file_name": file_info['name'],
+            "category": file_info['category'],
+            "pages": file_info['page_numbers'],
+            "page_count": len(file_info['page_numbers']),
+            "confidence": file_info['confidence_score'],
+            "url": file_info['full_path']
+        })
+
+    if format == "json":
+        with open("split_metadata.json", "w") as f:
+            json.dump(metadata, f, indent=2)
+        print("Exported to split_metadata.json")
+
+    elif format == "csv":
+        df = pd.DataFrame(metadata)
+        df.to_csv("split_metadata.csv", index=False)
+        print("Exported to split_metadata.csv")
+
+    return metadata
+
+result = client.split_and_wait(file="batch.pdf", categories=categories)
+metadata = export_split_metadata(result, format="csv")
+```
+
+## Building a Document Processing Pipeline
+
+```python
+from unsiloed_sdk import UnsiloedClient, Category
+import requests
+from pathlib import Path
+
+def process_split_documents(input_file, categories, output_dir="processed"):
+    """Complete pipeline: split, download, and organize documents"""
+
+    output_path = Path(output_dir)
+
+    with UnsiloedClient(api_key="your-api-key") as client:
+        # Step 1: Split the document
+        print(f"Splitting {input_file}...")
+        result = client.split_and_wait(
+            file=input_file,
+            categories=categories
+        )
+
+        if not result.result['success']:
+            print(f"Split failed: {result.result['message']}")
+            return
+
+        print(f"Split into {len(result.result['files'])} documents")
+
+        # Step 2: Download and organize by category
+        for file_info in result.result['files']:
+            category = file_info['category']
+            file_name = file_info['name']
+            file_url = file_info['full_path']
+
+            # Create category directory
+            category_dir = output_path / category
+            category_dir.mkdir(parents=True, exist_ok=True)
+
+            # Download file
+            print(f"Downloading {file_name} to {category}/...")
+            response = requests.get(file_url)
+
+            if response.status_code == 200:
+                file_path = category_dir / file_name
+                file_path.write_bytes(response.content)
+                print(f"  ✓ Saved")
+
+                # Step 3: Further processing based on category
+                if category == "Invoice":
+                    process_invoice(file_path)
+                elif category == "Receipt":
+                    process_receipt(file_path)
+                # Add more category-specific processing
+
+def process_invoice(file_path):
+    """Process invoice documents"""
+    print(f"  Processing invoice: {file_path.name}")
+    # Extract invoice data, update accounting system, etc.
+
+def process_receipt(file_path):
+    """Process receipt documents"""
+    print(f"  Processing receipt: {file_path.name}")
+    # Extract receipt data, match with expenses, etc.
+
+# Use the pipeline
+categories = [
+    Category("Invoice", "Invoice documents"),
+    Category("Receipt", "Receipt documents"),
+    Category("Statement", "Account statements")
+]
+
+process_split_documents("batch.pdf", categories, output_dir="organized_docs")
+```
+
+## Error Handling
+
+```python
+from unsiloed_sdk import (
+    UnsiloedClient,
+    InvalidRequestError,
+    TimeoutError,
+    APIError
+)
+
+try:
+    result = client.split_and_wait(
+        file="batch.pdf",
+        categories=categories,
+        max_wait=1800  # 30 minutes
+    )
+
+    if result.result['success']:
+        print(f"Success: {result.result['message']}")
+    else:
+        print(f"Split failed: {result.result['message']}")
+
+except InvalidRequestError as e:
+    print(f"Invalid request: {e.message}")
+    print("Ensure you're using a PDF file and valid categories")
+except TimeoutError:
+    print("Split operation timed out")
+    print("Try with a smaller file or increase max_wait")
+except APIError as e:
+    print(f"API error: {e.message}")
+```
+
+## Best Practices
+
+<Steps>
+  <Step title="Use Descriptive Categories">
+    Provide clear category names and descriptions for better accuracy
+  </Step>
+
+  <Step title="Keep Categories Distinct">
+    Ensure categories are mutually exclusive and clearly different
+  </Step>
+
+  <Step title="Check File Size">
+    Large PDF files may take longer to split; adjust timeout accordingly
+  </Step>
+
+  <Step title="Verify Confidence Scores">
+    Review low-confidence splits manually
+  </Step>
+
+  <Step title="Organize Output">
+    Download and organize split files by category
+  </Step>
+
+  <Step title="Handle Failures Gracefully">
+    Always check `result['success']` before processing files
+  </Step>
+
+  <Step title="Use Async for Multiple Files">
+    Process multiple batch files concurrently with AsyncUnsiloedClient
+  </Step>
+</Steps>
+
+## Common Use Cases
+
+### Mail Room Automation
+Split scanned mail batches into individual documents for routing
+
+### Medical Records Management
+Separate patient record batches by document type
+
+### Legal Document Processing
+Split case file batches into individual documents
+
+### Financial Document Organization
+Separate mixed financial documents by type
+
+### HR Document Processing
+Split employee file batches by document category
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/sdks/python/error-handling">
+    Learn how to handle errors effectively
+  </Card>
+  <Card title="Examples" icon="code" href="/sdks/python/examples">
+    View complete code examples
+  </Card>
+</CardGroup>

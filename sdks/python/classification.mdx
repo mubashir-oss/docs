@@ -1,0 +1,569 @@
+---
+title: "Document Classification"
+description: "Classify documents into predefined categories using the Unsiloed Python SDK"
+---
+
+# Document Classification
+
+The Classify API automatically categorizes documents into predefined categories using AI-powered classification with confidence scores.
+
+## Basic Usage
+
+### Synchronous
+
+```python
+from unsiloed_sdk import UnsiloedClient
+
+with UnsiloedClient(api_key="your-api-key") as client:
+    result = client.classify_and_wait(
+        file="document.pdf",
+        categories=["Invoice", "Receipt", "Contract", "Letter"]
+    )
+
+    print(f"Document type: {result.result['classification']}")
+    print(f"Confidence: {result.result['confidence']:.2%}")
+```
+
+### Async
+
+```python
+import asyncio
+from unsiloed_sdk import AsyncUnsiloedClient
+
+async def main():
+    async with AsyncUnsiloedClient(api_key="your-api-key") as client:
+        result = await client.classify_and_wait(
+            file="document.pdf",
+            categories=["Invoice", "Receipt", "Contract", "Letter"]
+        )
+
+        print(f"Type: {result.result['classification']}")
+        print(f"Confidence: {result.result['confidence']:.2%}")
+
+asyncio.run(main())
+```
+
+## Classification Methods
+
+### 1. classify_and_wait() - Automatic Polling (Recommended)
+
+```python
+result = client.classify_and_wait(
+    file="document.pdf",
+    categories=["Invoice", "Receipt", "Purchase Order"],
+    poll_interval=2.0,
+    max_wait=600.0
+)
+```
+
+### 2. classify() - Start Job
+
+```python
+response = client.classify(
+    file="document.pdf",
+    categories=["Invoice", "Receipt", "Contract"]
+)
+
+print(f"Job ID: {response.job_id}")
+print(f"Status: {response.status}")
+```
+
+### 3. get_classify_result() - Check Status
+
+```python
+result = client.get_classify_result(job_id="your-job-id")
+
+if result.status == "completed":
+    print(f"Classification: {result.result['classification']}")
+elif result.status == "failed":
+    print(f"Failed: {result.error}")
+```
+
+## Categories
+
+### Simple Categories (Strings)
+
+```python
+categories = ["Invoice", "Receipt", "Contract", "Letter", "Form"]
+
+result = client.classify_and_wait(
+    file="document.pdf",
+    categories=categories
+)
+```
+
+### Categories with Descriptions
+
+Use the `Category` class to provide descriptions that help with classification accuracy:
+
+```python
+from unsiloed_sdk import UnsiloedClient, Category
+
+categories = [
+    Category(
+        name="Invoice",
+        description="A bill or invoice requesting payment for goods or services"
+    ),
+    Category(
+        name="Receipt",
+        description="A proof of payment document showing a transaction was completed"
+    ),
+    Category(
+        name="Purchase Order",
+        description="A formal document from a buyer to a seller indicating types, quantities, and agreed prices"
+    ),
+    Category(
+        name="Contract",
+        description="A legally binding agreement between two or more parties"
+    )
+]
+
+result = client.classify_and_wait(
+    file="document.pdf",
+    categories=categories
+)
+```
+
+<Tip>
+  Adding descriptions improves classification accuracy, especially for similar or ambiguous document types.
+</Tip>
+
+## Input Options
+
+### From File Path
+
+```python
+result = client.classify_and_wait(
+    file="document.pdf",
+    categories=["Invoice", "Receipt"]
+)
+```
+
+### From File Bytes
+
+```python
+with open("document.pdf", "rb") as f:
+    file_bytes = f.read()
+
+result = client.classify_and_wait(
+    file=file_bytes,
+    categories=["Invoice", "Receipt"]
+)
+```
+
+### From URL
+
+```python
+result = client.classify_and_wait(
+    file_url="https://example.com/document.pdf",
+    categories=["Invoice", "Receipt"]
+)
+```
+
+## Response Structure
+
+### ClassifyResponse Object
+
+```python
+@dataclass
+class ClassifyResponse:
+    job_id: str                    # Unique job identifier
+    status: str                    # "completed", "failed", "processing"
+    progress: Optional[str]        # Progress information
+    message: Optional[str]         # Status message
+    result: Optional[Dict]         # Classification results
+    error: Optional[str]           # Error message if failed
+    quota_remaining: Optional[int] # Remaining API quota
+```
+
+### Result Structure
+
+```python
+{
+    "classification": "Invoice",  # Predicted category
+    "confidence": 0.95           # Confidence score (0.0-1.0)
+}
+```
+
+## Real-World Examples
+
+### Financial Document Classification
+
+```python
+from unsiloed_sdk import UnsiloedClient, Category
+
+categories = [
+    Category("Invoice", "Invoice or bill requesting payment"),
+    Category("Receipt", "Proof of payment"),
+    Category("Bank Statement", "Monthly bank account statement"),
+    Category("Tax Document", "Tax forms, W2, 1099, etc."),
+    Category("Financial Report", "Quarterly or annual financial reports")
+]
+
+with UnsiloedClient(api_key="your-api-key") as client:
+    result = client.classify_and_wait(
+        file="financial_doc.pdf",
+        categories=categories
+    )
+
+    doc_type = result.result['classification']
+    confidence = result.result['confidence']
+
+    print(f"Document Type: {doc_type}")
+    print(f"Confidence: {confidence:.2%}")
+
+    if confidence < 0.8:
+        print("Warning: Low confidence classification")
+```
+
+### Legal Document Classification
+
+```python
+categories = [
+    Category("Contract", "Legal contracts and agreements"),
+    Category("NDA", "Non-disclosure agreements"),
+    Category("Terms of Service", "Terms and conditions documents"),
+    Category("Legal Notice", "Legal notifications and notices"),
+    Category("Power of Attorney", "Authorization documents"),
+    Category("Court Filing", "Court documents and filings")
+]
+
+result = client.classify_and_wait(
+    file="legal_doc.pdf",
+    categories=categories
+)
+```
+
+### Medical Document Classification
+
+```python
+categories = [
+    Category("Medical Record", "Patient medical records and history"),
+    Category("Lab Report", "Laboratory test results"),
+    Category("Prescription", "Medical prescriptions"),
+    Category("Insurance Claim", "Health insurance claims"),
+    Category("Discharge Summary", "Hospital discharge documents"),
+    Category("Referral", "Doctor referral forms")
+]
+
+result = client.classify_and_wait(
+    file="medical_doc.pdf",
+    categories=categories
+)
+```
+
+### HR Document Classification
+
+```python
+categories = [
+    Category("Resume", "Job candidate resumes and CVs"),
+    Category("Job Application", "Completed job application forms"),
+    Category("Offer Letter", "Employment offer letters"),
+    Category("Performance Review", "Employee performance evaluations"),
+    Category("Termination Letter", "Employment termination documents"),
+    Category("Benefits Enrollment", "Employee benefits forms")
+]
+
+result = client.classify_and_wait(
+    file="hr_doc.pdf",
+    categories=categories
+)
+```
+
+## Batch Classification
+
+Classify multiple documents concurrently:
+
+```python
+import asyncio
+from unsiloed_sdk import AsyncUnsiloedClient, Category
+
+async def classify_batch():
+    categories = [
+        Category("Invoice", "Bills and invoices"),
+        Category("Receipt", "Payment receipts"),
+        Category("Contract", "Legal contracts")
+    ]
+
+    async with AsyncUnsiloedClient(api_key="your-api-key") as client:
+        files = [
+            "doc1.pdf",
+            "doc2.pdf",
+            "doc3.pdf",
+            "doc4.pdf",
+            "doc5.pdf"
+        ]
+
+        # Classify all documents concurrently
+        tasks = [
+            client.classify_and_wait(file=f, categories=categories)
+            for f in files
+        ]
+
+        results = await asyncio.gather(*tasks)
+
+        # Process results
+        for file, result in zip(files, results):
+            if result.status == "completed":
+                classification = result.result['classification']
+                confidence = result.result['confidence']
+                print(f"{file}: {classification} ({confidence:.2%})")
+            else:
+                print(f"{file}: Classification failed")
+
+asyncio.run(classify_batch())
+```
+
+## Building a Document Router
+
+Use classification to route documents to different processing pipelines:
+
+```python
+from unsiloed_sdk import UnsiloedClient, Category
+
+def process_invoice(file_path):
+    """Process invoice documents"""
+    print(f"Processing {file_path} as invoice...")
+    # Invoice-specific processing logic
+
+def process_receipt(file_path):
+    """Process receipt documents"""
+    print(f"Processing {file_path} as receipt...")
+    # Receipt-specific processing logic
+
+def process_contract(file_path):
+    """Process contract documents"""
+    print(f"Processing {file_path} as contract...")
+    # Contract-specific processing logic
+
+def route_document(file_path):
+    """Classify and route document to appropriate processor"""
+    categories = [
+        Category("Invoice", "Bills requesting payment"),
+        Category("Receipt", "Proof of payment"),
+        Category("Contract", "Legal agreements"),
+        Category("Other", "Other document types")
+    ]
+
+    with UnsiloedClient(api_key="your-api-key") as client:
+        result = client.classify_and_wait(
+            file=file_path,
+            categories=categories
+        )
+
+        doc_type = result.result['classification']
+        confidence = result.result['confidence']
+
+        # Only route if confidence is high enough
+        if confidence < 0.7:
+            print(f"Low confidence ({confidence:.2%}), manual review needed")
+            return
+
+        # Route to appropriate processor
+        processors = {
+            "Invoice": process_invoice,
+            "Receipt": process_receipt,
+            "Contract": process_contract
+        }
+
+        processor = processors.get(doc_type)
+        if processor:
+            processor(file_path)
+        else:
+            print(f"Unknown document type: {doc_type}")
+
+# Use the router
+route_document("document.pdf")
+```
+
+## Classification with Confidence Thresholds
+
+```python
+def classify_with_threshold(file_path, categories, min_confidence=0.8):
+    """Classify document and handle low confidence cases"""
+    with UnsiloedClient(api_key="your-api-key") as client:
+        result = client.classify_and_wait(
+            file=file_path,
+            categories=categories
+        )
+
+        classification = result.result['classification']
+        confidence = result.result['confidence']
+
+        if confidence >= min_confidence:
+            print(f"High confidence: {classification} ({confidence:.2%})")
+            return classification, True
+        else:
+            print(f"Low confidence: {classification} ({confidence:.2%})")
+            print("Recommend manual review")
+            return classification, False
+
+# Use with threshold
+doc_type, is_confident = classify_with_threshold(
+    "document.pdf",
+    ["Invoice", "Receipt", "Contract"],
+    min_confidence=0.85
+)
+```
+
+## Monitoring Classification Results
+
+Track classification accuracy over time:
+
+```python
+import asyncio
+from collections import Counter
+from unsiloed_sdk import AsyncUnsiloedClient
+
+async def analyze_classification_batch():
+    categories = ["Invoice", "Receipt", "Contract", "Other"]
+
+    async with AsyncUnsiloedClient(api_key="your-api-key") as client:
+        files = [f"doc_{i}.pdf" for i in range(100)]
+
+        tasks = [
+            client.classify_and_wait(file=f, categories=categories)
+            for f in files
+        ]
+
+        results = await asyncio.gather(*tasks)
+
+        # Analyze results
+        classifications = [r.result['classification'] for r in results if r.status == "completed"]
+        confidences = [r.result['confidence'] for r in results if r.status == "completed"]
+
+        print(f"Total classified: {len(classifications)}")
+        print(f"\nDistribution:")
+        for cat, count in Counter(classifications).items():
+            print(f"  {cat}: {count} ({count/len(classifications):.1%})")
+
+        print(f"\nAverage confidence: {sum(confidences)/len(confidences):.2%}")
+        print(f"Min confidence: {min(confidences):.2%}")
+        print(f"Max confidence: {max(confidences):.2%}")
+
+        # Flag low confidence classifications
+        low_confidence = [
+            (files[i], r.result['classification'], r.result['confidence'])
+            for i, r in enumerate(results)
+            if r.status == "completed" and r.result['confidence'] < 0.8
+        ]
+
+        if low_confidence:
+            print(f"\nLow confidence classifications ({len(low_confidence)}):")
+            for file, classification, confidence in low_confidence:
+                print(f"  {file}: {classification} ({confidence:.2%})")
+
+asyncio.run(analyze_classification_batch())
+```
+
+## Error Handling
+
+```python
+from unsiloed_sdk import (
+    UnsiloedClient,
+    InvalidRequestError,
+    TimeoutError,
+    APIError
+)
+
+try:
+    result = client.classify_and_wait(
+        file="document.pdf",
+        categories=["Invoice", "Receipt"],
+        max_wait=120  # 2 minutes
+    )
+
+    if result.status == "completed":
+        print(f"Success: {result.result['classification']}")
+    elif result.status == "failed":
+        print(f"Classification failed: {result.error}")
+
+except InvalidRequestError as e:
+    print(f"Invalid request: {e.message}")
+    print("Check that you provided at least one category")
+except TimeoutError:
+    print("Classification timed out")
+except APIError as e:
+    print(f"API error: {e.message}")
+```
+
+## Best Practices
+
+<Steps>
+  <Step title="Provide Clear Categories">
+    Use descriptive category names that clearly distinguish document types
+  </Step>
+
+  <Step title="Add Descriptions">
+    Include descriptions with categories to improve accuracy
+  </Step>
+
+  <Step title="Use Appropriate Categories">
+    Keep categories distinct and non-overlapping
+  </Step>
+
+  <Step title="Set Confidence Thresholds">
+    Define minimum confidence levels for auto-routing
+  </Step>
+
+  <Step title="Handle Low Confidence">
+    Route low-confidence classifications for manual review
+  </Step>
+
+  <Step title="Monitor Performance">
+    Track classification accuracy over time
+  </Step>
+
+  <Step title="Start with Few Categories">
+    Begin with 3-5 categories and expand as needed
+  </Step>
+</Steps>
+
+## Common Use Cases
+
+### Email Attachment Classification
+
+```python
+# Classify incoming email attachments
+categories = [
+    Category("Invoice", "Vendor invoices"),
+    Category("Receipt", "Purchase receipts"),
+    Category("Report", "Business reports"),
+    Category("Spam", "Unwanted or irrelevant documents")
+]
+```
+
+### Document Management System
+
+```python
+# Automatically tag documents in DMS
+categories = [
+    Category("Financial", "Financial documents"),
+    Category("Legal", "Legal documents"),
+    Category("HR", "Human resources documents"),
+    Category("Operations", "Operational documents"),
+    Category("Marketing", "Marketing materials")
+]
+```
+
+### Compliance Monitoring
+
+```python
+# Identify documents requiring compliance review
+categories = [
+    Category("Requires Review", "Documents needing compliance check"),
+    Category("Pre-Approved", "Documents matching approved templates"),
+    Category("Exempt", "Documents exempt from review")
+]
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Splitting" icon="scissors" href="/sdks/python/splitting">
+    Split documents by page categories
+  </Card>
+  <Card title="Examples" icon="code" href="/sdks/python/examples">
+    View complete code examples
+  </Card>
+</CardGroup>
