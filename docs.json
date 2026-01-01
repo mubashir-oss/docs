@@ -48,19 +48,6 @@
             ]
           },
           {
-            "group": "Python SDK",
-            "pages": [
-              "sdks/python/overview",
-              "sdks/python/authentication",
-              "sdks/python/parsing",
-              "sdks/python/extraction",
-              "sdks/python/classification",
-              "sdks/python/splitting",
-              "sdks/python/error-handling",
-              "sdks/python/examples"
-            ]
-          },
-          {
             "group": "FAQ",
             "pages": [
               "faq/general"
