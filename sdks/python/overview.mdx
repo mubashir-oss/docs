@@ -1,0 +1,172 @@
+---
+title: "Python SDK Overview"
+description: "Official Python SDK for Unsiloed Vision API - Parse, Extract, Classify, and Split documents with ease"
+---
+
+# Unsiloed Python SDK
+
+The official Python SDK for [Unsiloed](https://unsiloed.ai) provides a powerful and intuitive interface to interact with the Unsiloed Vision API. Process documents with advanced AI-powered capabilities for parsing, data extraction, classification, and splitting.
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Parse" icon="file-lines">
+    Extract structured content from documents (PDFs, images, etc.) with advanced layout detection
+  </Card>
+  <Card title="Extract" icon="database">
+    Extract specific data using JSON schemas with confidence scores and citations
+  </Card>
+  <Card title="Classify" icon="tags">
+    Classify documents into predefined categories with confidence metrics
+  </Card>
+  <Card title="Split" icon="scissors">
+    Split document pages based on categories for intelligent document separation
+  </Card>
+</CardGroup>
+
+## Why Use the Python SDK?
+
+<AccordionGroup>
+  <Accordion title="Both Sync & Async Support">
+    Choose between `UnsiloedClient` for traditional Python applications or `AsyncUnsiloedClient` for FastAPI and concurrent processing
+  </Accordion>
+
+  <Accordion title="Type-Safe">
+    Full type hints and dataclass models for better IDE support and fewer runtime errors
+  </Accordion>
+
+  <Accordion title="Automatic Polling">
+    Built-in `*_and_wait()` methods handle polling automatically, or use manual polling for more control
+  </Accordion>
+
+  <Accordion title="Error Handling">
+    Comprehensive exception classes for different error scenarios with detailed error information
+  </Accordion>
+
+  <Accordion title="Context Manager Support">
+    Automatic resource cleanup with Python's `with` statement
+  </Accordion>
+</AccordionGroup>
+
+## Installation
+
+Install the SDK using pip:
+
+```bash
+pip install unsiloed-sdk
+```
+
+## Requirements
+
+- Python 3.8 or higher
+- `httpx>=0.24.0` (automatically installed)
+
+## Quick Start
+
+### Synchronous Usage
+
+Perfect for scripts, notebooks, and traditional Python applications:
+
+```python
+from unsiloed_sdk import UnsiloedClient
+
+# Initialize client with API key
+with UnsiloedClient(api_key="your-api-key-here") as client:
+    # Parse a document
+    result = client.parse_and_wait(file="document.pdf")
+    print(f"Total chunks: {result.total_chunks}")
+
+    # Extract structured data
+    schema = {
+        "type": "object",
+        "properties": {
+            "invoice_number": {"type": "string"},
+            "total": {"type": "number"}
+        },
+        "required": ["invoice_number", "total"],
+        "additionalProperties": False
+    }
+    extract_result = client.extract_and_wait(file="invoice.pdf", schema=schema)
+    print(f"Invoice #: {extract_result.result['invoice_number']['value']}")
+```
+
+### Async Usage
+
+Perfect for FastAPI apps and concurrent processing:
+
+```python
+import asyncio
+from unsiloed_sdk import AsyncUnsiloedClient
+
+async def main():
+    async with AsyncUnsiloedClient(api_key="your-api-key-here") as client:
+        # Process multiple documents concurrently
+        results = await asyncio.gather(
+            client.parse_and_wait(file="doc1.pdf"),
+            client.parse_and_wait(file="doc2.pdf"),
+            client.parse_and_wait(file="doc3.pdf"),
+        )
+
+        for i, result in enumerate(results, 1):
+            print(f"Document {i}: {result.total_chunks} chunks")
+
+asyncio.run(main())
+```
+
+## Which Client Should I Use?
+
+| Use Case | Client | Best For |
+|----------|--------|----------|
+| Scripts, notebooks | `UnsiloedClient` | Quick scripts, data analysis, batch processing |
+| Flask, Django | `UnsiloedClient` | Traditional web frameworks with sync views |
+| FastAPI, async apps | `AsyncUnsiloedClient` | Modern async frameworks, high concurrency |
+| Concurrent processing | `AsyncUnsiloedClient` | Processing multiple documents simultaneously |
+
+## Core Concepts
+
+### Job-Based Processing
+
+All document processing operations in Unsiloed are asynchronous and job-based:
+
+1. **Submit**: Upload a document and get a job ID
+2. **Poll**: Check job status periodically
+3. **Retrieve**: Get results when job completes
+
+The SDK provides two approaches:
+
+- **Automatic**: Use `*_and_wait()` methods (recommended for most cases)
+- **Manual**: Use separate submit and polling methods for more control
+
+### Response Models
+
+All API responses are returned as typed dataclass objects:
+
+- `ParseResponse`: Parse operation results
+- `ExtractResponse`: Extraction results with confidence scores
+- `ClassifyResponse`: Classification results
+- `SplitResponse`: Document splitting results
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/sdks/python/authentication">
+    Learn how to authenticate and configure the SDK
+  </Card>
+  <Card title="Parsing" icon="file-lines" href="/sdks/python/parsing">
+    Extract structured content from documents
+  </Card>
+  <Card title="Extraction" icon="database" href="/sdks/python/extraction">
+    Extract specific data using JSON schemas
+  </Card>
+  <Card title="Examples" icon="code" href="/sdks/python/examples">
+    View complete code examples
+  </Card>
+</CardGroup>
+
+## Support
+
+Need help?
+
+- **Documentation**: [https://docs.unsiloed.ai/](https://docs.unsiloed.ai/)
+- **Support Email**: support@unsiloed.com
+- **GitHub Issues**: [https://github.com/unsiloed/unsiloed-sdk-python/issues](https://github.com/unsiloed/unsiloed-sdk-python/issues)

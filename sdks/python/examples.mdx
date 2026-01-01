@@ -1,0 +1,673 @@
+---
+title: "Code Examples"
+description: "Complete code examples for the Unsiloed Python SDK"
+---
+
+# Code Examples
+
+This page provides complete, ready-to-run examples for common use cases with the Unsiloed Python SDK.
+
+## Getting Started Examples
+
+### Simple Document Parsing
+
+```python
+from unsiloed_sdk import UnsiloedClient
+
+# Initialize client and parse a document
+with UnsiloedClient(api_key="your-api-key") as client:
+    result = client.parse_and_wait(
+        file="document.pdf",
+        merge_tables=True
+    )
+
+    print(f"Status: {result.status}")
+    print(f"Total chunks: {result.total_chunks}")
+
+    # Display first chunk
+    if result.chunks:
+        first_chunk = result.chunks[0]
+        print(f"\nFirst chunk from page {first_chunk['page_number']}:")
+        for segment in first_chunk['segments'][:3]:
+            print(f"- {segment['segment_type']}: {segment.get('content', '')[:100]}")
+```
+
+### Basic Data Extraction
+
+```python
+from unsiloed_sdk import UnsiloedClient
+
+schema = {
+    "type": "object",
+    "properties": {
+        "invoice_number": {"type": "string"},
+        "total": {"type": "number"}
+    },
+    "required": ["invoice_number", "total"],
+    "additionalProperties": False
+}
+
+with UnsiloedClient(api_key="your-api-key") as client:
+    result = client.extract_and_wait(
+        file="invoice.pdf",
+        schema=schema
+    )
+
+    print(f"Invoice #: {result.result['invoice_number']['value']}")
+    print(f"Total: ${result.result['total']['value']}")
+```
+
+## Document Processing Examples
+
+### Extract All Text from PDF
+
+```python
+from unsiloed_sdk import UnsiloedClient
+
+def extract_all_text(file_path):
+    """Extract all text content from a PDF"""
+
+    with UnsiloedClient(api_key="your-api-key") as client:
+        result = client.parse_and_wait(
+            file=file_path,
+            keep_segment_types="Text"
+        )
+
+        all_text = []
+        for chunk in result.chunks:
+            for segment in chunk['segments']:
+                if segment['segment_type'] == 'Text':
+                    all_text.append(segment.get('content', ''))
+
+        return '\n\n'.join(all_text)
+
+# Usage
+text = extract_all_text("document.pdf")
+print(text)
+```
+
+### Extract Tables as DataFrames
+
+```python
+import pandas as pd
+from io import StringIO
+from unsiloed_sdk import UnsiloedClient
+
+def extract_tables(file_path):
+    """Extract all tables from a PDF as pandas DataFrames"""
+
+    with UnsiloedClient(api_key="your-api-key") as client:
+        result = client.parse_and_wait(
+            file=file_path,
+            merge_tables=True,
+            enhanced_table=True,
+            keep_segment_types="Table"
+        )
+
+        tables = []
+        for chunk in result.chunks:
+            for segment in chunk['segments']:
+                if segment['segment_type'] == 'Table' and 'markdown' in segment:
+                    try:
+                        # Convert markdown table to DataFrame
+                        df = pd.read_table(
+                            StringIO(segment['markdown']),
+                            sep='|',
+                            header=0
+                        )
+                        # Clean up extra columns
+                        df = df.iloc[:, 1:-1]
+                        df.columns = df.columns.str.strip()
+
+                        tables.append({
+                            'page': chunk['page_number'],
+                            'dataframe': df
+                        })
+                    except Exception as e:
+                        print(f"Warning: Could not parse table on page {chunk['page_number']}: {e}")
+
+        return tables
+
+# Usage
+tables = extract_tables("report.pdf")
+for i, table_info in enumerate(tables):
+    print(f"\nTable {i+1} from page {table_info['page']}:")
+    print(table_info['dataframe'])
+```
+
+## Async Examples
+
+### Concurrent Document Processing
+
+```python
+import asyncio
+from unsiloed_sdk import AsyncUnsiloedClient
+
+async def process_multiple_documents():
+    """Process multiple documents concurrently"""
+
+    files = ["doc1.pdf", "doc2.pdf", "doc3.pdf", "doc4.pdf"]
+
+    async with AsyncUnsiloedClient(api_key="your-api-key") as client:
+        # Start all parse jobs concurrently
+        tasks = [client.parse_and_wait(file=f) for f in files]
+        results = await asyncio.gather(*tasks)
+
+        # Process results
+        for file, result in zip(files, results):
+            print(f"{file}: {result.status} - {result.total_chunks} chunks")
+
+asyncio.run(process_multiple_documents())
+```
+
+### Async Batch Extraction
+
+```python
+import asyncio
+from unsiloed_sdk import AsyncUnsiloedClient
+
+async def extract_batch():
+    """Extract data from multiple invoices concurrently"""
+
+    schema = {
+        "type": "object",
+        "properties": {
+            "invoice_number": {"type": "string"},
+            "date": {"type": "string"},
+            "total": {"type": "number"}
+        },
+        "required": ["invoice_number", "date", "total"],
+        "additionalProperties": False
+    }
+
+    files = ["invoice1.pdf", "invoice2.pdf", "invoice3.pdf"]
+
+    async with AsyncUnsiloedClient(api_key="your-api-key") as client:
+        tasks = [
+            client.extract_and_wait(file=f, schema=schema)
+            for f in files
+        ]
+
+        results = await asyncio.gather(*tasks)
+
+        # Display results
+        for file, result in zip(files, results):
+            if result.status == "completed":
+                data = result.result
+                print(f"\n{file}:")
+                print(f"  Invoice #: {data['invoice_number']['value']}")
+                print(f"  Date: {data['date']['value']}")
+                print(f"  Total: ${data['total']['value']}")
+
+asyncio.run(extract_batch())
+```
+
+## Real-World Use Cases
+
+### Invoice Processing Pipeline
+
+```python
+from unsiloed_sdk import UnsiloedClient
+import pandas as pd
+from datetime import datetime
+
+def process_invoice(file_path):
+    """Complete invoice processing pipeline"""
+
+    schema = {
+        "type": "object",
+        "properties": {
+            "invoice_number": {"type": "string"},
+            "invoice_date": {"type": "string"},
+            "vendor_name": {"type": "string"},
+            "total_amount": {"type": "number"},
+            "line_items": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "description": {"type": "string"},
+                        "quantity": {"type": "number"},
+                        "unit_price": {"type": "number"},
+                        "total": {"type": "number"}
+                    }
+                }
+            }
+        },
+        "required": ["invoice_number", "total_amount"],
+        "additionalProperties": False
+    }
+
+    with UnsiloedClient(api_key="your-api-key") as client:
+        result = client.extract_and_wait(
+            file=file_path,
+            schema=schema,
+            confidence_threshold=0.9
+        )
+
+        if result.status == "completed":
+            # Extract values
+            invoice_data = {k: v['value'] for k, v in result.result.items()}
+
+            # Create DataFrame for line items
+            if 'line_items' in invoice_data:
+                items_df = pd.DataFrame(invoice_data['line_items'])
+                invoice_data['line_items_df'] = items_df
+
+            # Add processing metadata
+            invoice_data['processed_at'] = datetime.now().isoformat()
+            invoice_data['confidence_scores'] = {
+                k: v['score'] for k, v in result.result.items()
+            }
+
+            return invoice_data
+        else:
+            print(f"Extraction failed: {result.error}")
+            return None
+
+# Usage
+invoice = process_invoice("invoice.pdf")
+if invoice:
+    print(f"Invoice #{invoice['invoice_number']}")
+    print(f"Vendor: {invoice['vendor_name']}")
+    print(f"Total: ${invoice['total_amount']}")
+    print("\nLine Items:")
+    print(invoice['line_items_df'])
+```
+
+### Document Classification and Routing
+
+```python
+from unsiloed_sdk import UnsiloedClient, Category
+from pathlib import Path
+import shutil
+
+def classify_and_route(file_path, output_dir="organized"):
+    """Classify document and move to appropriate folder"""
+
+    categories = [
+        Category("Invoice", "Bills and invoices"),
+        Category("Receipt", "Payment receipts"),
+        Category("Contract", "Legal contracts"),
+        Category("Report", "Business reports"),
+        Category("Other", "Other documents")
+    ]
+
+    with UnsiloedClient(api_key="your-api-key") as client:
+        result = client.classify_and_wait(
+            file=file_path,
+            categories=categories
+        )
+
+        if result.status == "completed":
+            category = result.result['classification']
+            confidence = result.result['confidence']
+
+            print(f"{file_path}: {category} ({confidence:.2%})")
+
+            # Create category folder
+            category_dir = Path(output_dir) / category
+            category_dir.mkdir(parents=True, exist_ok=True)
+
+            # Move file to category folder
+            file_name = Path(file_path).name
+            dest_path = category_dir / file_name
+            shutil.copy2(file_path, dest_path)
+
+            print(f"  Moved to {dest_path}")
+
+            return category, confidence
+        else:
+            print(f"Classification failed: {result.error}")
+            return None, None
+
+# Usage
+files = ["doc1.pdf", "doc2.pdf", "doc3.pdf"]
+for file in files:
+    classify_and_route(file, output_dir="organized_docs")
+```
+
+### Split and Process Documents
+
+```python
+from unsiloed_sdk import UnsiloedClient, Category
+import requests
+from pathlib import Path
+
+def split_and_process(batch_file, output_dir="processed"):
+    """Split batch file and process each document"""
+
+    categories = [
+        Category("Invoice", "Invoice documents"),
+        Category("Receipt", "Receipt documents"),
+        Category("Statement", "Statement documents")
+    ]
+
+    with UnsiloedClient(api_key="your-api-key") as client:
+        # Split the document
+        print(f"Splitting {batch_file}...")
+        split_result = client.split_and_wait(
+            file=batch_file,
+            categories=categories
+        )
+
+        if not split_result.result['success']:
+            print(f"Split failed: {split_result.result['message']}")
+            return
+
+        print(f"Split into {len(split_result.result['files'])} documents")
+
+        # Process each split document
+        for file_info in split_result.result['files']:
+            category = file_info['category']
+            file_url = file_info['full_path']
+            file_name = file_info['name']
+
+            print(f"\nProcessing {file_name} ({category})...")
+
+            # Download file
+            response = requests.get(file_url)
+            if response.status_code != 200:
+                print(f"  Failed to download")
+                continue
+
+            # Save file
+            category_dir = Path(output_dir) / category
+            category_dir.mkdir(parents=True, exist_ok=True)
+            file_path = category_dir / file_name
+
+            file_path.write_bytes(response.content)
+            print(f"  Saved to {file_path}")
+
+            # Process based on category
+            if category == "Invoice":
+                # Extract invoice data
+                schema = {
+                    "type": "object",
+                    "properties": {
+                        "invoice_number": {"type": "string"},
+                        "total": {"type": "number"}
+                    },
+                    "required": ["invoice_number", "total"],
+                    "additionalProperties": False
+                }
+                extract_result = client.extract_and_wait(
+                    file=response.content,
+                    schema=schema
+                )
+                if extract_result.status == "completed":
+                    print(f"  Invoice #: {extract_result.result['invoice_number']['value']}")
+                    print(f"  Total: ${extract_result.result['total']['value']}")
+
+# Usage
+split_and_process("batch_documents.pdf", output_dir="processed_docs")
+```
+
+## Integration Examples
+
+### FastAPI Integration
+
+```python
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from unsiloed_sdk import AsyncUnsiloedClient, UnsiloedError
+import os
+
+app = FastAPI()
+
+API_KEY = os.getenv("UNSILOED_API_KEY")
+
+@app.post("/parse")
+async def parse_document(file: UploadFile = File(...)):
+    """Parse uploaded document"""
+    try:
+        file_content = await file.read()
+
+        async with AsyncUnsiloedClient(api_key=API_KEY) as client:
+            result = await client.parse_and_wait(file=file_content)
+
+            return {
+                "status": "success",
+                "total_chunks": result.total_chunks,
+                "chunks": result.chunks
+            }
+
+    except UnsiloedError as e:
+        raise HTTPException(status_code=500, detail=str(e.message))
+
+@app.post("/extract")
+async def extract_data(file: UploadFile = File(...), schema: dict = None):
+    """Extract data from uploaded document"""
+    if not schema:
+        raise HTTPException(status_code=400, detail="Schema required")
+
+    try:
+        file_content = await file.read()
+
+        async with AsyncUnsiloedClient(api_key=API_KEY) as client:
+            result = await client.extract_and_wait(
+                file=file_content,
+                schema=schema
+            )
+
+            return {
+                "status": "success",
+                "data": result.result
+            }
+
+    except UnsiloedError as e:
+        raise HTTPException(status_code=500, detail=str(e.message))
+```
+
+### Flask Integration
+
+```python
+from flask import Flask, request, jsonify
+from unsiloed_sdk import UnsiloedClient, UnsiloedError
+import os
+
+app = Flask(__name__)
+
+API_KEY = os.getenv("UNSILOED_API_KEY")
+
+@app.route('/parse', methods=['POST'])
+def parse_document():
+    """Parse uploaded document"""
+    if 'file' not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+
+    file = request.files['file']
+    file_content = file.read()
+
+    try:
+        with UnsiloedClient(api_key=API_KEY) as client:
+            result = client.parse_and_wait(file=file_content)
+
+            return jsonify({
+                "status": "success",
+                "total_chunks": result.total_chunks,
+                "chunks": result.chunks
+            })
+
+    except UnsiloedError as e:
+        return jsonify({"error": str(e.message)}), 500
+
+@app.route('/classify', methods=['POST'])
+def classify_document():
+    """Classify uploaded document"""
+    if 'file' not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+
+    file = request.files['file']
+    categories = request.json.get('categories', [])
+
+    if not categories:
+        return jsonify({"error": "Categories required"}), 400
+
+    try:
+        file_content = file.read()
+
+        with UnsiloedClient(api_key=API_KEY) as client:
+            result = client.classify_and_wait(
+                file=file_content,
+                categories=categories
+            )
+
+            return jsonify({
+                "status": "success",
+                "classification": result.result['classification'],
+                "confidence": result.result['confidence']
+            })
+
+    except UnsiloedError as e:
+        return jsonify({"error": str(e.message)}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
+```
+
+### Streamlit App
+
+```python
+import streamlit as st
+from unsiloed_sdk import UnsiloedClient
+import os
+
+st.title("Document Processing App")
+
+API_KEY = os.getenv("UNSILOED_API_KEY")
+
+# File uploader
+uploaded_file = st.file_uploader("Upload a document", type=['pdf'])
+
+if uploaded_file:
+    # Operation selector
+    operation = st.selectbox(
+        "Select operation",
+        ["Parse", "Extract", "Classify"]
+    )
+
+    if operation == "Parse":
+        if st.button("Parse Document"):
+            with st.spinner("Parsing..."):
+                try:
+                    with UnsiloedClient(api_key=API_KEY) as client:
+                        result = client.parse_and_wait(file=uploaded_file.read())
+
+                    st.success(f"Parsed successfully! Total chunks: {result.total_chunks}")
+
+                    # Display chunks
+                    for i, chunk in enumerate(result.chunks[:5]):
+                        with st.expander(f"Page {chunk['page_number']}"):
+                            for segment in chunk['segments']:
+                                st.write(f"**{segment['segment_type']}**")
+                                st.write(segment.get('content', '')[:200])
+
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
+
+    elif operation == "Classify":
+        categories = st.text_input(
+            "Categories (comma-separated)",
+            "Invoice,Receipt,Contract"
+        )
+
+        if st.button("Classify Document"):
+            category_list = [c.strip() for c in categories.split(',')]
+
+            with st.spinner("Classifying..."):
+                try:
+                    with UnsiloedClient(api_key=API_KEY) as client:
+                        result = client.classify_and_wait(
+                            file=uploaded_file.read(),
+                            categories=category_list
+                        )
+
+                    st.success(f"Document type: {result.result['classification']}")
+                    st.info(f"Confidence: {result.result['confidence']:.2%}")
+
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
+```
+
+## Utility Functions
+
+### Progress Tracking
+
+```python
+from unsiloed_sdk import UnsiloedClient
+import time
+from tqdm import tqdm
+
+def parse_with_progress(file_path):
+    """Parse document with progress bar"""
+
+    with UnsiloedClient(api_key="your-api-key") as client:
+        # Start parse job
+        response = client.parse(file=file_path)
+        job_id = response.job_id
+
+        print(f"Job started: {job_id}")
+
+        # Progress bar
+        with tqdm(total=100, desc="Parsing") as pbar:
+            last_progress = 0
+
+            while True:
+                result = client.get_parse_result(job_id=job_id)
+
+                if result.status in ["Succeeded", "completed"]:
+                    pbar.update(100 - last_progress)
+                    break
+                elif result.status in ["Failed", "failed"]:
+                    print(f"\nFailed: {result.error}")
+                    break
+
+                # Estimate progress (simplified)
+                current_progress = 50 if result.status == "processing" else 10
+                pbar.update(current_progress - last_progress)
+                last_progress = current_progress
+
+                time.sleep(2)
+
+        return result
+
+result = parse_with_progress("document.pdf")
+```
+
+### Retry with Exponential Backoff
+
+```python
+import time
+from unsiloed_sdk import UnsiloedClient, TimeoutError, APIError
+
+def parse_with_retry(file_path, max_retries=3):
+    """Parse with automatic retry on transient errors"""
+
+    with UnsiloedClient(api_key="your-api-key") as client:
+        for attempt in range(max_retries):
+            try:
+                result = client.parse_and_wait(file=file_path)
+                return result
+
+            except (TimeoutError, APIError) as e:
+                if attempt < max_retries - 1:
+                    wait_time = 2 ** attempt
+                    print(f"Attempt {attempt + 1} failed, retrying in {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    print(f"All {max_retries} attempts failed")
+                    raise
+
+result = parse_with_retry("document.pdf")
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="book" href="/api-reference">
+    Explore the complete API documentation
+  </Card>
+  <Card title="GitHub Repository" icon="github" href="https://github.com/unsiloed/unsiloed-sdk-python">
+    View the SDK source code and contribute
+  </Card>
+</CardGroup>

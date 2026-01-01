@@ -1,0 +1,289 @@
+---
+title: "Authentication"
+description: "Learn how to authenticate and configure the Unsiloed Python SDK"
+---
+
+# Authentication
+
+The Unsiloed Python SDK requires an API key to authenticate requests to the Vision API.
+
+## Getting Your API Key
+
+1. Sign up at [Unsiloed](https://www.unsiloed.ai/login)
+2. Navigate to the API Keys section in your dashboard
+3. Generate a new API key
+4. Save it securely
+
+<Warning>
+  Never commit your API key to version control or share it publicly. Treat it like a password.
+</Warning>
+
+## Authentication Methods
+
+### Method 1: Direct Initialization
+
+Pass your API key directly when creating the client:
+
+```python
+from unsiloed_sdk import UnsiloedClient
+
+client = UnsiloedClient(api_key="your-api-key-here")
+```
+
+### Method 2: Environment Variable (Recommended)
+
+Set your API key as an environment variable:
+
+```bash
+export UNSILOED_API_KEY="your-api-key-here"
+```
+
+Then load it in your code:
+
+```python
+import os
+from unsiloed_sdk import UnsiloedClient
+
+client = UnsiloedClient(api_key=os.getenv("UNSILOED_API_KEY"))
+```
+
+### Method 3: Configuration File
+
+For production applications, use a configuration file:
+
+```python
+import json
+from unsiloed_sdk import UnsiloedClient
+
+# Load from config file
+with open('config.json') as f:
+    config = json.load(f)
+
+client = UnsiloedClient(api_key=config['unsiloed_api_key'])
+```
+
+<Tip>
+  Using environment variables is the recommended approach as it keeps sensitive credentials out of your codebase.
+</Tip>
+
+## Client Configuration
+
+### Synchronous Client
+
+```python
+from unsiloed_sdk import UnsiloedClient
+
+client = UnsiloedClient(
+    api_key="your-api-key-here",
+    base_url="https://prod.visionapi.unsiloed.ai",  # Default
+    timeout=300.0  # Request timeout in seconds (default: 300)
+)
+```
+
+### Async Client
+
+```python
+from unsiloed_sdk import AsyncUnsiloedClient
+
+client = AsyncUnsiloedClient(
+    api_key="your-api-key-here",
+    base_url="https://prod.visionapi.unsiloed.ai",  # Default
+    timeout=300.0  # Request timeout in seconds (default: 300)
+)
+```
+
+## Configuration Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `api_key` | `str` | Required | Your Unsiloed API key |
+| `base_url` | `str` | `https://prod.visionapi.unsiloed.ai` | API base URL |
+| `timeout` | `float` | `300.0` | Request timeout in seconds |
+
+## Using Context Managers
+
+Both clients support Python's context manager protocol for automatic cleanup:
+
+### Synchronous
+
+```python
+from unsiloed_sdk import UnsiloedClient
+
+with UnsiloedClient(api_key="your-api-key") as client:
+    result = client.parse_and_wait(file="document.pdf")
+    print(result.total_chunks)
+# Client automatically closed
+```
+
+### Async
+
+```python
+import asyncio
+from unsiloed_sdk import AsyncUnsiloedClient
+
+async def main():
+    async with AsyncUnsiloedClient(api_key="your-api-key") as client:
+        result = await client.parse_and_wait(file="document.pdf")
+        print(result.total_chunks)
+    # Client automatically closed
+
+asyncio.run(main())
+```
+
+## Manual Resource Management
+
+If you prefer manual control, you can explicitly close clients:
+
+### Synchronous
+
+```python
+from unsiloed_sdk import UnsiloedClient
+
+client = UnsiloedClient(api_key="your-api-key")
+try:
+    result = client.parse_and_wait(file="document.pdf")
+finally:
+    client.close()
+```
+
+### Async
+
+```python
+import asyncio
+from unsiloed_sdk import AsyncUnsiloedClient
+
+async def main():
+    client = AsyncUnsiloedClient(api_key="your-api-key")
+    try:
+        result = await client.parse_and_wait(file="document.pdf")
+    finally:
+        await client.close()
+
+asyncio.run(main())
+```
+
+## Authentication Errors
+
+The SDK will raise an `AuthenticationError` if your API key is invalid or missing:
+
+```python
+from unsiloed_sdk import UnsiloedClient, AuthenticationError
+
+try:
+    with UnsiloedClient(api_key="invalid-key") as client:
+        result = client.parse_and_wait(file="document.pdf")
+except AuthenticationError as e:
+    print(f"Authentication failed: {e.message}")
+    print(f"Status code: {e.status_code}")
+```
+
+## Environment Setup Examples
+
+### Development (.env file)
+
+Create a `.env` file in your project root:
+
+```bash
+UNSILOED_API_KEY=your-api-key-here
+UNSILOED_BASE_URL=https://prod.visionapi.unsiloed.ai
+```
+
+Load it using `python-dotenv`:
+
+```python
+from dotenv import load_dotenv
+import os
+from unsiloed_sdk import UnsiloedClient
+
+load_dotenv()
+
+client = UnsiloedClient(
+    api_key=os.getenv("UNSILOED_API_KEY"),
+    base_url=os.getenv("UNSILOED_BASE_URL")
+)
+```
+
+### Production (Docker)
+
+In your Dockerfile or docker-compose.yml:
+
+```yaml
+services:
+  app:
+    environment:
+      - UNSILOED_API_KEY=${UNSILOED_API_KEY}
+      - UNSILOED_BASE_URL=https://prod.visionapi.unsiloed.ai
+```
+
+### Production (AWS/Cloud)
+
+Use your cloud provider's secrets management:
+
+```python
+import boto3
+from unsiloed_sdk import UnsiloedClient
+
+# AWS Secrets Manager example
+def get_secret(secret_name):
+    client = boto3.client('secretsmanager')
+    response = client.get_secret_value(SecretId=secret_name)
+    return json.loads(response['SecretString'])
+
+secrets = get_secret('unsiloed-credentials')
+client = UnsiloedClient(api_key=secrets['api_key'])
+```
+
+## Testing Configuration
+
+For testing, you can use a mock API key:
+
+```python
+import os
+import pytest
+from unsiloed_sdk import UnsiloedClient
+
+@pytest.fixture
+def test_client():
+    # Use test API key from environment or fallback to test value
+    api_key = os.getenv("UNSILOED_TEST_API_KEY", "test-key")
+    return UnsiloedClient(api_key=api_key)
+
+def test_parse_document(test_client):
+    result = test_client.parse_and_wait(file="test.pdf")
+    assert result.status == "completed"
+```
+
+## Best Practices
+
+<Steps>
+  <Step title="Use Environment Variables">
+    Store API keys in environment variables, never in code
+  </Step>
+
+  <Step title="Use Context Managers">
+    Always use `with` statements for automatic resource cleanup
+  </Step>
+
+  <Step title="Separate Credentials">
+    Use different API keys for development, staging, and production
+  </Step>
+
+  <Step title="Rotate Keys Regularly">
+    Periodically rotate API keys and revoke old ones
+  </Step>
+
+  <Step title="Monitor Usage">
+    Track API usage through the Unsiloed dashboard
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Parsing" icon="file-lines" href="/sdks/python/parsing">
+    Learn how to parse documents
+  </Card>
+  <Card title="Extraction" icon="database" href="/sdks/python/extraction">
+    Extract structured data from documents
+  </Card>
+</CardGroup>

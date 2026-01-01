@@ -1,0 +1,605 @@
+---
+title: "Error Handling"
+description: "Handle errors and exceptions effectively in the Unsiloed Python SDK"
+---
+
+# Error Handling
+
+The Unsiloed Python SDK provides comprehensive exception classes for different error scenarios, making it easy to handle errors gracefully in your applications.
+
+## Exception Hierarchy
+
+All SDK exceptions inherit from the base `UnsiloedError` class:
+
+```python
+UnsiloedError
+├── AuthenticationError      # Invalid API key or authentication failure
+├── QuotaExceededError       # API quota exceeded
+├── InvalidRequestError      # Invalid request parameters
+├── NotFoundError            # Resource not found
+├── TimeoutError             # Request timeout
+└── APIError                 # General API errors
+```
+
+## Basic Error Handling
+
+### Try-Except Block
+
+```python
+from unsiloed_sdk import (
+    UnsiloedClient,
+    AuthenticationError,
+    InvalidRequestError,
+    QuotaExceededError,
+    APIError
+)
+
+try:
+    with UnsiloedClient(api_key="your-api-key") as client:
+        result = client.parse_and_wait(file="document.pdf")
+        print(f"Success: {result.total_chunks} chunks")
+
+except AuthenticationError:
+    print("Invalid API key. Please check your credentials.")
+except QuotaExceededError as e:
+    print(f"Quota exceeded. Remaining: {e.response_data}")
+except InvalidRequestError as e:
+    print(f"Invalid request: {e.message}")
+except APIError as e:
+    print(f"API error: {e.message}")
+```
+
+### Catch All Errors
+
+```python
+from unsiloed_sdk import UnsiloedClient, UnsiloedError
+
+try:
+    with UnsiloedClient(api_key="your-api-key") as client:
+        result = client.parse_and_wait(file="document.pdf")
+except UnsiloedError as e:
+    print(f"Unsiloed SDK error: {e.message}")
+    print(f"Status code: {e.status_code}")
+    print(f"Response data: {e.response_data}")
+```
+
+## Exception Details
+
+### UnsiloedError (Base Class)
+
+All exceptions provide these attributes:
+
+```python
+try:
+    result = client.parse_and_wait(file="document.pdf")
+except UnsiloedError as e:
+    print(f"Message: {e.message}")           # Error message
+    print(f"Status Code: {e.status_code}")   # HTTP status code
+    print(f"Response Data: {e.response_data}") # Full API response
+```
+
+### AuthenticationError
+
+Raised when authentication fails (HTTP 401):
+
+```python
+from unsiloed_sdk import UnsiloedClient, AuthenticationError
+
+try:
+    client = UnsiloedClient(api_key="invalid-key")
+    result = client.parse_and_wait(file="document.pdf")
+except AuthenticationError as e:
+    print("Authentication failed")
+    print(f"Message: {e.message}")
+    # Possible causes:
+    # - Invalid API key
+    # - Expired API key
+    # - Missing API key
+```
+
+### QuotaExceededError
+
+Raised when API quota is exceeded (HTTP 402):
+
+```python
+from unsiloed_sdk import QuotaExceededError
+
+try:
+    result = client.parse_and_wait(file="document.pdf")
+except QuotaExceededError as e:
+    print("Quota exceeded")
+    print(f"Message: {e.message}")
+    print(f"Details: {e.response_data}")
+    # Check remaining quota
+    if e.response_data:
+        remaining = e.response_data.get('quota_remaining', 0)
+        print(f"Remaining quota: {remaining}")
+```
+
+### InvalidRequestError
+
+Raised for invalid request parameters (HTTP 400):
+
+```python
+from unsiloed_sdk import InvalidRequestError
+
+try:
+    # Missing required parameter
+    result = client.extract_and_wait(file="invoice.pdf")  # Missing schema
+except InvalidRequestError as e:
+    print(f"Invalid request: {e.message}")
+    # Common causes:
+    # - Missing required parameters
+    # - Invalid file format
+    # - Invalid schema
+    # - Both file and url provided
+```
+
+### NotFoundError
+
+Raised when a resource is not found (HTTP 404):
+
+```python
+from unsiloed_sdk import NotFoundError
+
+try:
+    result = client.get_parse_result(job_id="invalid-job-id")
+except NotFoundError as e:
+    print(f"Resource not found: {e.message}")
+    # Job ID doesn't exist or has expired
+```
+
+### TimeoutError
+
+Raised when a request times out (HTTP 408):
+
+```python
+from unsiloed_sdk import TimeoutError
+
+try:
+    result = client.parse_and_wait(
+        file="large_document.pdf",
+        max_wait=60  # 1 minute
+    )
+except TimeoutError as e:
+    print(f"Request timed out: {e.message}")
+    # Document processing took longer than max_wait
+```
+
+### APIError
+
+General API errors (HTTP 4xx/5xx):
+
+```python
+from unsiloed_sdk import APIError
+
+try:
+    result = client.parse_and_wait(file="document.pdf")
+except APIError as e:
+    print(f"API error: {e.message}")
+    print(f"Status code: {e.status_code}")
+    # Server errors or unexpected issues
+```
+
+## Error Handling Patterns
+
+### Retry Logic
+
+Implement exponential backoff for transient errors:
+
+```python
+import time
+from unsiloed_sdk import UnsiloedClient, APIError, TimeoutError
+
+def parse_with_retry(file_path, max_retries=3):
+    """Parse document with automatic retry on transient errors"""
+
+    with UnsiloedClient(api_key="your-api-key") as client:
+        for attempt in range(max_retries):
+            try:
+                result = client.parse_and_wait(file=file_path)
+                return result
+
+            except TimeoutError:
+                if attempt < max_retries - 1:
+                    wait_time = 2 ** attempt  # Exponential backoff
+                    print(f"Timeout, retrying in {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    raise
+
+            except APIError as e:
+                if e.status_code >= 500 and attempt < max_retries - 1:
+                    # Retry on server errors
+                    wait_time = 2 ** attempt
+                    print(f"Server error, retrying in {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    raise
+
+result = parse_with_retry("document.pdf")
+```
+
+### Graceful Degradation
+
+Handle errors without breaking the application:
+
+```python
+from unsiloed_sdk import UnsiloedClient, UnsiloedError
+
+def safe_parse(file_path, fallback_value=None):
+    """Parse document with graceful error handling"""
+
+    try:
+        with UnsiloedClient(api_key="your-api-key") as client:
+            result = client.parse_and_wait(file=file_path)
+            return result
+
+    except UnsiloedError as e:
+        print(f"Warning: Failed to parse {file_path}: {e.message}")
+        return fallback_value
+
+# Use with fallback
+result = safe_parse("document.pdf", fallback_value=None)
+if result:
+    print(f"Parsed successfully: {result.total_chunks} chunks")
+else:
+    print("Using fallback processing")
+```
+
+### Batch Processing with Error Tracking
+
+Track errors when processing multiple documents:
+
+```python
+import asyncio
+from unsiloed_sdk import AsyncUnsiloedClient, UnsiloedError
+from dataclasses import dataclass
+from typing import Optional
+
+@dataclass
+class ProcessResult:
+    file: str
+    success: bool
+    result: Optional[any] = None
+    error: Optional[str] = None
+
+async def process_batch_with_errors(files):
+    """Process multiple files and track errors"""
+
+    results = []
+
+    async with AsyncUnsiloedClient(api_key="your-api-key") as client:
+        for file in files:
+            try:
+                result = await client.parse_and_wait(file=file)
+                results.append(ProcessResult(
+                    file=file,
+                    success=True,
+                    result=result
+                ))
+                print(f"✓ {file}")
+
+            except UnsiloedError as e:
+                results.append(ProcessResult(
+                    file=file,
+                    success=False,
+                    error=e.message
+                ))
+                print(f"✗ {file}: {e.message}")
+
+    # Summary
+    successes = sum(1 for r in results if r.success)
+    failures = len(results) - successes
+
+    print(f"\nProcessed {len(files)} files:")
+    print(f"  Success: {successes}")
+    print(f"  Failed: {failures}")
+
+    return results
+
+files = ["doc1.pdf", "doc2.pdf", "doc3.pdf"]
+results = asyncio.run(process_batch_with_errors(files))
+```
+
+### Logging Errors
+
+Integrate with Python's logging module:
+
+```python
+import logging
+from unsiloed_sdk import UnsiloedClient, UnsiloedError
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+def parse_with_logging(file_path):
+    """Parse document with comprehensive logging"""
+
+    logger.info(f"Starting parse for {file_path}")
+
+    try:
+        with UnsiloedClient(api_key="your-api-key") as client:
+            result = client.parse_and_wait(file=file_path)
+            logger.info(f"Successfully parsed {file_path}: {result.total_chunks} chunks")
+            return result
+
+    except UnsiloedError as e:
+        logger.error(
+            f"Failed to parse {file_path}",
+            extra={
+                'error_type': type(e).__name__,
+                'error_message': e.message,
+                'status_code': e.status_code,
+                'response_data': e.response_data
+            }
+        )
+        raise
+
+result = parse_with_logging("document.pdf")
+```
+
+## Async Error Handling
+
+### Basic Async Error Handling
+
+```python
+import asyncio
+from unsiloed_sdk import AsyncUnsiloedClient, UnsiloedError
+
+async def async_parse_with_errors():
+    try:
+        async with AsyncUnsiloedClient(api_key="your-api-key") as client:
+            result = await client.parse_and_wait(file="document.pdf")
+            print(f"Success: {result.total_chunks} chunks")
+
+    except UnsiloedError as e:
+        print(f"Error: {e.message}")
+
+asyncio.run(async_parse_with_errors())
+```
+
+### Async Batch Processing
+
+```python
+import asyncio
+from unsiloed_sdk import AsyncUnsiloedClient, UnsiloedError
+
+async def process_with_error_handling(client, file):
+    """Process single file with error handling"""
+    try:
+        result = await client.parse_and_wait(file=file)
+        return {"file": file, "success": True, "result": result}
+    except UnsiloedError as e:
+        return {"file": file, "success": False, "error": e.message}
+
+async def process_batch():
+    """Process multiple files concurrently"""
+    files = ["doc1.pdf", "doc2.pdf", "doc3.pdf"]
+
+    async with AsyncUnsiloedClient(api_key="your-api-key") as client:
+        tasks = [process_with_error_handling(client, f) for f in files]
+        results = await asyncio.gather(*tasks)
+
+        for result in results:
+            if result["success"]:
+                print(f"✓ {result['file']}")
+            else:
+                print(f"✗ {result['file']}: {result['error']}")
+
+asyncio.run(process_batch())
+```
+
+## Validation Before API Calls
+
+Validate inputs before making API calls to avoid errors:
+
+```python
+from pathlib import Path
+from unsiloed_sdk import UnsiloedClient
+
+def validate_and_parse(file_path):
+    """Validate file before parsing"""
+
+    # Check file exists
+    path = Path(file_path)
+    if not path.exists():
+        raise FileNotFoundError(f"File not found: {file_path}")
+
+    # Check file size (example: 50MB limit)
+    max_size = 50 * 1024 * 1024  # 50MB
+    if path.stat().st_size > max_size:
+        raise ValueError(f"File too large: {path.stat().st_size} bytes")
+
+    # Check file type
+    if path.suffix.lower() not in ['.pdf', '.jpg', '.jpeg', '.png']:
+        raise ValueError(f"Unsupported file type: {path.suffix}")
+
+    # Parse the file
+    with UnsiloedClient(api_key="your-api-key") as client:
+        result = client.parse_and_wait(file=str(path))
+        return result
+
+try:
+    result = validate_and_parse("document.pdf")
+    print(f"Success: {result.total_chunks} chunks")
+except (FileNotFoundError, ValueError) as e:
+    print(f"Validation error: {e}")
+except Exception as e:
+    print(f"Unexpected error: {e}")
+```
+
+## Monitoring and Alerting
+
+Track errors for monitoring:
+
+```python
+from unsiloed_sdk import UnsiloedClient, UnsiloedError
+from datetime import datetime
+import json
+
+class ErrorTracker:
+    def __init__(self):
+        self.errors = []
+
+    def log_error(self, operation, file, error):
+        """Log error details"""
+        self.errors.append({
+            "timestamp": datetime.now().isoformat(),
+            "operation": operation,
+            "file": file,
+            "error_type": type(error).__name__,
+            "error_message": error.message if isinstance(error, UnsiloedError) else str(error),
+            "status_code": getattr(error, 'status_code', None)
+        })
+
+    def get_error_summary(self):
+        """Get error summary"""
+        from collections import Counter
+        error_types = Counter(e["error_type"] for e in self.errors)
+        return {
+            "total_errors": len(self.errors),
+            "error_types": dict(error_types),
+            "recent_errors": self.errors[-10:]
+        }
+
+    def save_errors(self, filename="errors.json"):
+        """Save errors to file"""
+        with open(filename, "w") as f:
+            json.dump(self.errors, f, indent=2)
+
+# Usage
+tracker = ErrorTracker()
+
+files = ["doc1.pdf", "doc2.pdf", "doc3.pdf"]
+
+with UnsiloedClient(api_key="your-api-key") as client:
+    for file in files:
+        try:
+            result = client.parse_and_wait(file=file)
+            print(f"✓ {file}")
+        except Exception as e:
+            print(f"✗ {file}: {e}")
+            tracker.log_error("parse", file, e)
+
+# Print summary
+summary = tracker.get_error_summary()
+print(f"\nError Summary:")
+print(f"Total errors: {summary['total_errors']}")
+print(f"Error types: {summary['error_types']}")
+
+# Save errors
+tracker.save_errors()
+```
+
+## Best Practices
+
+<Steps>
+  <Step title="Always Use Try-Except">
+    Wrap API calls in try-except blocks to handle errors gracefully
+  </Step>
+
+  <Step title="Catch Specific Exceptions First">
+    Handle specific exceptions before general ones
+  </Step>
+
+  <Step title="Log Error Details">
+    Log error messages, status codes, and context for debugging
+  </Step>
+
+  <Step title="Implement Retry Logic">
+    Retry on transient errors with exponential backoff
+  </Step>
+
+  <Step title="Validate Inputs">
+    Check file existence, size, and format before API calls
+  </Step>
+
+  <Step title="Monitor Quota">
+    Track quota usage and handle QuotaExceededError appropriately
+  </Step>
+
+  <Step title="Provide User Feedback">
+    Give clear error messages to users when operations fail
+  </Step>
+
+  <Step title="Track Errors">
+    Monitor error rates and types for production applications
+  </Step>
+</Steps>
+
+## Common Error Scenarios
+
+### File Not Found
+
+```python
+from pathlib import Path
+
+file_path = "document.pdf"
+if not Path(file_path).exists():
+    print(f"Error: File not found: {file_path}")
+else:
+    result = client.parse_and_wait(file=file_path)
+```
+
+### Invalid API Key
+
+```python
+from unsiloed_sdk import AuthenticationError
+
+try:
+    client = UnsiloedClient(api_key="invalid-key")
+    result = client.parse_and_wait(file="document.pdf")
+except AuthenticationError:
+    print("Please check your API key in the Unsiloed dashboard")
+```
+
+### Missing Required Parameters
+
+```python
+from unsiloed_sdk import InvalidRequestError
+
+try:
+    # Missing required schema parameter
+    result = client.extract_and_wait(file="invoice.pdf")
+except InvalidRequestError as e:
+    print(f"Missing parameters: {e.message}")
+```
+
+### Quota Exceeded
+
+```python
+from unsiloed_sdk import QuotaExceededError
+
+try:
+    result = client.parse_and_wait(file="document.pdf")
+except QuotaExceededError:
+    print("API quota exceeded. Please upgrade your plan.")
+```
+
+### Job Status Errors
+
+```python
+# Always check job status
+result = client.parse_and_wait(file="document.pdf")
+
+if result.status in ["Failed", "failed"]:
+    print(f"Job failed: {result.error}")
+elif result.status in ["Succeeded", "completed"]:
+    print("Job completed successfully")
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Examples" icon="code" href="/sdks/python/examples">
+    View complete code examples
+  </Card>
+  <Card title="API Reference" icon="book" href="/api-reference">
+    Explore the complete API documentation
+  </Card>
+</CardGroup>
