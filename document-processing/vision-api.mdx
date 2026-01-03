@@ -37,14 +37,10 @@ All extraction schemas must follow the JSON Schema specification:
 
 ### Simple Data Extraction
 
-```python
-import requests
-import json
+<CodeGroup>
 
-# Prepare the document and JSON schema
-files = {
-    'pdf_file': open('document.pdf', 'rb')
-}
+```python Python
+from unsiloed_sdk import UnsiloedClient
 
 # Define extraction schema using JSON Schema format
 schema = {
@@ -57,54 +53,111 @@ schema = {
         "date": {
             "type": "string",
             "description": "Document date"
-        },
-        "author": {
-            "type": "string",
-            "description": "Document author"
-        },
-        "sections": {
-            "type": "array",
-            "description": "Document sections",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "heading": {
-                        "type": "string",
-                        "description": "Section heading"
-                    },
-                    "content": {
-                        "type": "string",
-                        "description": "Section content"
-                    }
-                },
-                "required": ["heading", "content"],
-                "additionalProperties": false
-            }
         }
     },
     "required": ["title", "date"],
-    "additionalProperties": false
+    "additionalProperties": False
 }
 
-data = {
-    'schema_data': json.dumps(schema)
-}
+with UnsiloedClient(api_key="your-api-key") as client:
+    # Extract and wait for completion
+    result = client.extract_and_wait(
+        file="document.pdf",
+        schema=schema
+    )
 
-# Make the extraction request
-response = requests.post(
-    'https://prod.visionapi.unsiloed.ai/extract',
-    files=files,
-    data=data,
-    headers={'api-key': 'your-api-key'}
-)
-
-result = response.json()
-print(f"Job ID: {result['job_id']}")
+    # Access extracted data with confidence scores
+    print(f"Title: {result.result['title']['value']}")
+    print(f"Confidence: {result.result['title']['score']:.2%}")
 ```
+
+```javascript JavaScript
+const { UnsiloedClient } = require('unsiloed-sdk');
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+// Define extraction schema using JSON Schema format
+const schema = {
+  type: 'object',
+  properties: {
+    title: {
+      type: 'string',
+      description: 'Document title'
+    },
+    date: {
+      type: 'string',
+      description: 'Document date'
+    }
+  },
+  required: ['title', 'date'],
+  additionalProperties: false
+};
+
+// Make the extraction request
+const result = await client.extract({
+  file: 'document.pdf',
+  schema: schema
+});
+
+console.log(`Job ID: ${result.job_id}`);
+```
+
+```typescript TypeScript
+import { UnsiloedClient } from 'unsiloed-sdk';
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+// Define extraction schema using JSON Schema format
+const schema = {
+  type: 'object',
+  properties: {
+    title: {
+      type: 'string',
+      description: 'Document title'
+    },
+    date: {
+      type: 'string',
+      description: 'Document date'
+    }
+  },
+  required: ['title', 'date'],
+  additionalProperties: false
+} as const;
+
+// Make the extraction request
+const result = await client.extract({
+  file: 'document.pdf',
+  schema: schema
+});
+
+console.log(`Job ID: ${result.job_id}`);
+```
+
+```bash cURL
+curl -X POST "https://prod.visionapi.unsiloed.ai/extract" \
+  -H "accept: application/json" \
+  -H "api-key: your-api-key" \
+  -H "Content-Type: multipart/form-data" \
+  -F "pdf_file=@document.pdf" \
+  -F 'schema_data={"type":"object","properties":{"title":{"type":"string","description":"Document title"},"date":{"type":"string","description":"Document date"},"author":{"type":"string","description":"Document author"}},"required":["title","date"],"additionalProperties":false}'
+
+# Response: {"job_id": "945b4578-691f-4c74-8184-dde654093b11", "status": "queued"}
+
+# Get results
+curl -X GET "https://prod.visionapi.unsiloed.ai/extract/{job_id}" \
+  -H "accept: application/json" \
+  -H "api-key: your-api-key"
+```
+
+</CodeGroup>
 
 ### Financial Document Extraction
 
-```python
+<CodeGroup>
+
+```python Python
+from unsiloed_sdk import UnsiloedClient
+
 # Financial document schema example
 financial_schema = {
     "type": "object",
@@ -127,21 +180,111 @@ financial_schema = {
         "LIC of India",
         "United bank of india"
     ],
-    "additionalProperties": false
+    "additionalProperties": False
 }
 
-files = {'pdf_file': open('financial_report.pdf', 'rb')}
-data = {'schema_data': json.dumps(financial_schema)}
+with UnsiloedClient(api_key="your-api-key") as client:
+    result = client.extract_and_wait(
+        file="financial_report.pdf",
+        schema=financial_schema
+    )
 
-response = requests.post(
-    'https://prod.visionapi.unsiloed.ai/extract',
-    files=files,
-    data=data,
-    headers={'api-key': 'your-api-key'}
-)
-
-job_id = response.json()['job_id']
+    # Print extracted values with confidence scores
+    for field, data in result.result.items():
+        if field != 'min_confidence_score':
+            print(f"{field}: {data['value']} (confidence: {data['score']:.2%})")
 ```
+
+```javascript JavaScript
+const { UnsiloedClient } = require('unsiloed-sdk');
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+// Financial document schema example
+const financialSchema = {
+  type: 'object',
+  properties: {
+    'Individuals': {
+      type: 'string',
+      description: 'Percentage Holding'
+    },
+    'LIC of India': {
+      type: 'string',
+      description: 'No of Shares Held'
+    },
+    'United bank of india': {
+      type: 'string',
+      description: 'No of shares held by United bank of india'
+    }
+  },
+  required: [
+    'Individuals',
+    'LIC of India',
+    'United bank of india'
+  ],
+  additionalProperties: false
+};
+
+const result = await client.extract({
+  file: 'financial_report.pdf',
+  schema: financialSchema
+});
+
+const jobId = result.job_id;
+```
+
+```typescript TypeScript
+import { UnsiloedClient } from 'unsiloed-sdk';
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+// Financial document schema example
+const financialSchema = {
+  type: 'object',
+  properties: {
+    'Individuals': {
+      type: 'string',
+      description: 'Percentage Holding'
+    },
+    'LIC of India': {
+      type: 'string',
+      description: 'No of Shares Held'
+    },
+    'United bank of india': {
+      type: 'string',
+      description: 'No of shares held by United bank of india'
+    }
+  },
+  required: [
+    'Individuals',
+    'LIC of India',
+    'United bank of india'
+  ],
+  additionalProperties: false
+} as const;
+
+const result = await client.extract({
+  file: 'financial_report.pdf',
+  schema: financialSchema
+});
+
+const jobId = result.job_id;
+```
+
+```bash cURL
+curl -X POST "https://prod.visionapi.unsiloed.ai/extract" \
+  -H "accept: application/json" \
+  -H "api-key: your-api-key" \
+  -H "Content-Type: multipart/form-data" \
+  -F "pdf_file=@financial_report.pdf" \
+  -F 'schema_data={"type":"object","properties":{"Individuals":{"type":"string","description":"Percentage Holding"},"LIC of India":{"type":"string","description":"No of Shares Held"},"United bank of india":{"type":"string","description":"No of shares held by United bank of india"}},"required":["Individuals","LIC of India","United bank of india"],"additionalProperties":false}'
+
+# Get results
+curl -X GET "https://prod.visionapi.unsiloed.ai/extract/{job_id}" \
+  -H "api-key: your-api-key"
+```
+
+</CodeGroup>
 
 ## Advanced Features
 
@@ -149,24 +292,101 @@ job_id = response.json()['job_id']
 
 For large documents or batch processing, use the async endpoints:
 
-```python
-# Start async extraction job
-response = requests.post(
-    'https://prod.visionapi.unsiloed.ai/extract',
-    files=files,
-    data=data,
-    headers={'api-key': 'your-api-key'}
-)
+<CodeGroup>
 
-job_id = response.json()['job_id']
+```python Python
+from unsiloed_sdk import UnsiloedClient
 
-# Check job status and get results
-result_response = requests.get(
-    f'https://prod.visionapi.unsiloed.ai/extract/{job_id}',
-    headers={'api-key': 'your-api-key'}
-)
-print(result_response.json())
+with UnsiloedClient(api_key="your-api-key") as client:
+    # Option 1: Start job and poll manually
+    response = client.extract(
+        file="document.pdf",
+        schema=schema
+    )
+    job_id = response.job_id
+    print(f"Job ID: {job_id}")
+
+    # Check job status later
+    result = client.get_extract_result(job_id)
+    print(f"Status: {result.status}")
+
+    # Option 2: Let SDK handle polling automatically
+    result = client.extract_and_wait(
+        file="document.pdf",
+        schema=schema,
+        poll_interval=5,  # Check every 5 seconds
+        max_wait_time=300  # Wait up to 5 minutes
+    )
+    print("Extraction complete!")
 ```
+
+```javascript JavaScript
+const { UnsiloedClient } = require('unsiloed-sdk');
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+// Start async extraction job
+const response = await client.extract({
+  file: 'document.pdf',
+  schema: schema
+});
+
+const jobId = response.job_id;
+
+// Check job status and get results
+const resultResponse = await client.getExtractResult(jobId);
+console.log(resultResponse);
+
+// Or use extractAndWait to automatically poll until completion
+const result = await client.extractAndWait({
+  file: 'document.pdf',
+  schema: schema,
+  pollInterval: 5000,  // Check every 5 seconds
+  maxWaitTime: 300000  // Wait up to 5 minutes
+});
+console.log(result);
+```
+
+```typescript TypeScript
+import { UnsiloedClient } from 'unsiloed-sdk';
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+// Start async extraction job
+const response = await client.extract({
+  file: 'document.pdf',
+  schema: schema
+});
+
+const jobId = response.job_id;
+
+// Check job status and get results
+const resultResponse = await client.getExtractResult(jobId);
+console.log(resultResponse);
+
+// Or use extractAndWait to automatically poll until completion
+const result = await client.extractAndWait({
+  file: 'document.pdf',
+  schema: schema,
+  pollInterval: 5000,  // Check every 5 seconds
+  maxWaitTime: 300000  // Wait up to 5 minutes
+});
+console.log(result);
+```
+
+```bash cURL
+# Start async extraction job
+curl -X POST "https://prod.visionapi.unsiloed.ai/extract" \
+  -H "api-key: your-api-key" \
+  -F "pdf_file=@document.pdf" \
+  -F 'schema_data={"type":"object","properties":{"title":{"type":"string"}},"required":["title"],"additionalProperties":false}'
+
+# Poll for results
+curl -X GET "https://prod.visionapi.unsiloed.ai/extract/{job_id}" \
+  -H "api-key: your-api-key"
+```
+
+</CodeGroup>
 
 ### Complex Schema Definition
 

@@ -49,27 +49,102 @@ The parsing system can identify and process the following element types through 
 
 ## Quick Start
 
-```python
-import requests
+<CodeGroup>
 
-url = "https://prod.visionapi.unsiloed.ai/parse"
-headers = {
-    "accept": "application/json",
-    "X-API-Key": "your-api-key"
-}
+```python Python
+from unsiloed_sdk import UnsiloedClient
 
-files = {
-    "document_file": ("document.pdf", open("document.pdf", "rb"), "application/pdf")
-}
+with UnsiloedClient(api_key="your-api-key") as client:
+    # Parse and wait for completion automatically
+    result = client.parse_and_wait(
+        file="document.pdf",
+        merge_tables=True
+    )
 
-# Create parsing job
-response = requests.post(url, headers=headers, files=files)
-job_id = response.json()['job_id']
+    print(f"Total chunks: {result.total_chunks}")
+    print(f"Status: {result.status}")
+
+    # Process chunks
+    for chunk in result.chunks:
+        for segment in chunk['segments']:
+            print(f"Type: {segment['segment_type']}")
+            print(f"Content: {segment.get('content', '')[:100]}...")
+
+# Or start job and poll manually
+with UnsiloedClient(api_key="your-api-key") as client:
+    # Start parse job
+    response = client.parse(file="document.pdf")
+    job_id = response.job_id
+
+    # Get results later
+    result = client.get_parse_result(job_id)
+```
+
+```javascript JavaScript
+const { UnsiloedClient } = require('unsiloed-sdk');
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+// Create parsing job and wait for completion
+const result = await client.parseAndWait({
+  file: 'document.pdf',
+  pollInterval: 5000,  // Check every 5 seconds
+  maxWaitTime: 300000  // Wait up to 5 minutes
+});
+
+console.log(`Total chunks: ${result.total_chunks}`);
+console.log(result);
+
+// Or start async job and check manually
+const response = await client.parse({ file: 'document.pdf' });
+const jobId = response.job_id;
+
+// Get results later
+const parseResult = await client.getParseResult(jobId);
+console.log(parseResult);
+```
+
+```typescript TypeScript
+import { UnsiloedClient } from 'unsiloed-sdk';
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+// Create parsing job and wait for completion
+const result = await client.parseAndWait({
+  file: 'document.pdf',
+  pollInterval: 5000,  // Check every 5 seconds
+  maxWaitTime: 300000  // Wait up to 5 minutes
+});
+
+console.log(`Total chunks: ${result.total_chunks}`);
+console.log(result);
+
+// Or start async job and check manually
+const response = await client.parse({ file: 'document.pdf' });
+const jobId = response.job_id;
+
+// Get results later
+const parseResult = await client.getParseResult(jobId);
+console.log(parseResult);
+```
+
+```bash cURL
+# Start parse job
+curl -X POST "https://prod.visionapi.unsiloed.ai/parse" \
+  -H "accept: application/json" \
+  -H "api-key: your-api-key" \
+  -H "Content-Type: multipart/form-data" \
+  -F "document_file=@document.pdf"
+
+# Response: {"job_id": "04a7a6d8-5ef7-465a-b22a-8a98e7104dd9", "status": "queued"}
 
 # Get results
-result = requests.get(f"{url}/{job_id}", headers=headers)
-print(result.json())
+curl -X GET "https://prod.visionapi.unsiloed.ai/parse/{job_id}" \
+  -H "accept: application/json" \
+  -H "api-key: your-api-key"
 ```
+
+</CodeGroup>
 
 <Note>
 For detailed API parameters and configuration options, see the [Parse API Reference](/api-reference/parser/parse-document).

@@ -97,14 +97,93 @@ On public benchmarks, Unsiloed AI consistently outperforms solutions from LlamaI
 - **Document Workflow Automation**: Classify, route, and process documents automatically
 - **Research & Compliance**: Parse and analyze large volumes of documents for specific information
 
+## SDKs
+
+We provide official SDKs to make integration even easier:
+
+<CodeGroup>
+
+```bash Python
+pip install unsiloed-sdk
+```
+
+```bash JavaScript/TypeScript
+npm install unsiloed-sdk
+```
+
+</CodeGroup>
+
+<CardGroup cols={2}>
+  <Card
+    title="Python SDK"
+    icon="python"
+    href="https://pypi.org/project/unsiloed-sdk/"
+  >
+    Official Python SDK with sync and async support
+  </Card>
+  <Card
+    title="JavaScript SDK"
+    icon="js"
+    href="https://www.npmjs.com/package/unsiloed-sdk"
+  >
+    Official JavaScript/TypeScript SDK with full type definitions
+  </Card>
+</CardGroup>
+
+### Quick Start Examples
+
+<CodeGroup>
+
+```python Python
+from unsiloed_sdk import UnsiloedClient
+
+with UnsiloedClient(api_key="your-api-key") as client:
+    result = client.parse_and_wait(file="document.pdf")
+    print(f"Total chunks: {result.total_chunks}")
+```
+
+```javascript JavaScript
+const { UnsiloedClient } = require('unsiloed-sdk');
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+const result = await client.parseAndWait({ file: 'document.pdf' });
+console.log(`Total chunks: ${result.total_chunks}`);
+```
+
+```typescript TypeScript
+import { UnsiloedClient } from 'unsiloed-sdk';
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+const result = await client.parseAndWait({ file: 'document.pdf' });
+console.log(`Total chunks: ${result.total_chunks}`);
+```
+
+```bash cURL
+# Parse a document
+curl -X POST "https://prod.visionapi.unsiloed.ai/parse" \
+  -H "api-key: your-api-key" \
+  -F "document_file=@document.pdf"
+
+# Get results
+curl -X GET "https://prod.visionapi.unsiloed.ai/parse/{job_id}" \
+  -H "api-key: your-api-key"
+```
+
+</CodeGroup>
+
 ### Getting Started
 
 <Steps>
   <Step title="Get API Access">
     Sign up at [unsiloed.ai](https://www.unsiloed.ai/login) and generate your API key from the dashboard.
   </Step>
+  <Step title="Install SDK or Use API Directly">
+    Install our Python or JavaScript SDK, or use the REST API directly. Check out the [installation guide](/document-processing/vision-api) to get started.
+  </Step>
   <Step title="Make Your First Request">
-    Use our API to extract data from a document. Check out the [extraction guide](/document-processing/vision-api) to get started.
+    Use our SDK or API to extract data from a document. Check out the [extraction guide](/document-processing/vision-api) to get started.
   </Step>
   <Step title="Explore Advanced Features">
     Learn about parsing strategies, classification, splitting, and batch processing to build powerful document workflows.

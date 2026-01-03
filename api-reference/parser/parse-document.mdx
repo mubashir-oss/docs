@@ -449,7 +449,7 @@ Provides precise coordinates for all extracted elements.
 
 <RequestExample>
 
-```bash cURL (File Upload)
+```bash cURL
 curl -X 'POST' \
   'https://prod.visionapi.unsiloed.ai/parse' \
   -H 'accept: application/json' \
@@ -463,26 +463,14 @@ curl -X 'POST' \
   -F 'validate_table_segments=false' \
   -F 'keep_segment_types=all' \
   -F 'segment_analysis={"Table":{"html":"LLM","markdown":"LLM","extended_context":true,"crop_image":"All","model_id":"us_table_v2"}}'
-```
 
-```bash cURL (Presigned URL)
-curl -X 'POST' \
-  'https://prod.visionapi.unsiloed.ai/parse' \
-  -H 'accept: application/json' \
-  -H 'api-key: your-api-key' \
-  -H 'Content-Type: multipart/form-data' \
-  -F 'url=https://your-bucket.s3.amazonaws.com/document.pdf?signature=...' \
-  -F 'use_high_resolution=true' \
-  -F 'segmentation_method=smart_layout_detection' \
-  -F 'ocr_mode=auto_ocr' \
-  -F 'merge_tables=true' \
-  -F 'validate_table_segments=false' \
-  -F 'keep_segment_types=all' \
-  -F 'segment_analysis={"Table":{"html":"LLM","markdown":"LLM","extended_context":true,"crop_image":"All","model_id":"us_table_v2"}}'
+# Alternative: Use presigned URL instead of file upload
+# Replace the file parameter with url parameter:
+# -F 'url=https://your-bucket.s3.amazonaws.com/document.pdf?signature=...' \
 ```
 
 
-```python Python (File Upload)
+```python Python
 import requests
 import json
 
@@ -492,7 +480,7 @@ headers = {
     "api-key": "your-api-key"
 }
 
-# Prepare file and form data
+# Basic file upload with all options
 files = {
     "file": ("document.pdf", open("document.pdf", "rb"), "application/pdf")
 }
@@ -526,56 +514,71 @@ if response.status_code == 200:
 else:
     print("Error:", response.status_code, response.text)
 
-# Close file
 files["file"][1].close()
+
+# ========== Alternative: Use Presigned URL ==========
+# Instead of uploading a file, you can provide a presigned URL
+# Remove the 'files' parameter and add 'url' to data:
+# data = {
+#     "url": "https://your-bucket.s3.amazonaws.com/document.pdf?signature=...",
+#     "use_high_resolution": "true",
+#     "segmentation_method": "smart_layout_detection",
+#     "ocr_mode": "auto_ocr",
+#     "merge_tables": "true",
+#     "validate_table_segments": "false",
+#     "keep_segment_types": "all"
+# }
+# response = requests.post(url, headers=headers, data=data)
+
+# ========== Use Case: Extract Tables Only ==========
+# For financial reports or documents where you only need tables:
+# data = {
+#     "merge_tables": "true",
+#     "validate_table_segments": "true",
+#     "keep_segment_types": "table",
+#     "segmentation_method": "smart_layout_detection",
+#     "ocr_mode": "auto_ocr"
+# }
+
+# ========== Use Case: Citation Extraction (Academic Papers) ==========
+# For research papers, enable citation extraction:
+# data = {
+#     "use_high_resolution": "true",
+#     "segmentation_method": "smart_layout_detection",
+#     "ocr_mode": "auto_ocr",
+#     "xml_citation": "true"
+# }
+
+# ========== Use Case: Advanced Segment Analysis ==========
+# Configure how different segment types are processed:
+# segment_analysis_config = {
+#     "Table": {
+#         "html": "LLM",
+#         "markdown": "LLM",
+#         "content_source": "HTML",
+#         "model_id": "us_table_v2"
+#     },
+#     "Picture": {
+#         "html": "LLM",
+#         "markdown": "LLM",
+#         "content_source": "Markdown"
+#     }
+# }
+# data = {
+#     "use_high_resolution": "true",
+#     "segmentation_method": "smart_layout_detection",
+#     "ocr_mode": "auto_ocr",
+#     "merge_tables": "true",
+#     "keep_segment_types": "table,picture",
+#     "segment_analysis": json.dumps(segment_analysis_config)
+# }
 ```
 
-```python Python (Presigned URL)
-import requests
-import json
 
-url = "https://prod.visionapi.unsiloed.ai/parse"
-headers = {
-    "accept": "application/json",
-    "api-key": "your-api-key"
-}
-
-# Use presigned URL instead of file upload
-data = {
-    "url": "https://your-bucket.s3.amazonaws.com/document.pdf?signature=...",
-    "use_high_resolution": "true",
-    "segmentation_method": "smart_layout_detection",
-    "ocr_mode": "auto_ocr",
-    "merge_tables": "true",
-    "validate_table_segments": "false",
-    "keep_segment_types": "all",
-    "segment_analysis": json.dumps({
-        "Table": {
-            "html": "LLM",
-            "markdown": "LLM",
-            "extended_context": True,
-            "crop_image": "All",
-            "model_id": "us_table_v2"
-        }
-    })
-}
-
-response = requests.post(url, headers=headers, data=data)
-
-if response.status_code == 200:
-    result = response.json()
-    print(f"Job ID: {result['job_id']}")
-    print(f"Status: {result['status']}")
-    print(f"Message: {result['message']}")
-else:
-    print("Error:", response.status_code, response.text)
-```
-
-
-```javascript JavaScript (File Upload)
+```javascript JavaScript
 const formData = new FormData();
 
-// Add document file
+// Basic file upload
 const fileInput = document.querySelector('input[type="file"]');
 if (fileInput.files[0]) {
   formData.append('file', fileInput.files[0]);
@@ -616,168 +619,26 @@ if (response.ok) {
 } else {
   console.error('Parsing failed:', response.status, await response.text());
 }
-```
 
-```javascript JavaScript (Presigned URL)
-const formData = new FormData();
+// ========== Alternative: Use Presigned URL ==========
+// Instead of file upload, use a presigned URL:
+// formData.append('url', 'https://your-bucket.s3.amazonaws.com/document.pdf?signature=...');
+// Remove the file upload lines above and use the url parameter instead
 
-// Use presigned URL instead of file upload
-formData.append('url', 'https://your-bucket.s3.amazonaws.com/document.pdf?signature=...');
+// ========== Use Case: Extract Tables Only ==========
+// For financial documents where you only need tables:
+// formData.append('merge_tables', 'true');
+// formData.append('validate_table_segments', 'true');
+// formData.append('keep_segment_types', 'table');
+// formData.append('segmentation_method', 'smart_layout_detection');
+// formData.append('ocr_mode', 'auto_ocr');
 
-// Add configuration parameters
-formData.append('use_high_resolution', 'true');
-formData.append('segmentation_method', 'smart_layout_detection');
-formData.append('ocr_mode', 'auto_ocr');
-formData.append('merge_tables', 'true');
-formData.append('validate_table_segments', 'false');
-formData.append('keep_segment_types', 'all');
-formData.append('segment_analysis', JSON.stringify({
-  Table: {
-    html: 'LLM',
-    markdown: 'LLM',
-    extended_context: true,
-    crop_image: 'All',
-    model_id: 'us_table_v2'
-  }
-}));
-
-const response = await fetch('https://prod.visionapi.unsiloed.ai/parse', {
-  method: 'POST',
-  headers: {
-    'accept': 'application/json',
-    'api-key': 'your-api-key'
-  },
-  body: formData
-});
-
-if (response.ok) {
-  const result = await response.json();
-  console.log(`Job ID: ${result.job_id}`);
-  console.log(`Status: ${result.status}`);
-  console.log(`Message: ${result.message}`);
-} else {
-  console.error('Parsing failed:', response.status, await response.text());
-}
-```
-
-**Example with Tables Only:**
-
-```python Python
-import requests
-
-url = "https://prod.visionapi.unsiloed.ai/parse"
-headers = {
-    "accept": "application/json",
-    "api-key": "your-api-key"
-}
-
-files = {
-    "file": ("financial_report.pdf", open("financial_report.pdf", "rb"), "application/pdf")
-}
-
-# Extract only tables with merging and validation enabled
-data = {
-    "merge_tables": "true",
-    "validate_table_segments": "true",
-    "keep_segment_types": "table",
-    "segmentation_method": "smart_layout_detection",
-    "ocr_mode": "auto_ocr"
-}
-
-response = requests.post(url, headers=headers, files=files, data=data)
-
-if response.status_code == 200:
-    result = response.json()
-    print(f"Job ID: {result['job_id']}")
-else:
-    print("Error:", response.status_code, response.text)
-
-files["file"][1].close()
-```
-
-**Example with Citation Extraction (Academic Papers):**
-
-```python Python
-import requests
-
-url = "https://prod.visionapi.unsiloed.ai/parse"
-headers = {
-    "accept": "application/json",
-    "api-key": "your-api-key"
-}
-
-files = {
-    "file": ("research_paper.pdf", open("research_paper.pdf", "rb"), "application/pdf")
-}
-
-# Enable citation extraction for academic documents
-data = {
-    "use_high_resolution": "true",
-    "segmentation_method": "smart_layout_detection",
-    "ocr_mode": "auto_ocr",
-    "xml_citation": "true"
-}
-
-response = requests.post(url, headers=headers, files=files, data=data)
-
-if response.status_code == 200:
-    result = response.json()
-    print(f"Job ID: {result['job_id']}")
-else:
-    print("Error:", response.status_code, response.text)
-
-files["file"][1].close()
-```
-
-**Example with Segment Analysis:**
-
-```python Python
-import requests
-import json
-
-url = "https://prod.visionapi.unsiloed.ai/parse"
-headers = {
-    "accept": "application/json",
-    "api-key": "your-api-key"
-}
-
-files = {
-    "file": ("document.pdf", open("document.pdf", "rb"), "application/pdf")
-}
-
-# Configure segment analysis to use HTML for Table content and Markdown for Picture content
-segment_analysis_config = {
-    "Table": {
-        "html": "LLM",
-        "markdown": "LLM",
-        "content_source": "HTML",
-        "model_id": "us_table_v2"
-    },
-    "Picture": {
-        "html": "LLM",
-        "markdown": "LLM",
-        "content_source": "Markdown"
-    }
-}
-
-data = {
-    "use_high_resolution": "true",
-    "segmentation_method": "smart_layout_detection",
-    "ocr_mode": "auto_ocr",
-    "merge_tables": "true",
-    "keep_segment_types": "table,picture",
-    "segment_analysis": json.dumps(segment_analysis_config)
-}
-
-response = requests.post(url, headers=headers, files=files, data=data)
-
-if response.status_code == 200:
-    result = response.json()
-    print(f"Job ID: {result['job_id']}")
-else:
-    print("Error:", response.status_code, response.text)
-
-files["file"][1].close()
+// ========== Use Case: Citation Extraction (Academic Papers) ==========
+// For research papers, enable citation extraction:
+// formData.append('use_high_resolution', 'true');
+// formData.append('segmentation_method', 'smart_layout_detection');
+// formData.append('ocr_mode', 'auto_ocr');
+// formData.append('xml_citation', 'true');
 ```
 
 </RequestExample>

@@ -36,85 +36,280 @@ You can split documents into various categories:
 
 ### Submit Split Job with File Upload
 
-```python
-import requests
-import json
+<CodeGroup>
 
-url = "https://prod.visionapi.unsiloed.ai/splitter"
-headers = {"api-key": "your-api-key"}
+```python Python
+from unsiloed_sdk import UnsiloedClient, Category
 
 # Define categories with optional descriptions for better accuracy
 categories = [
-    {"name": "Invoice", "description": "Financial invoices with itemized charges"},
-    {"name": "Receipt", "description": "Purchase receipts"},
-    {"name": "Contract"}  # Description is optional
+    Category(name="Invoice", description="Financial invoices with itemized charges"),
+    Category(name="Receipt", description="Purchase receipts"),
+    Category(name="Contract")  # Description is optional
 ]
 
-files = {"file": ("mixed_documents.pdf", open("mixed_documents.pdf", "rb"), "application/pdf")}
-data = {"categories": json.dumps(categories)}
+with UnsiloedClient(api_key="your-api-key") as client:
+    # Split and wait for completion
+    result = client.split_and_wait(
+        file="mixed_documents.pdf",
+        categories=categories
+    )
 
-response = requests.post(url, files=files, data=data, headers=headers)
+    # Check if split was successful
+    if result.result['success']:
+        print(f"✓ {result.result['message']}")
 
-if response.status_code == 200:
-    result = response.json()
-    job_id = result['job_id']
-    print(f"Split job created: {job_id}")
-    print(f"Status: {result['status']}")
-    print(f"Quota remaining: {result['quota_remaining']}")
-else:
-    print(f"Error: {response.status_code}")
-    print(response.text)
-
-files["file"][1].close()
+        # Access the generated split files
+        for file_info in result.result['files']:
+            print(f"\nFile: {file_info['name']}")
+            print(f"  Confidence: {file_info['confidence_score']:.2%}")
+            print(f"  Download: {file_info['full_path']}")
+    else:
+        print(f"Split failed: {result.result['message']}")
 ```
+
+```javascript JavaScript
+const { UnsiloedClient } = require('unsiloed-sdk');
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+// Define categories with optional descriptions for better accuracy
+const categories = [
+  { name: 'Invoice', description: 'Financial invoices with itemized charges' },
+  { name: 'Receipt', description: 'Purchase receipts' },
+  { name: 'Contract' }  // Description is optional
+];
+
+const result = await client.split({
+  file: 'mixed_documents.pdf',
+  categories: categories
+});
+
+console.log(`Split job created: ${result.job_id}`);
+console.log(`Status: ${result.status}`);
+console.log(`Quota remaining: ${result.quota_remaining}`);
+```
+
+```typescript TypeScript
+import { UnsiloedClient, Category } from 'unsiloed-sdk';
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+// Define categories with optional descriptions for better accuracy
+const categories: Category[] = [
+  { name: 'Invoice', description: 'Financial invoices with itemized charges' },
+  { name: 'Receipt', description: 'Purchase receipts' },
+  { name: 'Contract' }  // Description is optional
+];
+
+const result = await client.split({
+  file: 'mixed_documents.pdf',
+  categories: categories
+});
+
+console.log(`Split job created: ${result.job_id}`);
+console.log(`Status: ${result.status}`);
+console.log(`Quota remaining: ${result.quota_remaining}`);
+```
+
+```bash cURL
+curl -X POST "https://prod.visionapi.unsiloed.ai/splitter" \
+  -H "api-key: your-api-key" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@mixed_documents.pdf" \
+  -F 'categories=[{"name":"Invoice","description":"Financial invoices with itemized charges"},{"name":"Receipt","description":"Purchase receipts"},{"name":"Contract"}]'
+
+# Response: {"job_id": "550e8400-e29b-41d4-a716-446655440000", "status": "processing"}
+
+# Get results
+curl -X GET "https://prod.visionapi.unsiloed.ai/splitter/{job_id}" \
+  -H "api-key: your-api-key"
+```
+
+</CodeGroup>
 
 ### Submit Split Job with File URL
 
-```python
-import requests
-import json
+<CodeGroup>
 
-url = "https://prod.visionapi.unsiloed.ai/splitter"
-headers = {"api-key": "your-api-key"}
+```python Python
+from unsiloed_sdk import UnsiloedClient, Category
 
 categories = [
-    {"name": "Invoice", "description": "Financial invoices"},
-    {"name": "Receipt", "description": "Purchase receipts"}
+    Category(name="Invoice", description="Financial invoices"),
+    Category(name="Receipt", description="Purchase receipts")
 ]
 
-data = {
-    "file_url": "https://example.com/document.pdf",
-    "categories": json.dumps(categories)
-}
+with UnsiloedClient(api_key="your-api-key") as client:
+    result = client.split_and_wait(
+        file_url="https://example.com/document.pdf",
+        categories=categories
+    )
 
-response = requests.post(url, data=data, headers=headers)
-
-if response.status_code == 200:
-    result = response.json()
-    print(f"Split job created: {result['job_id']}")
-else:
-    print(f"Error: {response.status_code}")
+    if result.result['success']:
+        print(f"✓ Split successful: {len(result.result['files'])} files generated")
+        for file_info in result.result['files']:
+            print(f"  - {file_info['name']}")
 ```
+
+```javascript JavaScript
+const { UnsiloedClient } = require('unsiloed-sdk');
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+const categories = [
+  { name: 'Invoice', description: 'Financial invoices' },
+  { name: 'Receipt', description: 'Purchase receipts' }
+];
+
+const result = await client.split({
+  fileUrl: 'https://example.com/document.pdf',
+  categories: categories
+});
+
+console.log(`Split job created: ${result.job_id}`);
+```
+
+```typescript TypeScript
+import { UnsiloedClient, Category } from 'unsiloed-sdk';
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+const categories: Category[] = [
+  { name: 'Invoice', description: 'Financial invoices' },
+  { name: 'Receipt', description: 'Purchase receipts' }
+];
+
+const result = await client.split({
+  fileUrl: 'https://example.com/document.pdf',
+  categories: categories
+});
+
+console.log(`Split job created: ${result.job_id}`);
+```
+
+```bash cURL
+curl -X POST "https://prod.visionapi.unsiloed.ai/splitter" \
+  -H "api-key: your-api-key" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d 'file_url=https://example.com/document.pdf' \
+  -d 'categories=[{"name":"Invoice","description":"Financial invoices"},{"name":"Receipt","description":"Purchase receipts"}]'
+```
+
+</CodeGroup>
 
 ### Check Split Job Status
 
-```python
-import requests
+<CodeGroup>
 
-url = "https://prod.visionapi.unsiloed.ai/splitter"
-job_id = "550e8400-e29b-41d4-a716-446655440000"
-headers = {"api-key": "your-api-key"}
+```python Python
+from unsiloed_sdk import UnsiloedClient
 
-response = requests.get(f"{url}/{job_id}", headers=headers)
+with UnsiloedClient(api_key="your-api-key") as client:
+    job_id = "550e8400-e29b-41d4-a716-446655440000"
 
-if response.status_code == 200:
-    job = response.json()
-    print(f"Status: {job['status']}")
-    print(f"Progress: {job['progress']}")
+    # Get split job result
+    job = client.get_split_result(job_id)
 
-    if job['status'] == 'completed' and 'result' in job:
-        split_results = job['result']['split_results']
-        print(f"Documents split into {len(split_results)} categories")
-else:
-    print(f"Error: {response.status_code}")
+    print(f"Status: {job.status}")
+    print(f"Progress: {job.progress}")
+
+    if job.status == "Succeeded" and job.result:
+        if job.result['success']:
+            files = job.result['files']
+            print(f"Documents split into {len(files)} files")
+
+            for file_info in files:
+                print(f"\n{file_info['name']}")
+                print(f"  Category: {file_info['category']}")
+                print(f"  Confidence: {file_info['confidence_score']:.2%}")
+                print(f"  URL: {file_info['full_path']}")
 ```
+
+```javascript JavaScript
+const { UnsiloedClient } = require('unsiloed-sdk');
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+const jobId = '550e8400-e29b-41d4-a716-446655440000';
+
+const job = await client.getSplitResult(jobId);
+
+console.log(`Status: ${job.status}`);
+console.log(`Progress: ${job.progress}`);
+
+if (job.status === 'Succeeded' && job.split_results) {
+  console.log(`Documents split into ${job.split_results.length} categories`);
+}
+
+// Or use splitAndWait to automatically poll until completion
+const categories = [
+  { name: 'Invoice' },
+  { name: 'Receipt' }
+];
+
+const result = await client.splitAndWait({
+  file: 'document.pdf',
+  categories: categories,
+  pollInterval: 5000,  // Check every 5 seconds
+  maxWaitTime: 300000  // Wait up to 5 minutes
+});
+
+console.log(`Split completed: ${result.split_results.length} files generated`);
+```
+
+```typescript TypeScript
+import { UnsiloedClient, Category } from 'unsiloed-sdk';
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+const jobId = '550e8400-e29b-41d4-a716-446655440000';
+
+const job = await client.getSplitResult(jobId);
+
+console.log(`Status: ${job.status}`);
+console.log(`Progress: ${job.progress}`);
+
+if (job.status === 'Succeeded' && job.split_results) {
+  console.log(`Documents split into ${job.split_results.length} categories`);
+}
+
+// Or use splitAndWait to automatically poll until completion
+const categories: Category[] = [
+  { name: 'Invoice' },
+  { name: 'Receipt' }
+];
+
+const result = await client.splitAndWait({
+  file: 'document.pdf',
+  categories: categories,
+  pollInterval: 5000,  // Check every 5 seconds
+  maxWaitTime: 300000  // Wait up to 5 minutes
+});
+
+console.log(`Split completed: ${result.split_results.length} files generated`);
+```
+
+```bash cURL
+curl -X GET "https://prod.visionapi.unsiloed.ai/splitter/550e8400-e29b-41d4-a716-446655440000" \
+  -H "api-key: your-api-key"
+
+# Response when completed:
+# {
+#   "job_id": "550e8400-e29b-41d4-a716-446655440000",
+#   "status": "completed",
+#   "result": {
+#     "success": true,
+#     "files": [
+#       {
+#         "name": "Invoice_1.pdf",
+#         "category": "Invoice",
+#         "confidence_score": 0.976,
+#         "full_path": "https://s3.amazonaws.com/..."
+#       }
+#     ]
+#   }
+# }
+```
+
+</CodeGroup>
