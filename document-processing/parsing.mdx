@@ -68,7 +68,8 @@ with UnsiloedClient(api_key="your-api-key") as client:
     for chunk in result.chunks:
         for segment in chunk['segments']:
             print(f"Type: {segment['segment_type']}")
-            print(f"Content: {segment.get('content', '')[:100]}...")
+            content = segment.get('content') or ''
+            print(f"Content: {content[:100]}...")
 
 # Or start job and poll manually
 with UnsiloedClient(api_key="your-api-key") as client:
