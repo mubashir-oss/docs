@@ -161,7 +161,7 @@ curl -X POST "https://prod.visionapi.unsiloed.ai/extract" \
   -H "api-key: your-api-key" \
   -H "Content-Type: multipart/form-data" \
   -F "pdf_file=@document.pdf;type=application/pdf" \
-  -F "schema_data={\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\",\"description\":\"Document title\"},\"authors\":{\"type\":\"array\",\"description\":\"List of authors\",\"items\":{\"type\":\"string\"}}},\"required\":[\"title\",\"authors\"],\"additionalProperties\":false}"
+  -F "schema_data={\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\",\"description\":\"Document title\"},\"date\":{\"type\":\"string\",\"description\":\"Document date\"}},\"required\":[\"title\",\"date\"],\"additionalProperties\":false}"
 ```
 
 ```python Python
@@ -180,40 +180,25 @@ schema = {
     "properties": {
         "title": {
             "type": "string",
-            "description": "Document title or heading"
+            "description": "Document title"
         },
-        "authors": {
-            "type": "array",
-            "description": "List of document authors",
-            "items": {
-                "type": "string"
-            }
-        },
-        "publication_date": {
+        "date": {
             "type": "string",
-            "description": "Publication or creation date"
-        },
-        "citations": {
-            "type": "array",
-            "description": "List of citations or references",
-            "items": {
-                "type": "string"
-            }
-        },
-        "key_findings": {
-            "type": "array",
-            "description": "Main findings or conclusions",
-            "items": {
-                "type": "string"
-            }
+            "description": "Document date"
         }
     },
-    "required": ["title", "authors"],
-    "additionalProperties": false
+    "required": ["title", "date"],
+    "additionalProperties": False
 }
 
-files = {"pdf_file": ("document.pdf", open("document.pdf", "rb"), "application/pdf")}
-data = {"schema_data": json.dumps(schema)}
+# Prepare file and schema data
+files = {
+    "pdf_file": ("document.pdf", open("document.pdf", "rb"), "application/pdf")
+}
+
+data = {
+    "schema_data": json.dumps(schema)
+}
 
 response = requests.post(url, headers=headers, files=files, data=data)
 
@@ -222,13 +207,10 @@ if response.status_code == 200:
     print(f"Extraction job created: {result['job_id']}")
     print(f"Status: {result['status']}")
     print(f"Quota remaining: {result['quota_remaining']}")
-    
-    # Poll for job completion
-    job_id = result['job_id']
-    # Use job status endpoint to check progress
-    
 else:
     print("Error:", response.status_code, response.text)
+
+files["pdf_file"][1].close()
 ```
 
 ```javascript JavaScript
@@ -240,28 +222,14 @@ const schema = {
   properties: {
     title: {
       type: "string",
-      description: "Document title or heading"
+      description: "Document title"
     },
-    authors: {
-      type: "array", 
-      description: "List of document authors",
-      items: {
-        type: "string"
-      }
-    },
-    publication_date: {
+    date: {
       type: "string",
-      description: "Publication or creation date"
-    },
-    citations: {
-      type: "array",
-      description: "List of citations or references",
-      items: {
-        type: "string"
-      }
+      description: "Document date"
     }
   },
-  required: ["title", "authors"],
+  required: ["title", "date"],
   additionalProperties: false
 };
 
@@ -281,9 +249,9 @@ if (response.ok) {
   console.log(`Extraction job created: ${result.job_id}`);
   console.log(`Status: ${result.status}`);
   console.log(`Quota remaining: ${result.quota_remaining}`);
-  
+
   // Poll for job completion using job management endpoints
-  
+
 } else {
   console.error('Extraction failed:', response.status, await response.text());
 }
@@ -612,38 +580,43 @@ This example shows a more complex schema for extracting detailed shareholding in
 
 ## Job Management Integration
 
-After creating an extraction job, use the job management endpoints to monitor progress:
+After creating an extraction job, you can poll for completion using the job status endpoints:
 
 ```python
-import time
 import requests
+import time
 
-def wait_for_extraction_completion(job_id, api_key):
-    """Poll job status until completion"""
-
-    headers = {"api-key": api_key}
-    status_url = f"https://prod.visionapi.unsiloed.ai/extract/{job_id}"
-
-    while True:
-        response = requests.get(status_url, headers=headers)
-        
-        if response.status_code == 200:
-            status_data = response.json()
-            print(f"Job status: {status_data['status']}")
-            
-            if status_data['status'] == 'completed':
-                # Results are already in the status response
-                return status_data
-
-            elif status_data['status'] == 'failed':
-                raise Exception(f"Job failed: {status_data.get('error', 'Unknown error')}")
-                
-        time.sleep(5)  # Wait 5 seconds before next check
-
-# Usage
+# After creating the extraction job, you receive a job_id
 job_id = "945b4578-691f-4c74-8184-dde654093b11"
-results = wait_for_extraction_completion(job_id, "your-api-key")
-print("Extraction completed:", results)
+
+headers = {
+    "accept": "application/json",
+    "api-key": "your-api-key"
+}
+
+# Poll for job completion
+while True:
+    response = requests.get(
+        f"https://prod.visionapi.unsiloed.ai/jobs/{job_id}",
+        headers=headers
+    )
+
+    if response.status_code == 200:
+        result = response.json()
+        print(f"Job status: {result['status']}")
+
+        if result['status'] == 'Succeeded':
+            print("Extraction completed!")
+            print("Extracted data:", result['result'])
+            break
+        elif result['status'] == 'Failed':
+            print(f"Job failed: {result.get('error', 'Unknown error')}")
+            break
+    else:
+        print(f"Error checking status: {response.status_code}")
+        break
+
+    time.sleep(5)  # Wait 5 seconds before checking again
 ```
 
 ## Advanced Schema Patterns

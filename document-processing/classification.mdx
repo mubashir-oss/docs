@@ -32,12 +32,10 @@ Classification jobs are processed asynchronously. Submit a classification job an
 
 ### Classify Document with File Upload
 
-```python
-import requests
-import json
+<CodeGroup>
 
-url = "https://prod.visionapi.unsiloed.ai/classify"
-headers = {"api-key": "your-api-key"}
+```python Python
+from unsiloed_sdk import UnsiloedClient
 
 # Define categories with optional descriptions
 categories = [
@@ -46,33 +44,90 @@ categories = [
     {"name": "Prescription"}  # Description is optional
 ]
 
-files = {"pdf_file": ("document.pdf", open("document.pdf", "rb"), "application/pdf")}
-data = {"categories": json.dumps(categories)}
+with UnsiloedClient(api_key="your-api-key") as client:
+    # Classify and wait for completion
+    result = client.classify_and_wait(
+        file="document.pdf",
+        categories=categories
+    )
 
-response = requests.post(url, files=files, data=data, headers=headers)
+    print(f"Classification: {result.result['classification']}")
+    print(f"Confidence: {result.result['confidence']:.2%}")
 
-if response.status_code == 200:
-    result = response.json()
-    job_id = result['job_id']
-    print(f"Classification job created: {job_id}")
-    print(f"Status: {result['status']}")
-    print(f"Message: {result['message']}")
-    print(f"Quota remaining: {result['quota_remaining']}")
-else:
-    print(f"Error: {response.status_code}")
-    print(response.text)
-
-files["pdf_file"][1].close()
+    # Check page-by-page results if available
+    if 'details' in result.result:
+        for page_result in result.result['details']['page_results']:
+            print(f"Page {page_result['page']}: {page_result['classification']}")
 ```
+
+```javascript JavaScript
+const { UnsiloedClient } = require('unsiloed-sdk');
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+// Define categories with optional descriptions
+const categories = [
+  { name: 'Medical Record', description: 'Patient medical records and history' },
+  { name: 'Lab Report', description: 'Laboratory test results' },
+  { name: 'Prescription' }  // Description is optional
+];
+
+const result = await client.classify({
+  file: 'document.pdf',
+  categories: categories
+});
+
+console.log(`Classification job created: ${result.job_id}`);
+console.log(`Status: ${result.status}`);
+console.log(`Message: ${result.message}`);
+console.log(`Quota remaining: ${result.quota_remaining}`);
+```
+
+```typescript TypeScript
+import { UnsiloedClient, Category } from 'unsiloed-sdk';
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+// Define categories with optional descriptions
+const categories: Category[] = [
+  { name: 'Medical Record', description: 'Patient medical records and history' },
+  { name: 'Lab Report', description: 'Laboratory test results' },
+  { name: 'Prescription' }  // Description is optional
+];
+
+const result = await client.classify({
+  file: 'document.pdf',
+  categories: categories
+});
+
+console.log(`Classification job created: ${result.job_id}`);
+console.log(`Status: ${result.status}`);
+console.log(`Message: ${result.message}`);
+console.log(`Quota remaining: ${result.quota_remaining}`);
+```
+
+```bash cURL
+curl -X POST "https://prod.visionapi.unsiloed.ai/classify" \
+  -H "api-key: your-api-key" \
+  -H "Content-Type: multipart/form-data" \
+  -F "pdf_file=@document.pdf" \
+  -F 'categories=[{"name":"Medical Record","description":"Patient medical records and history"},{"name":"Lab Report","description":"Laboratory test results"},{"name":"Prescription"}]'
+
+# Response: {"job_id": "660e8400-e29b-41d4-a716-446655440001", "status": "processing"}
+
+# Get results
+curl -X GET "https://prod.visionapi.unsiloed.ai/classify/{job_id}" \
+  -H "api-key: your-api-key"
+```
+
+</CodeGroup>
 
 ### Classify Document with File URL
 
-```python
-import requests
-import json
+<CodeGroup>
 
-url = "https://prod.visionapi.unsiloed.ai/classify"
-headers = {"api-key": "your-api-key"}
+```python Python
+from unsiloed_sdk import UnsiloedClient
 
 categories = [
     {"name": "Invoice"},
@@ -80,86 +135,233 @@ categories = [
     {"name": "Contract"}
 ]
 
-data = {
-    "file_url": "https://example.com/document.pdf",
-    "categories": json.dumps(categories)
-}
+with UnsiloedClient(api_key="your-api-key") as client:
+    result = client.classify_and_wait(
+        file_url="https://example.com/document.pdf",
+        categories=categories
+    )
 
-response = requests.post(url, data=data, headers=headers)
-
-if response.status_code == 200:
-    result = response.json()
-    print(f"Classification job created: {result['job_id']}")
-else:
-    print(f"Error: {response.status_code}")
+    print(f"Classification: {result.result['classification']}")
+    print(f"Confidence: {result.result['confidence']:.2%}")
 ```
+
+```javascript JavaScript
+const { UnsiloedClient } = require('unsiloed-sdk');
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+const categories = [
+  { name: 'Invoice' },
+  { name: 'Receipt' },
+  { name: 'Contract' }
+];
+
+const result = await client.classify({
+  fileUrl: 'https://example.com/document.pdf',
+  categories: categories
+});
+
+console.log(`Classification job created: ${result.job_id}`);
+```
+
+```typescript TypeScript
+import { UnsiloedClient, Category } from 'unsiloed-sdk';
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+const categories: Category[] = [
+  { name: 'Invoice' },
+  { name: 'Receipt' },
+  { name: 'Contract' }
+];
+
+const result = await client.classify({
+  fileUrl: 'https://example.com/document.pdf',
+  categories: categories
+});
+
+console.log(`Classification job created: ${result.job_id}`);
+```
+
+```bash cURL
+curl -X POST "https://prod.visionapi.unsiloed.ai/classify" \
+  -H "api-key: your-api-key" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d 'file_url=https://example.com/document.pdf' \
+  -d 'categories=[{"name":"Invoice"},{"name":"Receipt"},{"name":"Contract"}]'
+```
+
+</CodeGroup>
 
 ### Check Classification Job Status
 
-```python
-import requests
+<CodeGroup>
 
-url = "https://prod.visionapi.unsiloed.ai/classify"
-job_id = "660e8400-e29b-41d4-a716-446655440001"
-headers = {"api-key": "your-api-key"}
+```python Python
+from unsiloed_sdk import UnsiloedClient
 
-response = requests.get(f"{url}/{job_id}", headers=headers)
+with UnsiloedClient(api_key="your-api-key") as client:
+    job_id = "660e8400-e29b-41d4-a716-446655440001"
 
-if response.status_code == 200:
-    job = response.json()
-    print(f"Status: {job['status']}")
-    print(f"Progress: {job['progress']}")
+    # Get classification result
+    job = client.get_classify_result(job_id)
 
-    if job['status'] == 'completed' and 'result' in job:
-        result = job['result']
+    print(f"Status: {job.status}")
+    print(f"Progress: {job.progress}")
+
+    if job.status == "Succeeded" and job.result:
+        result = job.result
         print(f"\nClassification: {result['classification']}")
-        print(f"Confidence: {result['confidence']:.2f}")
+        print(f"Confidence: {result['confidence']:.2%}")
 
         if 'details' in result:
             print(f"Details: {result['details']}")
-else:
-    print(f"Error: {response.status_code}")
 ```
+
+```javascript JavaScript
+const { UnsiloedClient } = require('unsiloed-sdk');
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+const jobId = '660e8400-e29b-41d4-a716-446655440001';
+
+const job = await client.getClassifyResult(jobId);
+
+console.log(`Status: ${job.status}`);
+console.log(`Progress: ${job.progress}`);
+
+if (job.status === 'Succeeded' && job.result) {
+  const result = job.result;
+  console.log(`\nClassification: ${result.classification}`);
+  console.log(`Confidence: ${result.confidence.toFixed(2)}`);
+
+  if (result.details) {
+    console.log(`Details: ${JSON.stringify(result.details)}`);
+  }
+}
+```
+
+```typescript TypeScript
+import { UnsiloedClient } from 'unsiloed-sdk';
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+const jobId = '660e8400-e29b-41d4-a716-446655440001';
+
+const job = await client.getClassifyResult(jobId);
+
+console.log(`Status: ${job.status}`);
+console.log(`Progress: ${job.progress}`);
+
+if (job.status === 'Succeeded' && job.result) {
+  const result = job.result;
+  console.log(`\nClassification: ${result.classification}`);
+  console.log(`Confidence: ${result.confidence.toFixed(2)}`);
+
+  if (result.details) {
+    console.log(`Details: ${JSON.stringify(result.details)}`);
+  }
+}
+```
+
+```bash cURL
+curl -X GET "https://prod.visionapi.unsiloed.ai/classify/660e8400-e29b-41d4-a716-446655440001" \
+  -H "api-key: your-api-key"
+
+# Response when completed:
+# {
+#   "job_id": "660e8400-e29b-41d4-a716-446655440001",
+#   "status": "completed",
+#   "result": {
+#     "classification": "Medical Record",
+#     "confidence": 0.95
+#   }
+# }
+```
+
+</CodeGroup>
 
 ### Poll for Completion
 
-```python
-import requests
-import time
+<CodeGroup>
 
-def wait_for_classification(job_id, api_key, max_wait=300):
-    """Poll classification job until complete"""
+```python Python
+from unsiloed_sdk import UnsiloedClient
 
-    url = "https://prod.visionapi.unsiloed.ai/classify"
-    headers = {"api-key": api_key}
-    start_time = time.time()
+categories = [
+    {"name": "Invoice"},
+    {"name": "Receipt"},
+    {"name": "Contract"}
+]
 
-    while time.time() - start_time < max_wait:
-        response = requests.get(f"{url}/{job_id}", headers=headers)
+with UnsiloedClient(api_key="your-api-key") as client:
+    # Use classify_and_wait for automatic polling
+    result = client.classify_and_wait(
+        file="document.pdf",
+        categories=categories,
+        poll_interval=5,  # Check every 5 seconds
+        max_wait_time=300  # Wait up to 5 minutes
+    )
 
-        if response.status_code == 200:
-            job = response.json()
-            status = job['status']
-
-            print(f"Status: {status} - {job.get('progress', '')}")
-
-            if status == 'completed':
-                return job['result']
-            elif status == 'failed':
-                raise Exception(f"Classification failed: {job.get('error', 'Unknown error')}")
-
-        time.sleep(5)  # Wait 5 seconds before next check
-
-    raise Exception("Classification timed out")
-
-# Usage
-try:
-    result = wait_for_classification("your-job-id", "your-api-key")
-    print(f"Classification: {result['classification']}")
-    print(f"Confidence: {result['confidence']}")
-except Exception as e:
-    print(f"Error: {e}")
+    print(f"Classification: {result.result['classification']}")
+    print(f"Confidence: {result.result['confidence']:.2%}")
 ```
+
+```javascript JavaScript
+const { UnsiloedClient } = require('unsiloed-sdk');
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+const categories = [
+  { name: 'Invoice' },
+  { name: 'Receipt' },
+  { name: 'Contract' }
+];
+
+// Use classifyAndWait for automatic polling
+try {
+  const result = await client.classifyAndWait({
+    file: 'document.pdf',
+    categories: categories,
+    pollInterval: 5000,  // Check every 5 seconds
+    maxWaitTime: 300000  // Wait up to 5 minutes
+  });
+
+  console.log(`Classification: ${result.result.classification}`);
+  console.log(`Confidence: ${result.result.confidence}`);
+} catch (error) {
+  console.error(`Error: ${error.message}`);
+}
+```
+
+```typescript TypeScript
+import { UnsiloedClient, Category } from 'unsiloed-sdk';
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+const categories: Category[] = [
+  { name: 'Invoice' },
+  { name: 'Receipt' },
+  { name: 'Contract' }
+];
+
+// Use classifyAndWait for automatic polling
+try {
+  const result = await client.classifyAndWait({
+    file: 'document.pdf',
+    categories: categories,
+    pollInterval: 5000,  // Check every 5 seconds
+    maxWaitTime: 300000  // Wait up to 5 minutes
+  });
+
+  console.log(`Classification: ${result.result.classification}`);
+  console.log(`Confidence: ${result.result.confidence}`);
+} catch (error) {
+  console.error(`Error: ${(error as Error).message}`);
+}
+```
+
+</CodeGroup>
 
 ## Response Format
 
