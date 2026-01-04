@@ -41,8 +41,8 @@
           {
             "group": "Document Processing",
             "pages": [
-              "document-processing/vision-api",
               "document-processing/parsing",
+              "document-processing/vision-api",
               "document-processing/classification",
               "document-processing/splitting"
             ]

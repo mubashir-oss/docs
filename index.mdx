@@ -5,31 +5,32 @@ description: 'Unsiloed AI is the unstructured data interface for LLMs and AI age
 
 # Welcome to Unsiloed AI
 
-AI teams spend 6+ months building document workflows, yet fewer than 10% ever reach production. Generic LLM parsers and OCR collapse on multimodal documents with text, tables, images, and charts. Poor parsing and suboptimal chunking cripple RAG pipelines and downstream automation.
+Unsiloed AI is the unstructured data interface for LLMs and AI agents. We build **vision-first, layout-aware systems** that combine computer vision, OCR, and multimodal models to turn complex documents into **deterministic, machine-readable representations** so that AI agents can read from and write to documents as reliably as humans.
 
-Unsiloed AI has built state-of-the-art vision models that serve as the infrastructure layer for turning unstructured data into structured, queryable, and LLM-ready assets. Our APIs are already parsing hundreds of thousands of documents for startups and NASDAQ-listed enterprises, powering vertical AI solutions across industries.
+Modern document workflows break down on real-world data: PDFs with dense layouts, scanned forms, tables, charts, images, and inconsistent formatting. Generic OCR and text-only LLM parsers lose structure, hallucinate, or produce brittle outputs that fail in production. Unsiloed AI is designed to be the infrastructure layer that sits before your LLMs, agents, or RAG pipelines ensuring documents are parsed correctly and consistently.
 
-On public benchmarks, Unsiloed AI consistently outperforms solutions from LlamaIndex, Gemini, Mistral, and Unstructured.io.
+You might find Unsiloed AI useful if you want to:
 
-## Quick Access
+- **Parse unstructured documents** (PDFs, PPTs, images, Excel sheets, and 20+ file formats) into high-fidelity **Markdown and JSON**
+- **Extract structured data** from documents using **schema-driven key-value extraction** along with **citation and confidence scoring**
+- **Classify or split large files** into logical buckets, sections, or categories
 
-<CardGroup cols={3}>
+These capabilities are commonly used for **document-based workflow automation**, **reliable parsing and chunking for RAG**, and **agentic systems that need structured access to documents**.
+
+Think of Unsiloed AI as the interface layer between your unstructured data and any **LLM, AI agent, or automation** you are building on top of it.
+
+## Give it a Try
+
+<CardGroup cols={2}>
   <Card
-    title="Demo"
+    title="Playground"
     icon="play"
     href="https://www.unsiloed.ai/demo"
   >
-    Demo UI for visualizing bounding boxes and Unsiloed API output
+    An interactive UI to upload documents and parse them using Unsiloed AI to visualize bounding boxes, inspect structured Markdown/JSON output, and run key-value extractions without writing code. Explore the included sample files to see how complex documents are parsed by our vision models.
   </Card>
   <Card
-    title="Platform"
-    icon="cube"
-    href="https://www.unsiloed.ai/login"
-  >
-    Manage API keys, configure webhooks, monitor usage, and track jobs
-  </Card>
-  <Card
-    title="API Reference"
+    title="Quickstart"
     icon="book-open"
     href="/api-reference/extraction/extract-data"
   >
@@ -41,28 +42,28 @@ On public benchmarks, Unsiloed AI consistently outperforms solutions from LlamaI
 
 <CardGroup cols={2}>
   <Card
-    title="Intelligent Extraction"
-    icon="database"
-  >
-    Extract structured data from documents using custom JSON schemas. Define exactly what you need, and our Vision API will locate and extract it with confidence scores and bounding boxes.
-  </Card>
-  <Card
-    title="Advanced Parsing"
+    title="Layout-Aware Parsing"
     icon="file-text"
   >
-    Parse documents into structured chunks with semantic understanding. Identify headers, tables, images, formulas, and maintain proper reading order using AI-powered analysis.
+    Parse complex documents into structured, hierarchical chunks while preserving layout, reading order, and visual hierarchy. Natively understands tables, images, charts, plots, formulas, and headers, producing Markdown and JSON optimized for accurate chunking and RAG.
   </Card>
   <Card
-    title="Document Classification"
-    icon="tags"
+    title="Schema-Based Extraction"
+    icon="database"
   >
-    Automatically classify documents by type with high accuracy. Route different document types to appropriate processing pipelines.
+    Extract structured data using custom JSON schemas with deterministic outputs. Every field includes word-level citations, bounding boxes, and confidence scores for full traceability back to the source document.
   </Card>
   <Card
     title="Smart Splitting"
     icon="scissors"
   >
-    Intelligently split multi-document PDFs into individual documents. Perfect for processing batches of scanned documents or merged files.
+    Split large or merged files into logical documents or sections using layout, content, or rule-based logic. Ideal for processing scanned batches, multi-document PDFs, or downstream routing.
+  </Card>
+  <Card
+    title="Document Classification"
+    icon="tags"
+  >
+    Classify documents by type using visual and semantic signals. Route each document to the appropriate parsing, extraction, or automation pipeline.
   </Card>
 </CardGroup>
 
@@ -70,32 +71,72 @@ On public benchmarks, Unsiloed AI consistently outperforms solutions from LlamaI
 
 <CardGroup cols={2}>
   <Card
-    title="Production-Ready Performance"
+    title="Built for Production"
     icon="bolt"
   >
-    - Asynchronous job processing for large documents
-    - High confidence scores with bounding box precision
-    - Multi-format support (PDF, DOCX, PPTX, images)
-    - Scalable infrastructure for enterprise workloads
+    - Asynchronous processing for large and multi-page documents
+    - Deterministic outputs with confidence scores and word level bounding boxes
+    - Broad multi-format support across PDFs, DOCX, PPTX, images and more
+    - Scalable infrastructure for high-throughput enterprise workloads
   </Card>
   <Card
-    title="Developer-Friendly API"
+    title="Developer-First"
     icon="laptop-code"
   >
-    - RESTful API with clear documentation
-    - JSON Schema-based extraction for flexibility
-    - Comprehensive error handling and validation
-    - Interactive API playground for testing
+    - Clean REST APIs designed with stable versioned contracts
+    - Schema-driven extraction with validation, confidence and traceability
+    - Interactive playground for testing API requests schemas and outputs
+    - Predictable error handling for reliable production integrations
   </Card>
 </CardGroup>
 
 ## Common Use Cases
 
-- **Financial Document Processing**: Extract data from annual reports, earnings statements, shareholding patterns, and regulatory filings
-- **Invoice & Receipt Processing**: Parse invoices, receipts, and purchase orders into structured formats
-- **Contract Analysis**: Extract key terms, dates, parties, and obligations from legal documents
-- **Document Workflow Automation**: Classify, route, and process documents automatically
-- **Research & Compliance**: Parse and analyze large volumes of documents for specific information
+<CardGroup cols={2}>
+  <Card
+    title="Finance"
+    icon="chart-line"
+  >
+    Parse financial statements, reports, and regulatory filings into structured, machine-readable data.
+  </Card>
+  <Card
+    title="Legal"
+    icon="scale-balanced"
+  >
+    Extract clauses, entities, dates, and obligations from contracts and legal documents.
+  </Card>
+  <Card
+    title="Healthcare"
+    icon="heart-pulse"
+  >
+    Structure clinical documents, forms, and records for downstream systems and workflows.
+  </Card>
+  <Card
+    title="RAG & Automation"
+    icon="robot"
+  >
+    Parse, chunk, classify, and route documents to power reliable RAG pipelines and document-driven automations.
+  </Card>
+</CardGroup>
+
+## Ready to Make your First API Call?
+
+<CardGroup cols={2}>
+  <Card
+    title="API & SDK"
+    icon="code"
+    href="/api-reference/extraction/extract-data"
+  >
+    Quickstart
+  </Card>
+  <Card
+    title="Playground"
+    icon="play"
+    href="https://www.unsiloed.ai/demo"
+  >
+    Take to playground
+  </Card>
+</CardGroup>
 
 ## SDKs
 
