@@ -17,21 +17,213 @@ This API provides powerful document processing capabilities using Vision models 
     Identify and locate visual elements with precise coordinate information
   </Card>
   <Card title="Multi-format Support" icon="file-pdf">
-    Process PDF documents with high-quality image rendering and OCR capabilities
+    Process 20+ document modalities (PDFs, PPTs, spreadsheets, images, and more) with image-based rendering, OCR, and structure-preserving parsing.
   </Card>
   <Card title="Async Processing" icon="clock">
     Handle large documents with background processing and job management
   </Card>
 </CardGroup>
 
-## JSON Schema Format
+## Getting Started with the /extract Endpoint
 
-All extraction schemas must follow the JSON Schema specification:
+Here are the steps to get started:
 
-- `type`: "object" (root level)
-- `properties`: Object defining the fields to extract
-- `required`: Array of required field names
-- `additionalProperties`: Set to `false` for strict validation
+1. **Get an API Key** - [Sign up on Unsiloed AI](https://cal.com/aman-mishra-p0ry57/15min) to get API access
+2. **Define a JSON Schema** - Specify the fields you want to extract. In the Unsiloed AI Platform, you can directly generate a JSON schema through the UI and export that schema as an endpoint to call the `/extract` endpoint
+
+## Defining Extraction Schemas
+
+Unsiloed AI uses **JSON Schema** to define what data should be extracted from a document. You describe the structure you want, and the extraction engine returns structured JSON with citations, bounding boxes, and confidence scores for each field.
+
+<Note>
+**Important:** When defining a schema, keep field descriptions as detailed and specific as possible. Clear, pointed descriptions help the model correctly locate and extract the intended information, especially in complex or ambiguous documents.
+</Note>
+
+Schemas are strict by default, making outputs deterministic and production-safe.
+
+## Schema Rules (Quick Overview)
+
+All extraction schemas must follow the JSON Schema specification with the following constraints:
+
+- **The root must be an object**: `{ "type": "object" }`
+- **Use `properties`** to define fields you want to extract
+- **Use `required`** to enforce mandatory fields
+- **Set `additionalProperties: false`** to prevent unexpected outputs
+
+This ensures predictable responses and easy downstream validation.
+
+## Example 1: Invoice Extraction
+
+A common schema for extracting data from US invoices.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_type": {
+      "type": "string",
+      "description": "Type of document (invoice, receipt, etc.)"
+    },
+    "invoice_header": {
+      "type": "object",
+      "description": "Invoice header details",
+      "properties": {
+        "invoice_number": {
+          "type": "string",
+          "description": "Invoice number"
+        },
+        "invoice_date": {
+          "type": "string",
+          "description": "Invoice issue date"
+        },
+        "due_date": {
+          "type": "string",
+          "description": "Payment due date"
+        }
+      },
+      "required": ["invoice_number", "invoice_date"],
+      "additionalProperties": false
+    },
+    "vendor": {
+      "type": "object",
+      "description": "Vendor information",
+      "properties": {
+        "vendor_name": {
+          "type": "string",
+          "description": "Legal business name"
+        },
+        "vendor_address": {
+          "type": "string",
+          "description": "Business address"
+        },
+        "vendor_email": {
+          "type": "string",
+          "description": "Accounts receivable contact email"
+        }
+      },
+      "required": ["vendor_name"],
+      "additionalProperties": false
+    },
+    "line_items": {
+      "type": "array",
+      "description": "List of billed items",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Item or service description"
+          },
+          "quantity": {
+            "type": "number",
+            "description": "Quantity billed"
+          },
+          "unit_price": {
+            "type": "number",
+            "description": "Price per unit in USD"
+          },
+          "line_total": {
+            "type": "number",
+            "description": "Total cost for this line item"
+          }
+        },
+        "required": ["description", "quantity", "unit_price"],
+        "additionalProperties": false
+      }
+    },
+    "invoice_totals": {
+      "type": "object",
+      "description": "Invoice totals",
+      "properties": {
+        "subtotal": {
+          "type": "number",
+          "description": "Subtotal before tax"
+        },
+        "sales_tax": {
+          "type": "number",
+          "description": "Sales tax amount"
+        },
+        "total_amount_due": {
+          "type": "number",
+          "description": "Final amount due in USD"
+        }
+      },
+      "required": ["total_amount_due"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["document_type", "invoice_header", "invoice_totals"],
+  "additionalProperties": false
+}
+```
+
+## Example 2: Public Company Filing (10-K / Annual Report)
+
+A schema for extracting governance and ownership information from US SEC filings.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "board_of_directors": {
+      "type": "array",
+      "description": "Board of Directors",
+      "items": {
+        "type": "object",
+        "properties": {
+          "director_name": {
+            "type": "string",
+            "description": "Full name of board member"
+          }
+        },
+        "required": ["director_name"],
+        "additionalProperties": false
+      }
+    },
+    "major_shareholders": {
+      "type": "array",
+      "description": "Major shareholders and ownership",
+      "items": {
+        "type": "object",
+        "properties": {
+          "shareholder_name": {
+            "type": "string",
+            "description": "Name of shareholder"
+          },
+          "ownership_percentage": {
+            "type": "string",
+            "description": "Percentage ownership"
+          }
+        },
+        "required": ["shareholder_name", "ownership_percentage"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["board_of_directors", "major_shareholders"],
+  "additionalProperties": false
+}
+```
+
+## How Extraction Works
+
+Once you submit a schema:
+
+1. **Unsiloed locates each field** in the document
+2. **Extracts values** that best match the schema
+3. **Returns structured JSON** with:
+   - Field-level confidence scores
+   - Word-level citations
+   - Bounding boxes mapped to the original document
+
+This makes every extracted value auditable and traceable.
+
+## Best Practices
+
+- Keep field names simple and descriptive
+- Use nested objects to reflect document structure
+- Avoid free-form schemas—strict schemas produce better results
+- Prefer arrays for repeated sections (line items, directors, transactions)
 
 ## Basic Usage
 
@@ -151,141 +343,6 @@ curl -X GET "https://prod.visionapi.unsiloed.ai/extract/{job_id}" \
 
 </CodeGroup>
 
-### Financial Document Extraction
-
-<CodeGroup>
-
-```python Python
-from unsiloed_sdk import UnsiloedClient
-
-# Financial document schema example
-financial_schema = {
-    "type": "object",
-    "properties": {
-        "Individuals": {
-            "type": "string",
-            "description": "Percentage Holding"
-        },
-        "LIC of India": {
-            "type": "string",
-            "description": "No of Shares Held"
-        },
-        "United bank of india": {
-            "type": "string",
-            "description": "No of shares held by United bank of india"
-        }
-    },
-    "required": [
-        "Individuals",
-        "LIC of India",
-        "United bank of india"
-    ],
-    "additionalProperties": False
-}
-
-with UnsiloedClient(api_key="your-api-key") as client:
-    result = client.extract_and_wait(
-        file="financial_report.pdf",
-        schema=financial_schema
-    )
-
-    # Print extracted values with confidence scores
-    for field, data in result.result.items():
-        if field != 'min_confidence_score':
-            print(f"{field}: {data['value']} (confidence: {data['score']:.2%})")
-```
-
-```javascript JavaScript
-const { UnsiloedClient } = require('unsiloed-sdk');
-
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
-
-// Financial document schema example
-const financialSchema = {
-  type: 'object',
-  properties: {
-    'Individuals': {
-      type: 'string',
-      description: 'Percentage Holding'
-    },
-    'LIC of India': {
-      type: 'string',
-      description: 'No of Shares Held'
-    },
-    'United bank of india': {
-      type: 'string',
-      description: 'No of shares held by United bank of india'
-    }
-  },
-  required: [
-    'Individuals',
-    'LIC of India',
-    'United bank of india'
-  ],
-  additionalProperties: false
-};
-
-const result = await client.extract({
-  file: 'financial_report.pdf',
-  schema: financialSchema
-});
-
-const jobId = result.job_id;
-```
-
-```typescript TypeScript
-import { UnsiloedClient } from 'unsiloed-sdk';
-
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
-
-// Financial document schema example
-const financialSchema = {
-  type: 'object',
-  properties: {
-    'Individuals': {
-      type: 'string',
-      description: 'Percentage Holding'
-    },
-    'LIC of India': {
-      type: 'string',
-      description: 'No of Shares Held'
-    },
-    'United bank of india': {
-      type: 'string',
-      description: 'No of shares held by United bank of india'
-    }
-  },
-  required: [
-    'Individuals',
-    'LIC of India',
-    'United bank of india'
-  ],
-  additionalProperties: false
-} as const;
-
-const result = await client.extract({
-  file: 'financial_report.pdf',
-  schema: financialSchema
-});
-
-const jobId = result.job_id;
-```
-
-```bash cURL
-curl -X POST "https://prod.visionapi.unsiloed.ai/extract" \
-  -H "accept: application/json" \
-  -H "api-key: your-api-key" \
-  -H "Content-Type: multipart/form-data" \
-  -F "pdf_file=@financial_report.pdf" \
-  -F 'schema_data={"type":"object","properties":{"Individuals":{"type":"string","description":"Percentage Holding"},"LIC of India":{"type":"string","description":"No of Shares Held"},"United bank of india":{"type":"string","description":"No of shares held by United bank of india"}},"required":["Individuals","LIC of India","United bank of india"],"additionalProperties":false}'
-
-# Get results
-curl -X GET "https://prod.visionapi.unsiloed.ai/extract/{job_id}" \
-  -H "api-key: your-api-key"
-```
-
-</CodeGroup>
-
 ## Advanced Features
 
 ### Asynchronous Processing
@@ -388,167 +445,6 @@ curl -X GET "https://prod.visionapi.unsiloed.ai/extract/{job_id}" \
 
 </CodeGroup>
 
-### Complex Schema Definition
-
-Define complex schemas for structured extraction:
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "document_type": {
-      "type": "string",
-      "description": "Type of document (invoice, contract, etc.)"
-    },
-    "header": {
-      "type": "object",
-      "description": "Document header information",
-      "properties": {
-        "invoice_number": {
-          "type": "string",
-          "description": "Invoice number"
-        },
-        "date": {
-          "type": "string",
-          "description": "Invoice date"
-        },
-        "due_date": {
-          "type": "string",
-          "description": "Payment due date"
-        }
-      },
-      "required": ["invoice_number", "date"],
-      "additionalProperties": false
-    },
-    "vendor": {
-      "type": "object",
-      "description": "Vendor information",
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "Vendor name"
-        },
-        "address": {
-          "type": "string",
-          "description": "Vendor address"
-        },
-        "contact": {
-          "type": "string",
-          "description": "Contact information"
-        }
-      },
-      "required": ["name"],
-      "additionalProperties": false
-    },
-    "line_items": {
-      "type": "array",
-      "description": "Invoice line items",
-      "items": {
-        "type": "object",
-        "properties": {
-          "description": {
-            "type": "string",
-            "description": "Item description"
-          },
-          "quantity": {
-            "type": "number",
-            "description": "Item quantity"
-          },
-          "unit_price": {
-            "type": "number",
-            "description": "Price per unit"
-          },
-          "total": {
-            "type": "number",
-            "description": "Line total"
-          }
-        },
-        "required": ["description", "quantity", "unit_price"],
-        "additionalProperties": false
-      }
-    },
-    "totals": {
-      "type": "object",
-      "description": "Invoice totals",
-      "properties": {
-        "subtotal": {
-          "type": "number",
-          "description": "Subtotal amount"
-        },
-        "tax": {
-          "type": "number",
-          "description": "Tax amount"
-        },
-        "total": {
-          "type": "number",
-          "description": "Total amount"
-        }
-      },
-      "required": ["total"],
-      "additionalProperties": false
-    }
-  },
-  "required": ["document_type", "header", "totals"],
-  "additionalProperties": false
-}
-```
-
-### Shareholding Pattern Schema
-
-For financial documents with complex shareholding data:
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "board of directors": {
-      "type": "array",
-      "description": "list of names of board of directors",
-      "items": {
-        "type": "object",
-        "required": [
-          "names of board of directors"
-        ],
-        "properties": {
-          "names of board of directors": {
-            "type": "string",
-            "description": "names of all the members of board of directors"
-          }
-        },
-        "additionalProperties": false
-      }
-    },
-    "shareholding pattern": {
-      "type": "array",
-      "description": "shareholding pattern",
-      "items": {
-        "type": "object",
-        "required": [
-          "name of shareholders",
-          "number of shares held"
-        ],
-        "properties": {
-          "name of shareholders": {
-            "type": "string",
-            "description": "name of the shareholders"
-          },
-          "number of shares held": {
-            "type": "string",
-            "description": "numbers of shares held by shareholders"
-          }
-        },
-        "additionalProperties": false
-      }
-    }
-  },
-  "required": [
-    "board of directors",
-    "shareholding pattern"
-  ],
-  "additionalProperties": false
-}
-```
-
 ## Response Format
 
 ### Extraction Results Structure
@@ -563,54 +459,87 @@ Each extracted field returns an object with detailed metadata:
 
 ### Standard Extraction Response
 
+Example response from extracting a US invoice:
+
 ```json
 {
-  "Individuals": {
-    "score": 0.9998314521743098,
-    "value": "10.57",
+  "document_type": {
+    "score": 0.9987,
+    "value": "invoice",
     "bboxes": [
       {
-        "bbox": [
-          79,
-          381,
-          524,
-          565
-        ]
+        "bbox": [125, 45, 280, 75]
       }
     ],
-    "page_no": 2
+    "page_no": 1
   },
-  "LIC of India": {
-    "score": 0.9999889986487799,
-    "value": "1515000",
-    "bboxes": [
-      {
-        "bbox": [
-          79,
-          381,
-          524,
-          565
-        ]
-      }
-    ],
-    "page_no": 2
+  "invoice_header": {
+    "invoice_number": {
+      "score": 0.9995,
+      "value": "INV-2024-00542",
+      "bboxes": [
+        {
+          "bbox": [450, 120, 580, 145]
+        }
+      ],
+      "page_no": 1
+    },
+    "invoice_date": {
+      "score": 0.9992,
+      "value": "January 15, 2024",
+      "bboxes": [
+        {
+          "bbox": [450, 155, 580, 180]
+        }
+      ],
+      "page_no": 1
+    }
   },
-  "United bank of india": {
-    "score": 0.999984548437705,
-    "value": "500000",
-    "bboxes": [
-      {
-        "bbox": [
-          79,
-          381,
-          524,
-          565
-        ]
-      }
-    ],
-    "page_no": 2
+  "vendor": {
+    "vendor_name": {
+      "score": 0.9998,
+      "value": "Acme Corp",
+      "bboxes": [
+        {
+          "bbox": [85, 95, 250, 125]
+        }
+      ],
+      "page_no": 1
+    },
+    "vendor_email": {
+      "score": 0.9991,
+      "value": "billing@acmecorp.com",
+      "bboxes": [
+        {
+          "bbox": [85, 185, 280, 210]
+        }
+      ],
+      "page_no": 1
+    }
   },
-  "min_confidence_score": 0.9998314521743098
+  "invoice_totals": {
+    "total_amount_due": {
+      "score": 0.9999,
+      "value": 2547.50,
+      "bboxes": [
+        {
+          "bbox": [480, 625, 580, 655]
+        }
+      ],
+      "page_no": 1
+    },
+    "sales_tax": {
+      "score": 0.9996,
+      "value": 197.50,
+      "bboxes": [
+        {
+          "bbox": [480, 590, 580, 615]
+        }
+      ],
+      "page_no": 1
+    }
+  },
+  "min_confidence_score": 0.9987
 }
 ```
 

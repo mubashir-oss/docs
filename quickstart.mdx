@@ -1,0 +1,452 @@
+---
+title: "Quickstart"
+description: "Get started with Unsiloed AI in minutes. Learn how to parse your first document and extract structured data."
+---
+
+## Overview
+
+Unsiloed AI provides a powerful API for processing unstructured documents. You can:
+
+- **Parse documents** into structured Markdown and JSON
+- **Extract data** using custom schemas
+- **Classify documents** by type
+- **Split multi-document files** into separate documents
+
+## Prerequisites
+
+Before you begin, you'll need:
+
+1. An Unsiloed AI account and API key
+2. A document to process (PDF, DOCX, PPTX, image, etc.)
+3. Python 3.7+ or Node.js 14+ (optional, for SDK usage)
+
+## Step 1: Get Your API Key
+
+To get API access, [sign up on Unsiloed AI](https://cal.com/aman-mishra-p0ry57/15min). We'll get you set up with an API key and help you get started.
+
+<Note>
+  Keep your API key secure and never commit it to version control. Use environment variables to store it.
+</Note>
+
+## Step 2: Install the SDK (Optional)
+
+We provide official SDKs for Python and JavaScript/TypeScript. You can also use the REST API directly.
+
+<CodeGroup>
+
+```bash Python
+pip install unsiloed-sdk
+```
+
+```bash JavaScript/TypeScript
+npm install unsiloed-sdk
+```
+
+</CodeGroup>
+
+## Step 3: Parse Your First Document
+
+Choose your preferred language and run the example below:
+
+<CodeGroup>
+
+```python Python
+from unsiloed_sdk import UnsiloedClient
+
+# Initialize the client
+with UnsiloedClient(api_key="your-api-key") as client:
+    # Parse a document and wait for results
+    result = client.parse_and_wait(file="document.pdf")
+    
+    # Access the parsed content
+    print(f"Total chunks: {result.total_chunks}")
+    print(f"Total pages: {result.total_pages}")
+    
+    # Get the markdown content
+    for chunk in result.chunks:
+        print(f"\n--- Chunk {chunk.chunk_number} ---")
+        print(chunk.markdown)
+```
+
+```javascript JavaScript
+const { UnsiloedClient } = require('unsiloed-sdk');
+
+// Initialize the client
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+// Parse a document and wait for results
+const result = await client.parseAndWait({ file: 'document.pdf' });
+
+// Access the parsed content
+console.log(`Total chunks: ${result.total_chunks}`);
+console.log(`Total pages: ${result.total_pages}`);
+
+// Get the markdown content
+result.chunks.forEach(chunk => {
+  console.log(`\n--- Chunk ${chunk.chunk_number} ---`);
+  console.log(chunk.markdown);
+});
+```
+
+```typescript TypeScript
+import { UnsiloedClient } from 'unsiloed-sdk';
+
+// Initialize the client
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+// Parse a document and wait for results
+const result = await client.parseAndWait({ file: 'document.pdf' });
+
+// Access the parsed content
+console.log(`Total chunks: ${result.total_chunks}`);
+console.log(`Total pages: ${result.total_pages}`);
+
+// Get the markdown content
+result.chunks.forEach(chunk => {
+  console.log(`\n--- Chunk ${chunk.chunk_number} ---`);
+  console.log(chunk.markdown);
+});
+```
+
+```bash cURL
+# Submit a document for parsing
+curl -X POST "https://prod.visionapi.unsiloed.ai/parse" \
+  -H "api-key: your-api-key" \
+  -F "document_file=@document.pdf"
+
+# Response will include a job_id
+# {
+#   "job_id": "550e8400-e29b-41d4-a716-446655440000",
+#   "status": "processing"
+# }
+
+# Poll for results using the job_id
+curl -X GET "https://prod.visionapi.unsiloed.ai/parse/550e8400-e29b-41d4-a716-446655440000" \
+  -H "api-key: your-api-key"
+```
+
+</CodeGroup>
+
+## Step 4: Extract Structured Data
+
+To extract specific fields from your document, define a JSON schema:
+
+<CodeGroup>
+
+```python Python
+from unsiloed_sdk import UnsiloedClient
+
+schema = {
+    "invoice_number": {
+        "type": "string",
+        "description": "The invoice number"
+    },
+    "invoice_date": {
+        "type": "string",
+        "description": "The invoice date"
+    },
+    "total_amount": {
+        "type": "number",
+        "description": "The total amount due"
+    },
+    "line_items": {
+        "type": "array",
+        "description": "List of line items",
+        "items": {
+            "type": "object",
+            "properties": {
+                "description": {"type": "string"},
+                "quantity": {"type": "number"},
+                "unit_price": {"type": "number"},
+                "total": {"type": "number"}
+            }
+        }
+    }
+}
+
+with UnsiloedClient(api_key="your-api-key") as client:
+    result = client.extract_and_wait(
+        file="invoice.pdf",
+        schema=schema
+    )
+    
+    # Access extracted data with confidence scores
+    print(f"Invoice Number: {result.data['invoice_number']}")
+    print(f"Total Amount: ${result.data['total_amount']}")
+    
+    # Each field includes citation information
+    for field_name, field_data in result.fields.items():
+        print(f"\n{field_name}:")
+        print(f"  Value: {field_data.value}")
+        print(f"  Confidence: {field_data.confidence}")
+        print(f"  Bounding Box: {field_data.bbox}")
+```
+
+```javascript JavaScript
+const { UnsiloedClient } = require('unsiloed-sdk');
+
+const schema = {
+  invoice_number: {
+    type: 'string',
+    description: 'The invoice number'
+  },
+  invoice_date: {
+    type: 'string',
+    description: 'The invoice date'
+  },
+  total_amount: {
+    type: 'number',
+    description: 'The total amount due'
+  },
+  line_items: {
+    type: 'array',
+    description: 'List of line items',
+    items: {
+      type: 'object',
+      properties: {
+        description: { type: 'string' },
+        quantity: { type: 'number' },
+        unit_price: { type: 'number' },
+        total: { type: 'number' }
+      }
+    }
+  }
+};
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+const result = await client.extractAndWait({
+  file: 'invoice.pdf',
+  schema: schema
+});
+
+// Access extracted data with confidence scores
+console.log(`Invoice Number: ${result.data.invoice_number}`);
+console.log(`Total Amount: $${result.data.total_amount}`);
+
+// Each field includes citation information
+Object.entries(result.fields).forEach(([fieldName, fieldData]) => {
+  console.log(`\n${fieldName}:`);
+  console.log(`  Value: ${fieldData.value}`);
+  console.log(`  Confidence: ${fieldData.confidence}`);
+  console.log(`  Bounding Box: ${fieldData.bbox}`);
+});
+```
+
+```bash cURL
+# Create a JSON file with your schema
+cat > schema.json << 'EOF'
+{
+  "invoice_number": {
+    "type": "string",
+    "description": "The invoice number"
+  },
+  "invoice_date": {
+    "type": "string",
+    "description": "The invoice date"
+  },
+  "total_amount": {
+    "type": "number",
+    "description": "The total amount due"
+  }
+}
+EOF
+
+# Submit extraction request
+curl -X POST "https://prod.visionapi.unsiloed.ai/extract" \
+  -H "api-key: your-api-key" \
+  -F "document_file=@invoice.pdf" \
+  -F "schema=@schema.json"
+
+# Get results
+curl -X GET "https://prod.visionapi.unsiloed.ai/extract/{job_id}" \
+  -H "api-key: your-api-key"
+```
+
+</CodeGroup>
+
+## Understanding the Response
+
+All API responses include:
+
+- **Structured data**: The parsed content or extracted fields
+- **Confidence scores**: How confident the model is in each extraction
+- **Bounding boxes**: Word-level coordinates for each field
+- **Citations**: References back to the source document
+- **Metadata**: Page numbers, document info, processing time
+
+<Accordion title="Example Response Structure">
+
+```json
+{
+  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "completed",
+  "total_chunks": 10,
+  "total_pages": 5,
+  "chunks": [
+    {
+      "chunk_number": 1,
+      "page_numbers": [1],
+      "markdown": "# Document Title\n\nThis is the parsed content...",
+      "bbox": [0.1, 0.1, 0.9, 0.3],
+      "confidence": 0.95
+    }
+  ],
+  "metadata": {
+    "processing_time_ms": 2341,
+    "file_type": "pdf",
+    "num_pages": 5
+  }
+}
+```
+
+</Accordion>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Document Processing"
+    icon="file-lines"
+    href="/document-processing/parsing"
+  >
+    Learn about advanced parsing options and strategies
+  </Card>
+  <Card
+    title="Data Extraction"
+    icon="database"
+    href="/document-processing/vision-api"
+  >
+    Deep dive into schema-based extraction
+  </Card>
+  <Card
+    title="Classification"
+    icon="tags"
+    href="/document-processing/classification"
+  >
+    Classify documents by type
+  </Card>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api-reference/parser/parse-document"
+  >
+    Explore the complete API documentation
+  </Card>
+</CardGroup>
+
+## Common Use Cases
+
+<AccordionGroup>
+  <Accordion title="RAG & Semantic Search">
+    Parse documents into clean, hierarchical Markdown chunks optimized for embedding and retrieval. Preserve layout, tables, and images for accurate context.
+    
+    ```python
+    result = client.parse_and_wait(
+        file="document.pdf",
+        chunking_strategy="layout_aware"
+    )
+    
+    # Use chunks for RAG
+    for chunk in result.chunks:
+        embedding = embed(chunk.markdown)
+        vector_db.insert(embedding, chunk.markdown)
+    ```
+  </Accordion>
+
+  <Accordion title="Invoice Processing">
+    Extract structured data from invoices with citations and confidence scores for validation workflows.
+    
+    ```python
+    schema = {
+        "invoice_number": {"type": "string"},
+        "total": {"type": "number"},
+        "line_items": {"type": "array"}
+    }
+    
+    result = client.extract_and_wait(
+        file="invoice.pdf",
+        schema=schema
+    )
+    ```
+  </Accordion>
+
+  <Accordion title="Contract Analysis">
+    Parse legal documents while preserving structure, then extract key clauses and dates.
+    
+    ```python
+    # First parse to get structured content
+    parse_result = client.parse_and_wait(file="contract.pdf")
+    
+    # Then extract specific clauses
+    schema = {
+        "parties": {"type": "array"},
+        "effective_date": {"type": "string"},
+        "termination_clause": {"type": "string"}
+    }
+    
+    extract_result = client.extract_and_wait(
+        file="contract.pdf",
+        schema=schema
+    )
+    ```
+  </Accordion>
+
+  <Accordion title="Document Classification & Routing">
+    Classify documents to route them to appropriate processing pipelines.
+    
+    ```python
+    result = client.classify_and_wait(
+        file="document.pdf",
+        classes=["invoice", "receipt", "contract", "form"]
+    )
+    
+    print(f"Document type: {result.classification}")
+    print(f"Confidence: {result.confidence}")
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## API Base URL
+
+All API requests should be made to:
+
+```
+https://prod.visionapi.unsiloed.ai
+```
+
+Authentication is required using your API key in the `api-key` header.
+
+## Need Help?
+
+<CardGroup cols={2}>
+  <Card
+    title="Documentation"
+    icon="book"
+    href="/document-processing/vision-api"
+  >
+    Explore our comprehensive guides
+  </Card>
+  <Card
+    title="Support"
+    icon="envelope"
+    href="mailto:hello@unsiloed-ai.com"
+  >
+    Contact our team
+  </Card>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api-reference/parser/parse-document"
+  >
+    View complete API docs
+  </Card>
+  <Card
+    title="FAQ"
+    icon="circle-question"
+    href="/faq/general"
+  >
+    Common questions and answers
+  </Card>
+</CardGroup>
+
