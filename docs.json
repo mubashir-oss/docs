@@ -1,11 +1,11 @@
 {
-  "theme": "willow",
+  "theme": "almond",
   "name": "Unsiloed AI",
   "description": "AI agents for Unstructured data",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#2563EB",
+    "light": "#3B82F6",
+    "dark": "#1E40AF"
   },
   "favicon": "/UnsiloedAILogo.webp",
   "api": {
@@ -35,7 +35,8 @@
           {
             "group": "Getting Started",
             "pages": [
-              "index"
+              "index",
+              "quickstart"
             ]
           },
           {
@@ -110,17 +111,13 @@
   "navbar": {
     "links": [
       {
-        "label": "Login",
-        "href": "https://www.unsiloed.ai/login"
-      },
-      {
         "label": "Support",
         "href": "mailto:hello@unsiloed-ai.com"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Demo",
+      "label": "Playground",
       "href": "https://www.unsiloed.ai/demo"
     }
   },

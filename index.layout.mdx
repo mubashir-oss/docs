@@ -1,55 +1,9 @@
 ---
-sidebarTitle: "Introduction"
-mode: "wide"
-keywords: ["overview", "platform", "getting started", "features"]
+title: Introduction
+description: 'Unsiloed AI is the unstructured data interface for LLMs and AI agents, turning complex documents into structured Markdown and JSON.'
 ---
 
-export const HeroCard = ({ filename, title, description, href }) => {
-  return (
-    <a className="group cursor-pointer pb-8" href={href}>
-      <img
-        src={`https://mintlify.s3.us-west-1.amazonaws.com/mintlify/images/hero/${filename}.png`}
-        className="block dark:hidden pointer-events-none group-hover:scale-105 transition-all duration-100"
-      />
-      <img
-        src={`https://mintlify.s3.us-west-1.amazonaws.com/mintlify/images/hero/${filename}-dark.png`}
-        className="pointer-events-none group-hover:scale-105 transition-all duration-100 hidden dark:block"
-      />
-      <h3 className="mt-5 text-gray-900 dark:text-zinc-50 font-medium">
-        {title}
-      </h3>
-      <span className="mt-1.5">{description}</span>
-    </a>
-  );
-};
-
-<div className="relative">
-  
-  <div className="relative z-10 px-4  lg:pb-24 max-w-3xl mx-auto">
-    <h1 className="block text-4xl font-medium text-center text-gray-900 dark:text-zinc-50 tracking-tight">
-      Welcome to Unsiloed AI
-    </h1>
-
-    <div className="max-w-xl mx-auto px-4 mt-4 text-lg text-center text-gray-500 dark:text-zinc-500">
-      The unstructured data interface for LLMs and AI agents. Turn complex documents into structured Markdown and JSON.
-    </div>
-
-    <div className="px-6 lg:px-0 mt-6 lg:mt-12 grid sm:grid-cols-2 gap-x-6 gap-y-4">
-      <HeroCard filename="rocket" title="Quickstart" description="Explore our complete API documentation with interactive examples" href="/quickstart" />
-
-      <HeroCard
-        filename="cli"
-        title="SDK & API"
-        description="Official SDKs for Python and JavaScript, or use the REST API directly"
-        href="/document-processing/parsing"
-      />
-    </div>
-  </div>
-</div>
-
-<div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-
-## What is Unsiloed AI?
+# Welcome to Unsiloed AI
 
 Unsiloed AI is the unstructured data interface for LLMs and AI agents. We build **vision-first, layout-aware systems** that combine computer vision, OCR, and multimodal models to turn complex documents into **deterministic, machine-readable representations** so that AI agents can read from and write to documents as reliably as humans.
 
@@ -64,6 +18,25 @@ You might find Unsiloed AI useful if you want to:
 These capabilities are commonly used for **document-based workflow automation**, **reliable parsing and chunking for RAG**, and **agentic systems that need structured access to documents**.
 
 Think of Unsiloed AI as the interface layer between your unstructured data and any **LLM, AI agent, or automation** you are building on top of it.
+
+## Give it a Try
+
+<CardGroup cols={2}>
+  <Card
+    title="Playground"
+    icon="play"
+    href="https://www.unsiloed.ai/demo"
+  >
+    An interactive UI to upload documents and parse them using Unsiloed AI to visualize bounding boxes, inspect structured Markdown/JSON output, and run key-value extractions without writing code. Explore the included sample files to see how complex documents are parsed by our vision models.
+  </Card>
+  <Card
+    title="Quickstart"
+    icon="book-open"
+    href="/api-reference/extraction/extract-data"
+  >
+    Explore our complete API documentation with interactive examples
+  </Card>
+</CardGroup>
 
 ## Core Capabilities
 
@@ -146,6 +119,25 @@ Think of Unsiloed AI as the interface layer between your unstructured data and a
   </Card>
 </CardGroup>
 
+## Ready to Make your First API Call?
+
+<CardGroup cols={2}>
+  <Card
+    title="API & SDK"
+    icon="code"
+    href="/api-reference/extraction/extract-data"
+  >
+    Quickstart
+  </Card>
+  <Card
+    title="Playground"
+    icon="play"
+    href="https://www.unsiloed.ai/demo"
+  >
+    Take to playground
+  </Card>
+</CardGroup>
+
 ## SDKs
 
 We provide official SDKs to make integration even easier:
@@ -179,7 +171,7 @@ npm install unsiloed-sdk
   </Card>
 </CardGroup>
 
-## Quick Start Examples
+### Quick Start Examples
 
 <CodeGroup>
 
@@ -222,7 +214,7 @@ curl -X GET "https://prod.visionapi.unsiloed.ai/parse/{job_id}" \
 
 </CodeGroup>
 
-## Getting Started
+### Getting Started
 
 <Steps>
   <Step title="Get API Access">
@@ -267,5 +259,3 @@ Authentication is required using your API key in the `api-key` header.
     Contact our team at hello@unsiloed-ai.com
   </Card>
 </CardGroup>
-
-</div>

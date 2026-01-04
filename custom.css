@@ -26,3 +26,7 @@ a[href*="unsiloed-ai.com"] {
   align-items: center !important;
 }
 
+/* Change hero card images from green to blue */
+img[src*="mintlify.s3.us-west-1.amazonaws.com/mintlify/images/hero/"] {
+  filter: hue-rotate(100deg) saturate(1.1) !important;
+}
