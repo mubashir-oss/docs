@@ -174,6 +174,213 @@ const result = await getSplitStatus(jobId, 'your-api-key');
 
 </RequestExample>
 
+## Polling for Job Completion
+
+Here are complete examples that poll the splitting job until it completes:
+
+<RequestExample>
+
+```bash cURL (with polling)
+#!/bin/bash
+
+JOB_ID="04a7a6d8-5ef7-465a-b22a-8a98e7104dd9"
+API_KEY="your-api-key"
+MAX_ATTEMPTS=60
+SLEEP_INTERVAL=5
+
+echo "Polling split job status..."
+
+for ((i=1; i<=MAX_ATTEMPTS; i++)); do
+  echo "Attempt $i..."
+  
+  RESPONSE=$(curl -s -X GET "https://prod.visionapi.unsiloed.ai/splitter/$JOB_ID" \
+    -H "accept: application/json" \
+    -H "api-key: $API_KEY")
+  
+  STATUS=$(echo $RESPONSE | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+  
+  echo "Status: $STATUS"
+  
+  if [ "$STATUS" = "completed" ]; then
+    echo "Split completed successfully!"
+    echo $RESPONSE | python -m json.tool
+    break
+  elif [ "$STATUS" = "failed" ]; then
+    echo "Split failed!"
+    echo $RESPONSE | python -m json.tool
+    break
+  else
+    echo "Still processing... waiting $SLEEP_INTERVAL seconds"
+    sleep $SLEEP_INTERVAL
+  fi
+done
+```
+
+```python Python (with polling)
+import requests
+import time
+
+def poll_split_job(job_id, api_key, max_attempts=60, sleep_interval=5):
+    """
+    Poll a splitting job until completion or failure
+    
+    Args:
+        job_id: The job ID returned from split request
+        api_key: Your API key
+        max_attempts: Maximum number of polling attempts
+        sleep_interval: Seconds to wait between polls
+    
+    Returns:
+        Final job result or None if failed
+    """
+    url = f"https://prod.visionapi.unsiloed.ai/splitter/{job_id}"
+    headers = {"api-key": api_key}
+    
+    print(f"Polling split job {job_id}...")
+    
+    for attempt in range(1, max_attempts + 1):
+        print(f"Attempt {attempt}...")
+        
+        try:
+            response = requests.get(url, headers=headers)
+            
+            if response.status_code == 200:
+                job = response.json()
+                status = job.get('status')
+                progress = job.get('progress', '')
+                
+                print(f"Status: {status}")
+                if progress:
+                    print(f"Progress: {progress}")
+                
+                if status == 'completed':
+                    print("\n✓ Split completed successfully!")
+                    if job.get('result', {}).get('success'):
+                        print(f"Message: {job['result']['message']}")
+                        print(f"\nSplit files:")
+                        for file_info in job['result']['files']:
+                            print(f"  • {file_info['name']}")
+                            print(f"    Download: {file_info['full_path']}")
+                            print(f"    Confidence: {file_info['confidence_score']:.2%}")
+                    return job
+                
+                elif status == 'failed':
+                    print(f"\n✗ Split failed: {job.get('error', 'Unknown error')}")
+                    return None
+                
+                elif status == 'processing':
+                    print(f"Still processing... waiting {sleep_interval} seconds\n")
+                    time.sleep(sleep_interval)
+                
+            elif response.status_code == 404:
+                print(f"Job not found. It may have expired.")
+                return None
+            else:
+                print(f"Error: {response.status_code} - {response.text}")
+                return None
+                
+        except Exception as e:
+            print(f"Error polling job: {e}")
+            return None
+    
+    print(f"Max attempts ({max_attempts}) reached. Job may still be processing.")
+    return None
+
+# Usage
+job_id = "04a7a6d8-5ef7-465a-b22a-8a98e7104dd9"
+result = poll_split_job(job_id, "your-api-key")
+
+if result:
+    print(f"\nQuota remaining: {result.get('quota_remaining')}")
+```
+
+```javascript JavaScript (with polling)
+async function pollSplitJob(jobId, apiKey, maxAttempts = 60, sleepInterval = 5000) {
+  /**
+   * Poll a splitting job until completion or failure
+   * 
+   * @param {string} jobId - The job ID returned from split request
+   * @param {string} apiKey - Your API key
+   * @param {number} maxAttempts - Maximum number of polling attempts
+   * @param {number} sleepInterval - Milliseconds to wait between polls
+   * @returns {Promise<object|null>} Final job result or null if failed
+   */
+  
+  const url = `https://prod.visionapi.unsiloed.ai/splitter/${jobId}`;
+  
+  console.log(`Polling split job ${jobId}...`);
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    console.log(`Attempt ${attempt}...`);
+    
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'accept': 'application/json',
+          'api-key': apiKey
+        }
+      });
+      
+      if (response.ok) {
+        const job = await response.json();
+        const { status, progress } = job;
+        
+        console.log(`Status: ${status}`);
+        if (progress) console.log(`Progress: ${progress}`);
+        
+        if (status === 'completed') {
+          console.log('\n✓ Split completed successfully!');
+          if (job.result?.success) {
+            console.log(`Message: ${job.result.message}`);
+            console.log('\nSplit files:');
+            job.result.files.forEach(file => {
+              console.log(`  • ${file.name}`);
+              console.log(`    Download: ${file.full_path}`);
+              console.log(`    Confidence: ${(file.confidence_score * 100).toFixed(2)}%`);
+            });
+          }
+          return job;
+        }
+        
+        if (status === 'failed') {
+          console.log(`\n✗ Split failed: ${job.error || 'Unknown error'}`);
+          return null;
+        }
+        
+        if (status === 'processing') {
+          console.log(`Still processing... waiting ${sleepInterval/1000} seconds\n`);
+          await new Promise(resolve => setTimeout(resolve, sleepInterval));
+        }
+        
+      } else if (response.status === 404) {
+        console.log('Job not found. It may have expired.');
+        return null;
+      } else {
+        console.error('Error:', response.status, await response.text());
+        return null;
+      }
+      
+    } catch (error) {
+      console.error('Error polling job:', error);
+      return null;
+    }
+  }
+  
+  console.log(`Max attempts (${maxAttempts}) reached. Job may still be processing.`);
+  return null;
+}
+
+// Usage
+const jobId = '04a7a6d8-5ef7-465a-b22a-8a98e7104dd9';
+const result = await pollSplitJob(jobId, 'your-api-key');
+
+if (result) {
+  console.log(`\nQuota remaining: ${result.quota_remaining}`);
+}
+```
+
+</RequestExample>
+
 <ResponseExample>
 
 ```json Completed Job

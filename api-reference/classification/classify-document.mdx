@@ -36,6 +36,112 @@ The endpoint supports both single-page and multi-page classification with detail
   Human-readable status message
 </ResponseField>
 
+<ResponseField name="quota_remaining" type="number">
+  Remaining API quota after this request
+</ResponseField>
+
+## Examples
+
+<RequestExample>
+
+```bash cURL
+curl -X POST "https://prod.visionapi.unsiloed.ai/classify" \
+  -H "api-key: your-api-key" \
+  -F "pdf_file=@document.pdf" \
+  -F 'categories=[{"name":"invoice","description":"Financial invoices"},{"name":"contract","description":"Legal contracts"},{"name":"receipt"}]'
+```
+
+```python Python
+import requests
+import json
+
+url = "https://prod.visionapi.unsiloed.ai/classify"
+headers = {"api-key": "your-api-key"}
+
+categories = [
+    {"name": "invoice", "description": "Financial invoices"},
+    {"name": "contract", "description": "Legal contracts"},
+    {"name": "receipt"}
+]
+
+files = {"pdf_file": ("document.pdf", open("document.pdf", "rb"), "application/pdf")}
+data = {"categories": json.dumps(categories)}
+
+response = requests.post(url, headers=headers, files=files, data=data)
+
+if response.status_code == 202:
+    result = response.json()
+    print(f"Job ID: {result['job_id']}")
+    print(f"Status: {result['status']}")
+    print(f"Quota Remaining: {result['quota_remaining']}")
+else:
+    print("Error:", response.status_code, response.text)
+```
+
+```javascript JavaScript
+const formData = new FormData();
+formData.append('pdf_file', fileInput.files[0]);
+
+const categories = [
+  {name: 'invoice', description: 'Financial invoices'},
+  {name: 'contract', description: 'Legal contracts'},
+  {name: 'receipt'}
+];
+formData.append('categories', JSON.stringify(categories));
+
+const response = await fetch('https://prod.visionapi.unsiloed.ai/classify', {
+  method: 'POST',
+  headers: {
+    'api-key': 'your-api-key'
+  },
+  body: formData
+});
+
+if (response.status === 202) {
+  const result = await response.json();
+  console.log('Job ID:', result.job_id);
+  console.log('Status:', result.status);
+  console.log('Quota Remaining:', result.quota_remaining);
+} else {
+  console.error('Error:', response.status, await response.text());
+}
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 202 - Success
+{
+  "job_id": "7e10f5cd-6d83-4b8e-9f80-ac103fd9b2f1",
+  "status": "processing",
+  "message": "Classification started",
+  "quota_remaining": 450
+}
+```
+
+```json 400 - Bad Request
+{
+  "detail": "Either pdf_file or file_url must be provided"
+}
+```
+
+```json 402 - Payment Required
+{
+  "detail": {
+    "message": "Insufficient quota",
+    "status": "QUOTA_EXCEEDED",
+    "quota_data": {
+      "current": 1000,
+      "limit": 1000,
+      "remaining": 0
+    }
+  }
+}
+```
+
+</ResponseExample>
+
 ## Job Status Checking
 
 After starting a classification job, you can check its status using the job ID by making a GET request to `/classify/{job_id}`.
