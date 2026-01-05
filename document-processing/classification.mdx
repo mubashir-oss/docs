@@ -105,49 +105,52 @@ curl -X GET "https://prod.visionapi.unsiloed.ai/classify/{job_id}" \
 ```python Python
 from unsiloed_sdk import UnsiloedClient
 
-with UnsiloedClient(api_key="your-api-key") as client:
-    job_id = "660e8400-e29b-41d4-a716-446655440001"
+def check_classification_status(job_id: str, api_key: str):
+    with UnsiloedClient(api_key=api_key) as client:
+        # Get classification result
+        job = client.get_classify_result(job_id)
 
-    # Get classification result
-    job = client.get_classify_result(job_id)
+        print(f"Status: {job.status}")
+        print(f"Progress: {job.progress}")
 
-    print(f"Status: {job.status}")
-    print(f"Progress: {job.progress}")
+        if job.status == "completed" and job.result:
+            result = job.result
+            print(f"\nClassification: {result['classification']}")
+            print(f"Confidence: {result['confidence']:.2%}")
+            print(f"Total Pages: {result.get('total_pages', 'N/A')}")
 
-    if job.status == "completed" and job.result:
-        result = job.result
-        print(f"\nClassification: {result['classification']}")
-        print(f"Confidence: {result['confidence']:.2%}")
-        print(f"Total Pages: {result.get('total_pages', 'N/A')}")
-
-        if 'page_results' in result:
-            for page_result in result['page_results']:
-                print(f"Page {page_result['page']}: {page_result['classification']}")
+            if 'page_results' in result:
+                for page_result in result['page_results']:
+                    print(f"Page {page_result['page']}: {page_result['classification']}")
+        
+        return job
 ```
 
 ```typescript TypeScript
 import { UnsiloedClient } from 'unsiloed-sdk';
 
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+async function checkClassificationStatus(jobId: string, apiKey: string) {
+  const client = new UnsiloedClient({ apiKey });
 
-const jobId = '660e8400-e29b-41d4-a716-446655440001';
+  const job = await client.getClassifyResult(jobId);
 
-const job = await client.getClassifyResult(jobId);
+  console.log(`Status: ${job.status}`);
+  console.log(`Progress: ${job.progress}`);
 
-console.log(`Status: ${job.status}`);
-console.log(`Progress: ${job.progress}`);
+  if (job.status === 'completed' && job.result) {
+    const result = job.result;
+    console.log(`\nClassification: ${result.classification}`);
+    console.log(`Confidence: ${result.confidence.toFixed(2)}`);
+    console.log(`Total Pages: ${result.total_pages || 'N/A'}`);
 
-if (job.status === 'completed' && job.result) {
-  const result = job.result;
-  console.log(`\nClassification: ${result.classification}`);
-  console.log(`Confidence: ${result.confidence.toFixed(2)}`);
-  console.log(`Total Pages: ${result.total_pages || 'N/A'}`);
-
-  if (result.page_results) {
-    result.page_results.forEach((pageResult: any) => {
-      console.log(`Page ${pageResult.page}: ${pageResult.classification}`);
-    });
+    if (result.page_results) {
+      result.page_results.forEach((pageResult: any) => {
+        console.log(`Page ${pageResult.page}: ${pageResult.classification}`);
+      });
+    }
   }
+
+  return job;
 }
 ```
 

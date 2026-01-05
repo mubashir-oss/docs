@@ -112,67 +112,55 @@ curl -X GET "https://prod.visionapi.unsiloed.ai/splitter/{job_id}" \
 ```python Python
 from unsiloed_sdk import UnsiloedClient
 
-with UnsiloedClient(api_key="your-api-key") as client:
-    job_id = "550e8400-e29b-41d4-a716-446655440000"
+def check_split_status(job_id: str, api_key: str):
+    with UnsiloedClient(api_key=api_key) as client:
+        # Get split job result
+        job = client.get_split_result(job_id)
 
-    # Get split job result
-    job = client.get_split_result(job_id)
+        print(f"Status: {job.status}")
+        print(f"Progress: {job.progress}")
 
-    print(f"Status: {job.status}")
-    print(f"Progress: {job.progress}")
+        if job.status == "completed" and job.result:
+            if job.result['success']:
+                files = job.result['files']
+                print(f"\n{job.result['message']}")
+                print(f"Documents split into {len(files)} files")
 
-    if job.status == "completed" and job.result:
-        if job.result['success']:
-            files = job.result['files']
-            print(f"\n{job.result['message']}")
-            print(f"Documents split into {len(files)} files")
-
-            for file_info in files:
-                print(f"\n{file_info['name']}")
-                print(f"  Confidence: {file_info['confidence_score']:.2%}")
-                print(f"  Download: {file_info['full_path']}")
+                for file_info in files:
+                    print(f"\n{file_info['name']}")
+                    print(f"  Confidence: {file_info['confidence_score']:.2%}")
+                    print(f"  Download: {file_info['full_path']}")
+        
+        return job
 ```
 
 ```typescript TypeScript
 import { UnsiloedClient, Category } from 'unsiloed-sdk';
 
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+async function checkSplitStatus(jobId: string, apiKey: string) {
+  const client = new UnsiloedClient({ apiKey });
 
-const jobId = '550e8400-e29b-41d4-a716-446655440000';
+  const job = await client.getSplitResult(jobId);
 
-const job = await client.getSplitResult(jobId);
+  console.log(`Status: ${job.status}`);
+  console.log(`Progress: ${job.progress}`);
 
-console.log(`Status: ${job.status}`);
-console.log(`Progress: ${job.progress}`);
-
-if (job.status === 'completed' && job.result) {
-  if (job.result.success) {
-    console.log(`\n${job.result.message}`);
-    console.log(`Documents split into ${job.result.files.length} files`);
-    
-    job.result.files.forEach((file: any) => {
-      console.log(`\n${file.name}`);
-      console.log(`  Confidence: ${file.confidence_score.toFixed(2)}`);
-      console.log(`  Download: ${file.full_path}`);
-    });
+  if (job.status === 'completed' && job.result) {
+    if (job.result.success) {
+      console.log(`\n${job.result.message}`);
+      console.log(`Documents split into ${job.result.files.length} files`);
+      
+      job.result.files.forEach((file: any) => {
+        console.log(`\n${file.name}`);
+        console.log(`  Confidence: ${file.confidence_score.toFixed(2)}`);
+        console.log(`  Download: ${file.full_path}`);
+      });
+    }
   }
+
+  return job;
 }
 
-// Or use splitAndWait to automatically poll until completion
-const categories: Category[] = [
-  { name: 'Invoice' },
-  { name: 'Receipt' }
-];
-
-const result = await client.splitAndWait({
-  file: 'document.pdf',
-  categories: categories,
-  pollInterval: 5000,  // Check every 5 seconds
-});
-
-if (result.result?.success) {
-  console.log(`Split completed: ${result.result.files.length} files generated`);
-}
 ```
 
 ```bash cURL
