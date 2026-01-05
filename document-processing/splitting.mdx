@@ -93,7 +93,6 @@ console.log(`Quota remaining: ${result.quota_remaining}`);
 ```bash cURL
 curl -X POST "https://prod.visionapi.unsiloed.ai/splitter" \
   -H "api-key: your-api-key" \
-  -H "Content-Type: multipart/form-data" \
   -F "file=@mixed_documents.pdf" \
   -F 'categories=[{"name":"Invoice","description":"Financial invoices with itemized charges"},{"name":"Receipt","description":"Purchase receipts"},{"name":"Contract"}]'
 

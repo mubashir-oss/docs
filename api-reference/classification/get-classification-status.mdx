@@ -42,23 +42,23 @@ Classification jobs are stored in Supabase and updated in real-time. Status chec
     <ResponseField name="confidence" type="number">
       Confidence score for primary classification (0.0-1.0)
     </ResponseField>
+    <ResponseField name="total_pages" type="number">
+      Total number of pages in the document
+    </ResponseField>
+    <ResponseField name="processed_pages" type="number">
+      Number of pages successfully processed
+    </ResponseField>
     <ResponseField name="page_results" type="array">
       Per-page classification details
       <Expandable title="page_result_structure">
         <ResponseField name="page" type="number">
           Page number (1-indexed)
         </ResponseField>
-        <ResponseField name="success" type="boolean">
-          Whether this page was processed successfully
-        </ResponseField>
         <ResponseField name="classification" type="string">
           Classification result for this page
         </ResponseField>
         <ResponseField name="confidence" type="number">
-          Confidence score for this page
-        </ResponseField>
-        <ResponseField name="raw_result" type="string">
-          Raw response from the vision model
+          Confidence score for this page (0.0-1.0)
         </ResponseField>
       </Expandable>
     </ResponseField>

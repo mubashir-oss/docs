@@ -88,12 +88,6 @@
             ]
           },
           {
-            "group": "PDF Editor",
-            "pages": [
-              "api-reference/pdf-editor/edit-pdf"
-            ]
-          },
-          {
             "group": "Organization",
             "pages": [
               "api-reference/organization/usage"
