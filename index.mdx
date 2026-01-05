@@ -191,15 +191,6 @@ with UnsiloedClient(api_key="your-api-key") as client:
     print(f"Total chunks: {result.total_chunks}")
 ```
 
-```javascript JavaScript
-const { UnsiloedClient } = require('unsiloed-sdk');
-
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
-
-const result = await client.parseAndWait({ file: 'document.pdf' });
-console.log(`Total chunks: ${result.total_chunks}`);
-```
-
 ```typescript TypeScript
 import { UnsiloedClient } from 'unsiloed-sdk';
 
@@ -213,7 +204,7 @@ console.log(`Total chunks: ${result.total_chunks}`);
 # Parse a document
 curl -X POST "https://prod.visionapi.unsiloed.ai/parse" \
   -H "api-key: your-api-key" \
-  -F "document_file=@document.pdf"
+  -F "file=@document.pdf"
 
 # Get results
 curl -X GET "https://prod.visionapi.unsiloed.ai/parse/{job_id}" \

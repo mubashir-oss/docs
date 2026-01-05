@@ -81,29 +81,6 @@ with UnsiloedClient(api_key="your-api-key") as client:
     result = client.get_parse_result(job_id)
 ```
 
-```javascript JavaScript
-const { UnsiloedClient } = require('unsiloed-sdk');
-
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
-
-// Create parsing job and wait for completion
-const result = await client.parseAndWait({
-  file: 'document.pdf',
-  pollInterval: 5000,  // Check every 5 seconds
-  maxWaitTime: 300000  // Wait up to 5 minutes
-});
-
-console.log(`Total chunks: ${result.total_chunks}`);
-console.log(result);
-
-// Or start async job and check manually
-const response = await client.parse({ file: 'document.pdf' });
-const jobId = response.job_id;
-
-// Get results later
-const parseResult = await client.getParseResult(jobId);
-console.log(parseResult);
-```
 
 ```typescript TypeScript
 import { UnsiloedClient } from 'unsiloed-sdk';
@@ -114,7 +91,6 @@ const client = new UnsiloedClient({ apiKey: 'your-api-key' });
 const result = await client.parseAndWait({
   file: 'document.pdf',
   pollInterval: 5000,  // Check every 5 seconds
-  maxWaitTime: 300000  // Wait up to 5 minutes
 });
 
 console.log(`Total chunks: ${result.total_chunks}`);
@@ -132,16 +108,17 @@ console.log(parseResult);
 ```bash cURL
 # Start parse job
 curl -X POST "https://prod.visionapi.unsiloed.ai/parse" \
-  -H "accept: application/json" \
   -H "api-key: your-api-key" \
-  -H "Content-Type: multipart/form-data" \
-  -F "document_file=@document.pdf"
+  -F "file=@document.pdf"
 
-# Response: {"job_id": "04a7a6d8-5ef7-465a-b22a-8a98e7104dd9", "status": "queued"}
+# Response will include a job_id
+# {
+#   "job_id": "550e8400-e29b-41d4-a716-446655440000",
+#   "status": "processing"
+# }
 
-# Get results
-curl -X GET "https://prod.visionapi.unsiloed.ai/parse/{job_id}" \
-  -H "accept: application/json" \
+# Poll for results using the job_id
+curl -X GET "https://prod.visionapi.unsiloed.ai/parse/550e8400-e29b-41d4-a716-446655440000" \
   -H "api-key: your-api-key"
 ```
 
@@ -157,60 +134,129 @@ Parsed content is organized into chunks with segments containing rich metadata, 
 
 ```json
 {
-  "job_id": "04a7a6d8-5ef7-465a-b22a-8a98e7104dd9",
+  "job_id": "1699d429-9c2e-464e-b311-d4b68a8444b8",
   "status": "Succeeded",
-  "created_at": "2025-10-22T06:51:16.870302Z",
-  "started_at": "2025-10-22T06:51:16.966136Z",
-  "finished_at": "2025-10-22T06:57:19.821541Z",
-  "total_chunks": 25,
+  "file_name": "document.pdf",
+  "total_chunks": 3,
+  "page_count": 1,
+  "created_at": "2026-01-05T15:06:27.966175Z",
+  "started_at": "2026-01-05T15:06:28.130578Z",
+  "finished_at": "2026-01-05T15:06:36.009842Z",
+  "pdf_url": "https://s3.us-east-1.amazonaws.com/...",
   "chunks": [
     {
+      "chunk_id": "6b2eca3a-d14f-4164-ba9a-0a3a58fcaf45",
+      "chunk_length": 118,
+      "embed": "## Tax Invoice on behalf of -\n\nThe parsed content combined from all segments...",
       "segments": [
         {
+          "segment_id": "c60d89b1-373e-428d-9950-544e7c903b61",
           "segment_type": "Picture",
-          "content": "eternal",
-          "image": "https://s3.us-east-1.amazonaws.com/unsiloed-bucket/...",
-          "page_number": 1,
-          "segment_id": "1c60ecbd-b6da-493c-b3f6-6849337a981f",
-          "confidence": 0.6062846,
-          "page_width": 1191.0,
-          "page_height": 1684.0,
+          "markdown": "1. DESCRIPTION:\nThe image displays a logo...",
           "html": "<p>The image displays a logo...</p>",
-          "markdown": "Eternal Logo\n\nThe image displays a logo...",
+          "image": "https://s3.us-east-1.amazonaws.com/chunker-bucket/...",
+          "page_number": 1,
+          "page_width": 595.0,
+          "page_height": 842.0,
+          "confidence": 0.9805617332458496,
           "bbox": {
-            "left": 72.92226,
-            "top": 62.030334,
-            "width": 230.36308,
-            "height": 55.395317
+            "left": 34.476383209228516,
+            "top": 30.995285034179688,
+            "width": 118.25996398925781,
+            "height": 29.03614044189453
+          },
+          "ocr": []
+        },
+        {
+          "segment_id": "16d38aae-9d38-4a5e-8e78-febb2f206e3d",
+          "segment_type": "SectionHeader",
+          "content": "Tax Invoice on behalf of -",
+          "markdown": "## Tax Invoice on behalf of -",
+          "html": "<h2>Tax Invoice on behalf of -</h2>",
+          "page_number": 1,
+          "page_width": 595.0,
+          "page_height": 842.0,
+          "confidence": 0.5002586245536804,
+          "bbox": {
+            "left": 33.08928680419922,
+            "top": 103.89154052734375,
+            "width": 144.82037353515625,
+            "height": 11.463272094726562
           },
           "ocr": [
             {
               "bbox": {
-                "left": 63.753525,
-                "top": 5.395447,
-                "width": 164.45312,
-                "height": 42.757812
+                "left": 1.1465377807617188,
+                "top": 3.37347412109375,
+                "width": 19.81999969482422,
+                "height": 5.54998779296875
               },
-              "text": "eternal",
-              "confidence": 0.9999992
+              "text": "Tax",
+              "confidence": null,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "hex": "#000000"
+              }
             }
           ]
+        },
+        {
+          "segment_id": "4f4b54bc-793e-49cc-b0a3-113bbb5484be",
+          "segment_type": "Table",
+          "markdown": "| Particulars | Gross value | Discount | Net value |\n| :--- | :--- | :--- | :--- |\n| 1 x Dal Tadka | 170 | 0 | 170 |",
+          "html": "<table>...</table>",
+          "image": "https://s3.us-east-1.amazonaws.com/chunker-bucket/...",
+          "page_number": 1,
+          "confidence": 0.9682685732841492,
+          "bbox": {
+            "left": 32.230628967285156,
+            "top": 299.7548522949219,
+            "width": 539.4254760742188,
+            "height": 106.92483520507812
+          }
         }
       ]
     }
-  ]
+  ],
+  "metadata": {
+    "keep_segment_types": "all"
+  },
+  "credit_used": 1,
+  "merge_tables": false
 }
 ```
 
 ### Response Fields
 
-- **`chunks`**: Array of content chunks, each containing multiple segments
-- **`segments`**: Document elements with type, content, and positioning data
-- **`segment_type`**: Element classification (Title, Text, Table, Picture, etc.)
-- **`bbox`**: Bounding box coordinates for spatial location
-- **`ocr`**: OCR results with text, confidence, and word-level bounding boxes
-- **`html`** / **`markdown`**: Multi-format content representations
-- **`confidence`**: AI model confidence score for element detection
+#### Top-Level Fields
+- **`job_id`**: Unique identifier for the parsing job
+- **`status`**: Job status (`Succeeded`, `Failed`, `Processing`, etc.)
+- **`file_name`**: Name of the uploaded file
+- **`total_chunks`**: Number of content chunks generated
+- **`page_count`**: Total number of pages in the document
+- **`pdf_url`**: Temporary S3 URL to access the processed PDF
+- **`metadata`**: Additional processing metadata and settings
+
+#### Chunk Fields
+- **`chunk_id`**: Unique identifier for each chunk
+- **`chunk_length`**: Character length of the chunk
+- **`embed`**: Combined markdown content from all segments in the chunk (ideal for RAG/embeddings)
+- **`segments`**: Array of document elements within the chunk
+
+#### Segment Fields
+- **`segment_id`**: Unique identifier for each segment
+- **`segment_type`**: Element classification (Text, Title, Table, Picture, SectionHeader, etc.)
+- **`content`**: Plain text content (for text segments)
+- **`markdown`**: Markdown-formatted content
+- **`html`**: HTML-formatted content
+- **`image`**: S3 URL for visual elements (Picture, Table)
+- **`bbox`**: Bounding box with `left`, `top`, `width`, `height` coordinates
+- **`page_number`**: Page where the segment appears
+- **`page_width` / `page_height`**: Page dimensions for coordinate reference
+- **`confidence`**: AI model confidence score (0-1) for element detection
+- **`ocr`**: Array of OCR results with word-level text, bounding boxes, and colors
 
 ## Use Cases
 

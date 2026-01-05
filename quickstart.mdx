@@ -60,32 +60,10 @@ with UnsiloedClient(api_key="your-api-key") as client:
     
     # Access the parsed content
     print(f"Total chunks: {result.total_chunks}")
-    print(f"Total pages: {result.total_pages}")
     
-    # Get the markdown content
+    # Get the embed content
     for chunk in result.chunks:
-        print(f"\n--- Chunk {chunk.chunk_number} ---")
-        print(chunk.markdown)
-```
-
-```javascript JavaScript
-const { UnsiloedClient } = require('unsiloed-sdk');
-
-// Initialize the client
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
-
-// Parse a document and wait for results
-const result = await client.parseAndWait({ file: 'document.pdf' });
-
-// Access the parsed content
-console.log(`Total chunks: ${result.total_chunks}`);
-console.log(`Total pages: ${result.total_pages}`);
-
-// Get the markdown content
-result.chunks.forEach(chunk => {
-  console.log(`\n--- Chunk ${chunk.chunk_number} ---`);
-  console.log(chunk.markdown);
-});
+        print(f"\n--- {chunk['embed'][:100]} ---")
 ```
 
 ```typescript TypeScript
@@ -99,12 +77,10 @@ const result = await client.parseAndWait({ file: 'document.pdf' });
 
 // Access the parsed content
 console.log(`Total chunks: ${result.total_chunks}`);
-console.log(`Total pages: ${result.total_pages}`);
 
 // Get the markdown content
-result.chunks.forEach(chunk => {
-  console.log(`\n--- Chunk ${chunk.chunk_number} ---`);
-  console.log(chunk.markdown);
+result.chunks?.forEach(chunk => {
+  console.log(`\n--- Chunk ${chunk['embed']} ---`);
 });
 ```
 
@@ -112,7 +88,7 @@ result.chunks.forEach(chunk => {
 # Submit a document for parsing
 curl -X POST "https://prod.visionapi.unsiloed.ai/parse" \
   -H "api-key: your-api-key" \
-  -F "document_file=@document.pdf"
+  -F "file=@document.pdf"
 
 # Response will include a job_id
 # {
@@ -136,130 +112,111 @@ To extract specific fields from your document, define a JSON schema:
 ```python Python
 from unsiloed_sdk import UnsiloedClient
 
+# Define extraction schema using JSON Schema format
 schema = {
-    "invoice_number": {
-        "type": "string",
-        "description": "The invoice number"
-    },
-    "invoice_date": {
-        "type": "string",
-        "description": "The invoice date"
-    },
-    "total_amount": {
-        "type": "number",
-        "description": "The total amount due"
-    },
-    "line_items": {
-        "type": "array",
-        "description": "List of line items",
-        "items": {
-            "type": "object",
-            "properties": {
-                "description": {"type": "string"},
-                "quantity": {"type": "number"},
-                "unit_price": {"type": "number"},
-                "total": {"type": "number"}
-            }
+    "type": "object",
+    "properties": {
+        "title": {
+            "type": "string",
+            "description": "Document title"
+        },
+        "date": {
+            "type": "string",
+            "description": "Document date"
         }
-    }
+    },
+    "required": ["title", "date"],
+    "additionalProperties": False
 }
 
 with UnsiloedClient(api_key="your-api-key") as client:
+    # Extract and wait for completion
     result = client.extract_and_wait(
-        file="invoice.pdf",
+        file="document.pdf",
         schema=schema
     )
-    
+
     # Access extracted data with confidence scores
-    print(f"Invoice Number: {result.data['invoice_number']}")
-    print(f"Total Amount: ${result.data['total_amount']}")
-    
-    # Each field includes citation information
-    for field_name, field_data in result.fields.items():
-        print(f"\n{field_name}:")
-        print(f"  Value: {field_data.value}")
-        print(f"  Confidence: {field_data.confidence}")
-        print(f"  Bounding Box: {field_data.bbox}")
+    print(f"Title: {result.result['title']['value']}")
+    print(f"Confidence: {result.result['title']['score']:.2%}")
 ```
 
-```javascript JavaScript
-const { UnsiloedClient } = require('unsiloed-sdk');
+```javascript TypeScript
+import { UnsiloedClient } from "unsiloed-sdk";
 
+// Define extraction schema using JSON Schema format
 const schema = {
-  invoice_number: {
-    type: 'string',
-    description: 'The invoice number'
+  type: "object",
+  properties: {
+    title: {
+      type: "string",
+      description: "Document title",
+    },
+    date: {
+      type: "string",
+      description: "Document date",
+    },
   },
-  invoice_date: {
-    type: 'string',
-    description: 'The invoice date'
-  },
-  total_amount: {
-    type: 'number',
-    description: 'The total amount due'
-  },
-  line_items: {
-    type: 'array',
-    description: 'List of line items',
-    items: {
-      type: 'object',
-      properties: {
-        description: { type: 'string' },
-        quantity: { type: 'number' },
-        unit_price: { type: 'number' },
-        total: { type: 'number' }
-      }
-    }
-  }
+  required: ["title", "date"],
+  additionalProperties: false,
 };
 
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+async function runExtraction() {
+  const client = new UnsiloedClient({
+    apiKey: "your-api-key",
+  });
 
-const result = await client.extractAndWait({
-  file: 'invoice.pdf',
-  schema: schema
-});
+  try {
+    // Extract and wait for completion
+    const result = await client.extractAndWait({
+      file: "document.pdf",
+      schema,
+    });
 
-// Access extracted data with confidence scores
-console.log(`Invoice Number: ${result.data.invoice_number}`);
-console.log(`Total Amount: $${result.data.total_amount}`);
+    // Access extracted data with confidence scores
+    console.log(`Title: ${result.result?.title?.value}`);
+    console.log(`Confidence: ${(result.result?.title?.score * 100).toFixed(2)}%`);
+  } catch (error) {
+    console.error(error);
+  }
+}
 
-// Each field includes citation information
-Object.entries(result.fields).forEach(([fieldName, fieldData]) => {
-  console.log(`\n${fieldName}:`);
-  console.log(`  Value: ${fieldData.value}`);
-  console.log(`  Confidence: ${fieldData.confidence}`);
-  console.log(`  Bounding Box: ${fieldData.bbox}`);
-});
+runExtraction().catch(console.error);
+
 ```
 
 ```bash cURL
 # Create a JSON file with your schema
 cat > schema.json << 'EOF'
 {
-  "invoice_number": {
-    "type": "string",
-    "description": "The invoice number"
+  "type": "object",
+  "properties": {
+    "invoice_number": {
+      "type": "string",
+      "description": "The invoice number"
+    },
+    "invoice_date": {
+      "type": "string",
+      "description": "The invoice date"
+    },
+    "total_amount": {
+      "type": "number",
+      "description": "The total amount due"
+    }
   },
-  "invoice_date": {
-    "type": "string",
-    "description": "The invoice date"
-  },
-  "total_amount": {
-    "type": "number",
-    "description": "The total amount due"
-  }
+  "required": ["invoice_number", "invoice_date", "total_amount"],
+  "additionalProperties": false
 }
 EOF
 
-# Submit extraction request
+# Submit extraction request (passing schema as string, not file)
 curl -X POST "https://prod.visionapi.unsiloed.ai/extract" \
   -H "api-key: your-api-key" \
-  -F "document_file=@invoice.pdf" \
-  -F "schema=@schema.json"
+  -F "pdf_file=@Invoice.pdf" \
+  -F "schema_data=$(cat schema.json)"
 
-# Get results
-curl -X GET "https://prod.visionapi.unsiloed.ai/extract/{job_id}" \
+# Get extraction results
+curl -X GET "https://prod.visionapi.unsiloed.ai/extract/${job_id}" \
   -H "api-key: your-api-key"
 ```
 
@@ -267,40 +224,129 @@ curl -X GET "https://prod.visionapi.unsiloed.ai/extract/{job_id}" \
 
 ## Understanding the Response
 
-All API responses include:
+### Parsing Response
 
-- **Structured data**: The parsed content or extracted fields
-- **Confidence scores**: How confident the model is in each extraction
-- **Bounding boxes**: Word-level coordinates for each field
-- **Citations**: References back to the source document
-- **Metadata**: Page numbers, document info, processing time
+The parsing API returns structured chunks with markdown, segments, and metadata:
 
-<Accordion title="Example Response Structure">
+<Accordion title="Parsing Response Structure">
 
 ```json
 {
-  "job_id": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "completed",
-  "total_chunks": 10,
-  "total_pages": 5,
+  "job_id": "1699d429-9c2e-464e-b311-d4b68a8444b8",
+  "status": "Succeeded",
+  "file_name": "document.pdf",
+  "total_chunks": 3,
+  "page_count": 1,
+  "created_at": "2026-01-05T15:06:27.966175Z",
+  "started_at": "2026-01-05T15:06:28.130578Z",
+  "finished_at": "2026-01-05T15:06:36.009842Z",
   "chunks": [
     {
-      "chunk_number": 1,
-      "page_numbers": [1],
-      "markdown": "# Document Title\n\nThis is the parsed content...",
-      "bbox": [0.1, 0.1, 0.9, 0.3],
-      "confidence": 0.95
+      "chunk_id": "6b2eca3a-d14f-4164-ba9a-0a3a58fcaf45",
+      "chunk_length": 118,
+      "embed": "# Document Title\n\nThis is the parsed content...",
+      "segments": [
+        {
+          "segment_id": "c60d89b1-373e-428d-9950-544e7c903b61",
+          "segment_type": "Text",
+          "markdown": "Document content here...",
+          "html": "<p>Document content here...</p>",
+          "bbox": {
+            "left": 34.47,
+            "top": 30.99,
+            "width": 118.26,
+            "height": 29.03
+          },
+          "page_number": 1,
+          "page_width": 595.0,
+          "page_height": 842.0,
+          "confidence": 0.98
+        }
+      ]
     }
   ],
+  "pdf_url": "https://s3.us-east-1.amazonaws.com/...",
   "metadata": {
-    "processing_time_ms": 2341,
-    "file_type": "pdf",
-    "num_pages": 5
+    "keep_segment_types": "all"
   }
 }
 ```
 
 </Accordion>
+
+### Extraction Response
+
+The extraction API returns extracted fields with confidence scores and bounding boxes:
+
+<Accordion title="Extraction Response Structure">
+
+```json
+{
+  "job_id": "4943f2a3-7c99-46b9-90e8-c1c4b748a9bb",
+  "status": "completed",
+  "file_name": "invoice.pdf",
+  "created_at": "2026-01-05T15:00:10.836401+00:00",
+  "updated_at": "2026-01-05T15:00:53.123541+00:00",
+  "result": {
+    "invoice_number": {
+      "value": "25G1TIZT00000999",
+      "score": 0.8686260225487502,
+      "page_no": 1,
+      "bboxes": [
+        {
+          "bbox": [65, 251, 1136, 431],
+          "type": "segment",
+          "confidence": 0.7901723,
+          "page_width": 1191.0,
+          "page_height": 1684.0
+        },
+        {
+          "bbox": [216, 385, 413, 400],
+          "text": "25G1TIZT00000999",
+          "type": "ocr",
+          "confidence": null
+        }
+      ]
+    },
+    "invoice_date": {
+      "value": "10/05/2025",
+      "score": 0.9999994661137259,
+      "page_no": 1,
+      "bboxes": [
+        {
+          "bbox": [232, 407, 344, 422],
+          "text": "10/05/2025",
+          "type": "ocr",
+          "confidence": null
+        }
+      ]
+    },
+    "total_amount": {
+      "value": 346.5,
+      "score": 0.9999993593737946,
+      "page_no": 1,
+      "bboxes": [
+        {
+          "bbox": [221, 892, 275, 894],
+          "text": "346.5",
+          "type": "ocr",
+          "confidence": null
+        }
+      ]
+    }
+  }
+}
+```
+
+</Accordion>
+
+**Key Features:**
+
+- **Parsing**: Returns chunks with markdown, HTML, segments, and layout information
+- **Extraction**: Returns structured fields with confidence scores and precise bounding boxes
+- **Bounding boxes**: Pixel-level coordinates for locating data in the original document
+- **Confidence scores**: Model confidence (0-1) for each extracted field
+- **Page references**: Page numbers where each field was found
 
 ## Next Steps
 

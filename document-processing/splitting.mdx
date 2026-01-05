@@ -34,7 +34,7 @@ You can split documents into various categories:
 
 ## API Usage
 
-### Submit Split Job with File Upload
+### Submit Split Job
 
 <CodeGroup>
 
@@ -66,28 +66,6 @@ with UnsiloedClient(api_key="your-api-key") as client:
             print(f"  Download: {file_info['full_path']}")
     else:
         print(f"Split failed: {result.result['message']}")
-```
-
-```javascript JavaScript
-const { UnsiloedClient } = require('unsiloed-sdk');
-
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
-
-// Define categories with optional descriptions for better accuracy
-const categories = [
-  { name: 'Invoice', description: 'Financial invoices with itemized charges' },
-  { name: 'Receipt', description: 'Purchase receipts' },
-  { name: 'Contract' }  // Description is optional
-];
-
-const result = await client.split({
-  file: 'mixed_documents.pdf',
-  categories: categories
-});
-
-console.log(`Split job created: ${result.job_id}`);
-console.log(`Status: ${result.status}`);
-console.log(`Quota remaining: ${result.quota_remaining}`);
 ```
 
 ```typescript TypeScript
@@ -128,76 +106,6 @@ curl -X GET "https://prod.visionapi.unsiloed.ai/splitter/{job_id}" \
 
 </CodeGroup>
 
-### Submit Split Job with File URL
-
-<CodeGroup>
-
-```python Python
-from unsiloed_sdk import UnsiloedClient, Category
-
-categories = [
-    Category(name="Invoice", description="Financial invoices"),
-    Category(name="Receipt", description="Purchase receipts")
-]
-
-with UnsiloedClient(api_key="your-api-key") as client:
-    result = client.split_and_wait(
-        file_url="https://example.com/document.pdf",
-        categories=categories
-    )
-
-    if result.result['success']:
-        print(f"✓ Split successful: {len(result.result['files'])} files generated")
-        for file_info in result.result['files']:
-            print(f"  - {file_info['name']}")
-```
-
-```javascript JavaScript
-const { UnsiloedClient } = require('unsiloed-sdk');
-
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
-
-const categories = [
-  { name: 'Invoice', description: 'Financial invoices' },
-  { name: 'Receipt', description: 'Purchase receipts' }
-];
-
-const result = await client.split({
-  fileUrl: 'https://example.com/document.pdf',
-  categories: categories
-});
-
-console.log(`Split job created: ${result.job_id}`);
-```
-
-```typescript TypeScript
-import { UnsiloedClient, Category } from 'unsiloed-sdk';
-
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
-
-const categories: Category[] = [
-  { name: 'Invoice', description: 'Financial invoices' },
-  { name: 'Receipt', description: 'Purchase receipts' }
-];
-
-const result = await client.split({
-  fileUrl: 'https://example.com/document.pdf',
-  categories: categories
-});
-
-console.log(`Split job created: ${result.job_id}`);
-```
-
-```bash cURL
-curl -X POST "https://prod.visionapi.unsiloed.ai/splitter" \
-  -H "api-key: your-api-key" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d 'file_url=https://example.com/document.pdf' \
-  -d 'categories=[{"name":"Invoice","description":"Financial invoices"},{"name":"Receipt","description":"Purchase receipts"}]'
-```
-
-</CodeGroup>
-
 ### Check Split Job Status
 
 <CodeGroup>
@@ -214,48 +122,16 @@ with UnsiloedClient(api_key="your-api-key") as client:
     print(f"Status: {job.status}")
     print(f"Progress: {job.progress}")
 
-    if job.status == "Succeeded" and job.result:
+    if job.status == "completed" and job.result:
         if job.result['success']:
             files = job.result['files']
+            print(f"\n{job.result['message']}")
             print(f"Documents split into {len(files)} files")
 
             for file_info in files:
                 print(f"\n{file_info['name']}")
-                print(f"  Category: {file_info['category']}")
                 print(f"  Confidence: {file_info['confidence_score']:.2%}")
-                print(f"  URL: {file_info['full_path']}")
-```
-
-```javascript JavaScript
-const { UnsiloedClient } = require('unsiloed-sdk');
-
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
-
-const jobId = '550e8400-e29b-41d4-a716-446655440000';
-
-const job = await client.getSplitResult(jobId);
-
-console.log(`Status: ${job.status}`);
-console.log(`Progress: ${job.progress}`);
-
-if (job.status === 'Succeeded' && job.split_results) {
-  console.log(`Documents split into ${job.split_results.length} categories`);
-}
-
-// Or use splitAndWait to automatically poll until completion
-const categories = [
-  { name: 'Invoice' },
-  { name: 'Receipt' }
-];
-
-const result = await client.splitAndWait({
-  file: 'document.pdf',
-  categories: categories,
-  pollInterval: 5000,  // Check every 5 seconds
-  maxWaitTime: 300000  // Wait up to 5 minutes
-});
-
-console.log(`Split completed: ${result.split_results.length} files generated`);
+                print(f"  Download: {file_info['full_path']}")
 ```
 
 ```typescript TypeScript
@@ -270,8 +146,17 @@ const job = await client.getSplitResult(jobId);
 console.log(`Status: ${job.status}`);
 console.log(`Progress: ${job.progress}`);
 
-if (job.status === 'Succeeded' && job.split_results) {
-  console.log(`Documents split into ${job.split_results.length} categories`);
+if (job.status === 'completed' && job.result) {
+  if (job.result.success) {
+    console.log(`\n${job.result.message}`);
+    console.log(`Documents split into ${job.result.files.length} files`);
+    
+    job.result.files.forEach((file: any) => {
+      console.log(`\n${file.name}`);
+      console.log(`  Confidence: ${file.confidence_score.toFixed(2)}`);
+      console.log(`  Download: ${file.full_path}`);
+    });
+  }
 }
 
 // Or use splitAndWait to automatically poll until completion
@@ -284,10 +169,11 @@ const result = await client.splitAndWait({
   file: 'document.pdf',
   categories: categories,
   pollInterval: 5000,  // Check every 5 seconds
-  maxWaitTime: 300000  // Wait up to 5 minutes
 });
 
-console.log(`Split completed: ${result.split_results.length} files generated`);
+if (result.result?.success) {
+  console.log(`Split completed: ${result.result.files.length} files generated`);
+}
 ```
 
 ```bash cURL
@@ -296,20 +182,105 @@ curl -X GET "https://prod.visionapi.unsiloed.ai/splitter/550e8400-e29b-41d4-a716
 
 # Response when completed:
 # {
-#   "job_id": "550e8400-e29b-41d4-a716-446655440000",
+#   "job_id": "c8a86841-beb1-4d00-ac4f-2f9fb9de9d5a",
 #   "status": "completed",
+#   "progress": "Starting document processing...",
+#   "file_url": "https://lyltzyvtloozzovxrupp.supabase.co/storage/v1/object/public/job-files-bucket/...",
+#   "file_name": "mixed_documents.pdf",
+#   "parameters": {
+#     "classes": ["Invoice", "Receipt", "Contract"],
+#     "category_descriptions": {"Invoice": "Financial invoices with itemized charges", "Receipt": "Purchase receipts"}
+#   },
 #   "result": {
 #     "success": true,
+#     "message": "Successfully split PDF into 1 files",
 #     "files": [
 #       {
-#         "name": "Invoice_1.pdf",
-#         "category": "Invoice",
-#         "confidence_score": 0.976,
-#         "full_path": "https://s3.amazonaws.com/..."
+#         "name": "Contract.pdf",
+#         "path": "Contract.pdf",
+#         "type": "file",
+#         "fileId": "580e091d-c354-4558-8318-89e600346691",
+#         "full_path": "https://lyltzyvtloozzovxrupp.supabase.co/storage/v1/object/public/files/...",
+#         "confidence_score": 0.999147126422347
 #       }
 #     ]
-#   }
+#   },
+#   "error": null,
+#   "quota_remaining": 450
 # }
 ```
 
 </CodeGroup>
+
+## Response Format
+
+### Job Creation Response
+
+```json
+{
+  "job_id": "c8a86841-beb1-4d00-ac4f-2f9fb9de9d5a",
+  "status": "processing",
+  "message": "Split job started",
+  "quota_remaining": 450
+}
+```
+
+### Job Status Response (Completed)
+
+```json
+{
+  "job_id": "c8a86841-beb1-4d00-ac4f-2f9fb9de9d5a",
+  "status": "completed",
+  "progress": "Starting document processing...",
+  "file_url": "https://lyltzyvtloozzovxrupp.supabase.co/storage/v1/object/public/job-files-bucket/...",
+  "file_name": "mixed_documents.pdf",
+  "parameters": {
+    "classes": ["Invoice", "Receipt", "Contract"],
+    "category_descriptions": {
+      "Invoice": "Financial invoices with itemized charges",
+      "Receipt": "Purchase receipts"
+    }
+  },
+  "result": {
+    "success": true,
+    "message": "Successfully split PDF into 3 files",
+    "files": [
+      {
+        "name": "Invoice.pdf",
+        "path": "Invoice.pdf",
+        "type": "file",
+        "fileId": "580e091d-c354-4558-8318-89e600346691",
+        "full_path": "https://lyltzyvtloozzovxrupp.supabase.co/storage/v1/object/public/files/...",
+        "confidence_score": 0.999147126422347
+      }
+    ]
+  },
+  "error": null,
+  "quota_remaining": 450
+}
+```
+
+### Response Fields
+
+**Top-Level Fields:**
+- `job_id` (string): Unique identifier for the split job
+- `status` (string): Job status - "processing", "completed", or "failed"
+- `progress` (string): Current processing status message
+- `file_url` (string): URL to the original uploaded file
+- `file_name` (string): Name of the original file
+- `parameters` (object): Job parameters including classes and category descriptions
+- `error` (string|null): Error message if job failed
+- `quota_remaining` (number|null): Remaining API quota
+
+**Result Object Fields:**
+- `success` (boolean): Whether the split operation succeeded
+- `message` (string): Success/failure message
+- `files` (array): Array of generated split files
+
+**File Object Fields:**
+- `name` (string): Name of the split file (category-based)
+- `path` (string): Relative path to the file
+- `type` (string): File type (always "file")
+- `fileId` (string): Unique identifier for the file
+- `full_path` (string): Full download URL for the split file
+- `confidence_score` (number): Confidence score for the classification (0-1)

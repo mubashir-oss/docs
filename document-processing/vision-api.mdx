@@ -263,66 +263,47 @@ with UnsiloedClient(api_key="your-api-key") as client:
     print(f"Confidence: {result.result['title']['score']:.2%}")
 ```
 
-```javascript JavaScript
-const { UnsiloedClient } = require('unsiloed-sdk');
-
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+```typescript TypeScript
+import { UnsiloedClient } from "unsiloed-sdk";
 
 // Define extraction schema using JSON Schema format
 const schema = {
-  type: 'object',
+  type: "object",
   properties: {
     title: {
-      type: 'string',
-      description: 'Document title'
+      type: "string",
+      description: "Document title",
     },
     date: {
-      type: 'string',
-      description: 'Document date'
-    }
+      type: "string",
+      description: "Document date",
+    },
   },
-  required: ['title', 'date'],
-  additionalProperties: false
+  required: ["title", "date"],
+  additionalProperties: false,
 };
 
-// Make the extraction request
-const result = await client.extract({
-  file: 'document.pdf',
-  schema: schema
-});
+async function runExtraction() {
+  const client = new UnsiloedClient({
+    apiKey: "your-api-key",
+  });
 
-console.log(`Job ID: ${result.job_id}`);
-```
+  try {
+    // Extract and wait for completion
+    const result = await client.extractAndWait({
+      file: "document.pdf",
+      schema,
+    });
 
-```typescript TypeScript
-import { UnsiloedClient } from 'unsiloed-sdk';
+    // Access extracted data with confidence scores
+    console.log(`Title: ${result.result?.title?.value}`);
+    console.log(`Confidence: ${(result.result?.title?.score * 100).toFixed(2)}%`);
+  } catch (error) {
+    console.error(error);
+  }
+}
 
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
-
-// Define extraction schema using JSON Schema format
-const schema = {
-  type: 'object',
-  properties: {
-    title: {
-      type: 'string',
-      description: 'Document title'
-    },
-    date: {
-      type: 'string',
-      description: 'Document date'
-    }
-  },
-  required: ['title', 'date'],
-  additionalProperties: false
-} as const;
-
-// Make the extraction request
-const result = await client.extract({
-  file: 'document.pdf',
-  schema: schema
-});
-
-console.log(`Job ID: ${result.job_id}`);
+runExtraction().catch(console.error);
 ```
 
 ```bash cURL
@@ -372,36 +353,8 @@ with UnsiloedClient(api_key="your-api-key") as client:
         file="document.pdf",
         schema=schema,
         poll_interval=5,  # Check every 5 seconds
-        max_wait_time=300  # Wait up to 5 minutes
     )
     print("Extraction complete!")
-```
-
-```javascript JavaScript
-const { UnsiloedClient } = require('unsiloed-sdk');
-
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
-
-// Start async extraction job
-const response = await client.extract({
-  file: 'document.pdf',
-  schema: schema
-});
-
-const jobId = response.job_id;
-
-// Check job status and get results
-const resultResponse = await client.getExtractResult(jobId);
-console.log(resultResponse);
-
-// Or use extractAndWait to automatically poll until completion
-const result = await client.extractAndWait({
-  file: 'document.pdf',
-  schema: schema,
-  pollInterval: 5000,  // Check every 5 seconds
-  maxWaitTime: 300000  // Wait up to 5 minutes
-});
-console.log(result);
 ```
 
 ```typescript TypeScript
@@ -426,7 +379,6 @@ const result = await client.extractAndWait({
   file: 'document.pdf',
   schema: schema,
   pollInterval: 5000,  // Check every 5 seconds
-  maxWaitTime: 300000  // Wait up to 5 minutes
 });
 console.log(result);
 ```
@@ -449,107 +401,135 @@ curl -X GET "https://prod.visionapi.unsiloed.ai/extract/{job_id}" \
 
 ### Extraction Results Structure
 
-Each extracted field returns an object with detailed metadata:
-
-- `value`: The extracted data matching the schema type
-- `score`: Confidence score between 0 and 1
-- `bboxes`: Array of bounding box coordinates
-- `page_no`: Page number where data was found
-- `min_confidence_score`: Overall minimum confidence
-
-### Standard Extraction Response
-
-Example response from extracting a US invoice:
+The extraction API returns a complete job response with metadata and extracted results:
 
 ```json
 {
-  "document_type": {
-    "score": 0.9987,
-    "value": "invoice",
-    "bboxes": [
-      {
-        "bbox": [125, 45, 280, 75]
-      }
-    ],
-    "page_no": 1
-  },
-  "invoice_header": {
+  "job_id": "4943f2a3-7c99-46b9-90e8-c1c4b748a9bb",
+  "status": "completed",
+  "file_name": "invoice.pdf",
+  "created_at": "2026-01-05T15:00:10.836401+00:00",
+  "updated_at": "2026-01-05T15:00:53.123541+00:00",
+  "result": {
     "invoice_number": {
-      "score": 0.9995,
       "value": "INV-2024-00542",
+      "score": 0.9995421238765432,
+      "page_no": 1,
       "bboxes": [
         {
-          "bbox": [450, 120, 580, 145]
+          "bbox": [450, 120, 580, 145],
+          "type": "segment",
+          "confidence": 0.8654321,
+          "page_width": 1191.0,
+          "page_height": 1684.0
+        },
+        {
+          "bbox": [450, 120, 580, 145],
+          "text": "INV-2024-00542",
+          "type": "ocr",
+          "confidence": null
         }
-      ],
-      "page_no": 1
+      ]
     },
     "invoice_date": {
-      "score": 0.9992,
       "value": "January 15, 2024",
+      "score": 0.9992341234567891,
+      "page_no": 1,
       "bboxes": [
         {
-          "bbox": [450, 155, 580, 180]
+          "bbox": [450, 155, 580, 180],
+          "type": "segment",
+          "confidence": 0.8923456,
+          "page_width": 1191.0,
+          "page_height": 1684.0
+        },
+        {
+          "bbox": [450, 155, 580, 180],
+          "text": "January 15, 2024",
+          "type": "ocr",
+          "confidence": null
         }
-      ],
-      "page_no": 1
-    }
-  },
-  "vendor": {
+      ]
+    },
     "vendor_name": {
-      "score": 0.9998,
-      "value": "Acme Corp",
+      "value": "Acme Corporation",
+      "score": 0.9998765432109876,
+      "page_no": 1,
       "bboxes": [
         {
-          "bbox": [85, 95, 250, 125]
+          "bbox": [85, 95, 250, 125],
+          "type": "segment",
+          "confidence": 0.9123456,
+          "page_width": 1191.0,
+          "page_height": 1684.0
+        },
+        {
+          "bbox": [85, 95, 250, 125],
+          "text": "Acme Corporation",
+          "type": "ocr",
+          "confidence": null
         }
-      ],
-      "page_no": 1
+      ]
     },
-    "vendor_email": {
-      "score": 0.9991,
-      "value": "billing@acmecorp.com",
-      "bboxes": [
-        {
-          "bbox": [85, 185, 280, 210]
-        }
-      ],
-      "page_no": 1
-    }
-  },
-  "invoice_totals": {
-    "total_amount_due": {
-      "score": 0.9999,
+    "total_amount": {
       "value": 2547.50,
+      "score": 0.9999876543210987,
+      "page_no": 1,
       "bboxes": [
         {
-          "bbox": [480, 625, 580, 655]
-        }
-      ],
-      "page_no": 1
-    },
-    "sales_tax": {
-      "score": 0.9996,
-      "value": 197.50,
-      "bboxes": [
+          "bbox": [480, 625, 580, 655],
+          "type": "segment",
+          "confidence": 0.9534567,
+          "page_width": 1191.0,
+          "page_height": 1684.0
+        },
         {
-          "bbox": [480, 590, 580, 615]
+          "bbox": [480, 625, 580, 655],
+          "text": "2547.50",
+          "type": "ocr",
+          "confidence": null
         }
-      ],
-      "page_no": 1
+      ]
     }
-  },
-  "min_confidence_score": 0.9987
+  }
 }
 ```
 
-### Bounding Box Information
+### Response Fields
 
-Bounding boxes provide precise location data:
-- Coordinates are in pixels: `[x1, y1, x2, y2]`
-- `x1, y1`: Top-left corner
-- `x2, y2`: Bottom-right corner
-- Page numbers are 1-indexed
+#### Top-Level Fields
+- **`job_id`**: Unique identifier for the extraction job
+- **`status`**: Job status (`completed`, `processing`, `failed`, etc.)
+- **`file_name`**: Name of the processed file
+- **`created_at`**: Timestamp when the job was created
+- **`updated_at`**: Timestamp of the last status update
+- **`result`**: Object containing all extracted fields
+
+#### Extracted Field Structure
+
+Each field in the `result` object contains:
+
+- **`value`**: The extracted data (type matches your schema: string, number, object, array)
+- **`score`**: Confidence score between 0 and 1 (higher is better)
+- **`page_no`**: Page number where the data was found (1-indexed)
+- **`bboxes`**: Array of bounding box objects with location information
+
+#### Bounding Box Structure
+
+Each bounding box in the `bboxes` array includes:
+
+- **`bbox`**: Pixel coordinates `[left, top, right, bottom]`
+  - `left, top`: Top-left corner coordinates
+  - `right, bottom`: Bottom-right corner coordinates
+- **`type`**: Either `"segment"` (document region) or `"ocr"` (word-level text)
+- **`confidence`**: Segment confidence score (for segment type) or `null` (for OCR type)
+- **`page_width`**: Page width in pixels (for coordinate reference)
+- **`page_height`**: Page height in pixels (for coordinate reference)
+- **`text`**: Extracted text (only present for OCR-type bboxes)
+
+<Note>
+Each extracted field typically has two bounding boxes: one for the document segment containing the data, and one for the precise OCR text location. This dual-level citation allows you to trace extractions back to both the visual region and the exact words in the document.
+</Note>
 
 ## Error Handling
 
