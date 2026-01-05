@@ -19,19 +19,66 @@ Splitting jobs are processed asynchronously. Poll this endpoint to check complet
 </ResponseField>
 
 <ResponseField name="status" type="string">
-  Current job status: "Starting", "Processing", "Succeeded", or "Failed"
+  Current job status: "processing", "completed", or "failed"
 </ResponseField>
 
-<ResponseField name="created_at" type="string">
-  Timestamp when the job was created
+<ResponseField name="progress" type="string">
+  Progress message describing current processing stage
 </ResponseField>
 
-<ResponseField name="finished_at" type="string">
-  Timestamp when processing completed (only present when status is "Succeeded" or "Failed")
+<ResponseField name="file_url" type="string">
+  URL to the original uploaded file
 </ResponseField>
 
-<ResponseField name="results" type="object">
-  Split documents and classification data (only present when status is "Succeeded")
+<ResponseField name="file_name" type="string">
+  Name of the original file
+</ResponseField>
+
+<ResponseField name="parameters" type="object">
+  Job parameters including classes and category descriptions
+</ResponseField>
+
+<ResponseField name="result" type="object">
+  Split results (only present when status is "completed")
+  <Expandable title="result_structure">
+    <ResponseField name="success" type="boolean">
+      Whether the splitting operation succeeded
+    </ResponseField>
+    <ResponseField name="message" type="string">
+      Success/failure message (e.g., "Successfully split PDF into 3 files")
+    </ResponseField>
+    <ResponseField name="files" type="array">
+      Array of split PDF files
+      <Expandable title="file_structure">
+        <ResponseField name="name" type="string">
+          Name of the split file (e.g., "Invoice.pdf")
+        </ResponseField>
+        <ResponseField name="path" type="string">
+          Relative path to the file
+        </ResponseField>
+        <ResponseField name="type" type="string">
+          File type (always "file")
+        </ResponseField>
+        <ResponseField name="fileId" type="string">
+          Unique file identifier
+        </ResponseField>
+        <ResponseField name="full_path" type="string">
+          Complete download URL for the split file
+        </ResponseField>
+        <ResponseField name="confidence_score" type="number">
+          Classification confidence score (0.0-1.0)
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message (if job failed, otherwise null)
+</ResponseField>
+
+<ResponseField name="quota_remaining" type="number">
+  Remaining API quota after this request
 </ResponseField>
 
 <RequestExample>
@@ -57,14 +104,19 @@ def get_split_status(job_id, api_key):
         job = response.json()
         print(f"Job Status: {job['status']}")
 
-        if job['status'] == 'Succeeded':
+        if job['status'] == 'completed':
             print("Split completed successfully!")
+            if job.get('result', {}).get('success'):
+                print(f"Message: {job['result']['message']}")
+                for file_info in job['result']['files']:
+                    print(f"  File: {file_info['name']}")
+                    print(f"    Download: {file_info['full_path']}")
             return job
-        elif job['status'] == 'Failed':
-            print(f"Job failed: {job.get('message', 'Unknown error')}")
+        elif job['status'] == 'failed':
+            print(f"Job failed: {job.get('error', 'Unknown error')}")
             return None
-        elif job['status'] in ['Starting', 'Processing']:
-            print("Job is currently being processed...")
+        elif job['status'] == 'processing':
+            print(f"Job is processing: {job.get('progress', '')}")
             return job
     else:
         print("Error:", response.status_code, response.text)
@@ -89,15 +141,21 @@ async function getSplitStatus(jobId, apiKey) {
     console.log('Job Status:', job.status);
 
     switch (job.status) {
-      case 'Succeeded':
+      case 'completed':
         console.log('Split completed successfully!');
+        if (job.result?.success) {
+          console.log('Message:', job.result.message);
+          job.result.files.forEach(file => {
+            console.log(`  File: ${file.name}`);
+            console.log(`    Download: ${file.full_path}`);
+          });
+        }
         return job;
-      case 'Failed':
-        console.log('Job failed:', job.message || 'Unknown error');
+      case 'failed':
+        console.log('Job failed:', job.error || 'Unknown error');
         return null;
-      case 'Starting':
-      case 'Processing':
-        console.log('Job is currently being processed...');
+      case 'processing':
+        console.log('Job is processing:', job.progress || '');
         return job;
       default:
         console.log('Unknown status:', job.status);
@@ -118,63 +176,74 @@ const result = await getSplitStatus(jobId, 'your-api-key');
 
 <ResponseExample>
 
-```json Succeeded Job
+```json Completed Job
 {
-  "job_id": "04a7a6d8-5ef7-465a-b22a-8a98e7104dd9",
-  "status": "Succeeded",
-  "created_at": "2025-10-22T06:51:16.870302Z",
-  "finished_at": "2025-10-22T06:57:19.821541Z",
-  "results": {
-    "classifications": {
-      "1": "invoice",
-      "2": "invoice",
-      "3": "contract",
-      "4": "contract",
-      "5": "report"
-    },
-    "confidence_scores": {
-      "1": 0.95,
-      "2": 0.93,
-      "3": 0.89,
-      "4": 0.91,
-      "5": 0.87
-    },
-    "split_documents": [
+  "job_id": "c8a86841-beb1-4d00-ac4f-2f9fb9de9d5a",
+  "status": "completed",
+  "progress": "Starting document processing...",
+  "file_url": "https://lyltzyvtloozzovxrupp.supabase.co/storage/v1/object/public/job-files-bucket/...",
+  "file_name": "mixed_documents.pdf",
+  "parameters": {
+    "classes": ["Invoice", "Receipt", "Contract"],
+    "category_descriptions": {
+      "Invoice": "Financial invoices with itemized charges",
+      "Receipt": "Purchase receipts"
+    }
+  },
+  "result": {
+    "success": true,
+    "message": "Successfully split PDF into 3 files",
+    "files": [
       {
-        "category": "invoice",
-        "pages": [1, 2],
-        "file_url": "https://s3.amazonaws.com/..."
+        "name": "Invoice.pdf",
+        "path": "Invoice.pdf",
+        "type": "file",
+        "fileId": "580e091d-c354-4558-8318-89e600346691",
+        "full_path": "https://lyltzyvtloozzovxrupp.supabase.co/storage/v1/object/public/files/...",
+        "confidence_score": 0.999147126422347
       },
       {
-        "category": "contract",
-        "pages": [3, 4],
-        "file_url": "https://s3.amazonaws.com/..."
-      },
-      {
-        "category": "report",
-        "pages": [5],
-        "file_url": "https://s3.amazonaws.com/..."
+        "name": "Contract.pdf",
+        "path": "Contract.pdf",
+        "type": "file",
+        "fileId": "680e091d-c354-4558-8318-89e600346692",
+        "full_path": "https://lyltzyvtloozzovxrupp.supabase.co/storage/v1/object/public/files/...",
+        "confidence_score": 0.987654321098765
       }
     ]
-  }
+  },
+  "error": null,
+  "quota_remaining": 450
 }
 ```
 
 ```json Processing Job
 {
-  "job_id": "04a7a6d8-5ef7-465a-b22a-8a98e7104dd9",
-  "status": "Processing",
-  "created_at": "2025-10-22T06:51:16.870302Z"
+  "job_id": "c8a86841-beb1-4d00-ac4f-2f9fb9de9d5a",
+  "status": "processing",
+  "progress": "Processing page 2 of 10 (20.0%)",
+  "file_url": "https://lyltzyvtloozzovxrupp.supabase.co/storage/v1/object/public/job-files-bucket/...",
+  "file_name": "mixed_documents.pdf",
+  "parameters": {
+    "classes": ["Invoice", "Receipt", "Contract"]
+  },
+  "error": null,
+  "quota_remaining": 450
 }
 ```
 
 ```json Failed Job
 {
-  "job_id": "04a7a6d8-5ef7-465a-b22a-8a98e7104dd9",
-  "status": "Failed",
-  "created_at": "2025-10-22T06:51:16.870302Z",
-  "finished_at": "2025-10-22T06:51:25.123456Z",
-  "message": "Failed to process document: Invalid PDF format"
+  "job_id": "c8a86841-beb1-4d00-ac4f-2f9fb9de9d5a",
+  "status": "failed",
+  "progress": "Classification failed with error",
+  "file_url": "https://lyltzyvtloozzovxrupp.supabase.co/storage/v1/object/public/job-files-bucket/...",
+  "file_name": "mixed_documents.pdf",
+  "parameters": {
+    "classes": ["Invoice", "Receipt", "Contract"]
+  },
+  "error": "Failed to process document: Invalid PDF format",
+  "quota_remaining": 450
 }
 ```
 

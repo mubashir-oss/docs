@@ -38,7 +38,7 @@
                   },
                   "schema_data": {
                     "type": "string",
-                    "description": "JSON schema defining the structure and fields to extract from the document"
+                    "description": "JSON schema defining the structure and fields to extract from the document. Example: {\"type\":\"object\",\"properties\":{\"invoice_number\":{\"type\":\"string\"},\"invoice_date\":{\"type\":\"string\"},\"total_amount\":{\"type\":\"number\"},\"vendor_name\":{\"type\":\"string\"}},\"required\":[\"invoice_number\"],\"additionalProperties\":false}"
                   }
                 },
                 "required": [
@@ -107,7 +107,7 @@
                   },
                   "schema_data": {
                     "type": "string",
-                    "description": "JSON schema defining the structure of data to extract"
+                    "description": "JSON schema defining the structure of data to extract. Example: {\"type\":\"object\",\"properties\":{\"invoice_number\":{\"type\":\"string\"},\"invoice_date\":{\"type\":\"string\"},\"total_amount\":{\"type\":\"number\"}},\"required\":[\"invoice_number\"],\"additionalProperties\":false}"
                   },
                   "batch_size": {
                     "type": "integer",
@@ -297,16 +297,19 @@
                   "pdf_file": {
                     "type": "string",
                     "format": "binary",
-                    "description": "PDF file to classify"
+                    "description": "PDF file to classify. Either pdf_file or file_url must be provided."
                   },
-                  "conditions": {
+                  "file_url": {
                     "type": "string",
-                    "description": "JSON string list of categories e.g. ['category1', 'category2']"
+                    "description": "URL to a PDF file to classify. Either pdf_file or file_url must be provided. Example: https://example.com/document.pdf"
+                  },
+                  "categories": {
+                    "type": "string",
+                    "description": "JSON string containing array of category objects with name and optional description. Example: [{\"name\":\"invoice\",\"description\":\"Financial invoices with itemized charges\"},{\"name\":\"contract\",\"description\":\"Legal contracts and agreements\"},{\"name\":\"receipt\"}]"
                   }
                 },
                 "required": [
-                  "pdf_file",
-                  "conditions"
+                  "categories"
                 ]
               }
             }
@@ -314,20 +317,27 @@
         },
         "responses": {
           "202": {
-            "description": "Accepted - job started",
+            "description": "Accepted - classification job started",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "job_id": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "Unique identifier for the classification job"
                     },
                     "status": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "Current job status (typically 'processing')"
                     },
                     "message": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "Status message about the job"
+                    },
+                    "quota_remaining": {
+                      "type": "number",
+                      "description": "Remaining API quota after this request"
                     }
                   }
                 }
@@ -441,64 +451,6 @@
                       "type": "string"
                     }
                   }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "apiKeyAuth": []
-          }
-        ]
-      }
-    },
-    "/splitter/split-pdf": {
-      "post": {
-        "summary": "Split Document",
-        "description": "Split PDF documents by classifying pages into categories",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "classes",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Comma-separated categories"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary",
-                    "description": "PDF to split"
-                  },
-                  "categories": {
-                    "type": "string",
-                    "description": "JSON string with category descriptions"
-                  }
-                },
-                "required": [
-                  "file"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Split started",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
                 }
               }
             }
@@ -714,7 +666,71 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "Classification job status and results"
+                  "properties": {
+                    "job_id": {
+                      "type": "string",
+                      "description": "Unique identifier for the classification job"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Current job status (processing, completed, failed)"
+                    },
+                    "progress": {
+                      "type": "string",
+                      "description": "Progress message"
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message if job failed"
+                    },
+                    "result": {
+                      "type": "object",
+                      "description": "Classification results (only present when status is completed)",
+                      "properties": {
+                        "success": {
+                          "type": "boolean",
+                          "description": "Whether classification succeeded"
+                        },
+                        "classification": {
+                          "type": "string",
+                          "description": "The classified category"
+                        },
+                        "confidence": {
+                          "type": "number",
+                          "description": "Confidence score (0-1)"
+                        },
+                        "total_pages": {
+                          "type": "number",
+                          "description": "Total number of pages"
+                        },
+                        "processed_pages": {
+                          "type": "number",
+                          "description": "Number of pages processed"
+                        },
+                        "page_results": {
+                          "type": "array",
+                          "description": "Per-page classification results",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "page": {
+                                "type": "number",
+                                "description": "Page number"
+                              },
+                              "classification": {
+                                "type": "string",
+                                "description": "Classification for this page"
+                              },
+                              "confidence": {
+                                "type": "number",
+                                "description": "Confidence score for this page"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -852,19 +868,8 @@
     },
     "/splitter": {
       "post": {
-        "summary": "Split Document (v1)",
+        "summary": "Split Document",
         "description": "Split PDF documents by classifying pages into categories",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "classes",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Comma-separated categories (e.g., invoice,contract)"
-          }
-        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -875,15 +880,19 @@
                   "file": {
                     "type": "string",
                     "format": "binary",
-                    "description": "PDF file to split"
+                    "description": "PDF file to split. Either file or file_url must be provided."
+                  },
+                  "file_url": {
+                    "type": "string",
+                    "description": "URL to a PDF file to split. Either file or file_url must be provided. Example: https://example.com/mixed_documents.pdf"
                   },
                   "categories": {
                     "type": "string",
-                    "description": "JSON string with category descriptions"
+                    "description": "JSON string containing array of category objects with name and optional description. Example: [{\"name\":\"invoice\",\"description\":\"Business invoices with itemized charges\"},{\"name\":\"contract\",\"description\":\"Legal agreements and binding documents\"},{\"name\":\"report\"}]"
                   }
                 },
                 "required": [
-                  "file"
+                  "categories"
                 ]
               },
               "encoding": {
@@ -895,12 +904,30 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Split started",
+          "202": {
+            "description": "Accepted - split job started",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "type": "object",
+                  "properties": {
+                    "job_id": {
+                      "type": "string",
+                      "description": "Unique identifier for the splitting job"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Current job status (typically 'processing')"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Status message about the job"
+                    },
+                    "quota_remaining": {
+                      "type": "number",
+                      "description": "Remaining API quota after this request"
+                    }
+                  }
                 }
               }
             }
@@ -935,7 +962,100 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "Split job status and results"
+                  "properties": {
+                    "job_id": {
+                      "type": "string",
+                      "description": "Unique identifier for the splitting job"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Current job status (processing, completed, failed)"
+                    },
+                    "progress": {
+                      "type": "string",
+                      "description": "Progress message"
+                    },
+                    "file_url": {
+                      "type": "string",
+                      "description": "URL to the original uploaded file"
+                    },
+                    "file_name": {
+                      "type": "string",
+                      "description": "Name of the original file"
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "description": "Job parameters",
+                      "properties": {
+                        "classes": {
+                          "type": "array",
+                          "description": "List of category names",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "category_descriptions": {
+                          "type": "object",
+                          "description": "Category descriptions map"
+                        }
+                      }
+                    },
+                    "result": {
+                      "type": "object",
+                      "description": "Split results (only present when status is completed)",
+                      "properties": {
+                        "success": {
+                          "type": "boolean",
+                          "description": "Whether splitting succeeded"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Success/failure message"
+                        },
+                        "files": {
+                          "type": "array",
+                          "description": "Array of split PDF files",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "description": "Name of the split file"
+                              },
+                              "path": {
+                                "type": "string",
+                                "description": "Relative path to the file"
+                              },
+                              "type": {
+                                "type": "string",
+                                "description": "File type (always 'file')"
+                              },
+                              "fileId": {
+                                "type": "string",
+                                "description": "Unique file identifier"
+                              },
+                              "full_path": {
+                                "type": "string",
+                                "description": "Complete download URL"
+                              },
+                              "confidence_score": {
+                                "type": "number",
+                                "description": "Classification confidence score (0-1)"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message if job failed"
+                    },
+                    "quota_remaining": {
+                      "type": "number",
+                      "description": "Remaining API quota"
+                    }
+                  }
                 }
               }
             }
