@@ -38,7 +38,7 @@
                   },
                   "schema_data": {
                     "type": "string",
-                    "description": "JSON schema defining the structure and fields to extract from the document. Example: {\"type\":\"object\",\"properties\":{\"invoice_number\":{\"type\":\"string\"},\"invoice_date\":{\"type\":\"string\"},\"total_amount\":{\"type\":\"number\"},\"vendor_name\":{\"type\":\"string\"}},\"required\":[\"invoice_number\"],\"additionalProperties\":false}"
+                    "description": "JSON schema defining the structure and fields to extract from the document. Example: {\"type\":\"object\",\"properties\":{\"invoice_number\":{\"type\":\"string\",\"description\":\"The invoice number\"}},\"required\":[\"invoice_number\"],\"additionalProperties\":false}"
                   }
                 },
                 "required": [
@@ -107,7 +107,7 @@
                   },
                   "schema_data": {
                     "type": "string",
-                    "description": "JSON schema defining the structure of data to extract. Example: {\"type\":\"object\",\"properties\":{\"invoice_number\":{\"type\":\"string\"},\"invoice_date\":{\"type\":\"string\"},\"total_amount\":{\"type\":\"number\"}},\"required\":[\"invoice_number\"],\"additionalProperties\":false}"
+                    "description": "JSON schema defining the structure of data to extract. Example: {\"type\":\"object\",\"properties\":{\"invoice_number\":{\"type\":\"string\",\"description\":\"The invoice number\"}},\"required\":[\"invoice_number\"],\"additionalProperties\":false}"
                   },
                   "batch_size": {
                     "type": "integer",
