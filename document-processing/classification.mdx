@@ -30,7 +30,7 @@ Classification jobs are processed asynchronously. Submit a classification job an
 
 ## API Usage
 
-### Classify Document with File Upload
+### Classify Document
 
 <CodeGroup>
 
@@ -55,32 +55,9 @@ with UnsiloedClient(api_key="your-api-key") as client:
     print(f"Confidence: {result.result['confidence']:.2%}")
 
     # Check page-by-page results if available
-    if 'details' in result.result:
-        for page_result in result.result['details']['page_results']:
+    if 'page_results' in result.result:
+        for page_result in result.result['page_results']:
             print(f"Page {page_result['page']}: {page_result['classification']}")
-```
-
-```javascript JavaScript
-const { UnsiloedClient } = require('unsiloed-sdk');
-
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
-
-// Define categories with optional descriptions
-const categories = [
-  { name: 'Medical Record', description: 'Patient medical records and history' },
-  { name: 'Lab Report', description: 'Laboratory test results' },
-  { name: 'Prescription' }  // Description is optional
-];
-
-const result = await client.classify({
-  file: 'document.pdf',
-  categories: categories
-});
-
-console.log(`Classification job created: ${result.job_id}`);
-console.log(`Status: ${result.status}`);
-console.log(`Message: ${result.message}`);
-console.log(`Quota remaining: ${result.quota_remaining}`);
 ```
 
 ```typescript TypeScript
@@ -122,77 +99,6 @@ curl -X GET "https://prod.visionapi.unsiloed.ai/classify/{job_id}" \
 
 </CodeGroup>
 
-### Classify Document with File URL
-
-<CodeGroup>
-
-```python Python
-from unsiloed_sdk import UnsiloedClient
-
-categories = [
-    {"name": "Invoice"},
-    {"name": "Receipt"},
-    {"name": "Contract"}
-]
-
-with UnsiloedClient(api_key="your-api-key") as client:
-    result = client.classify_and_wait(
-        file_url="https://example.com/document.pdf",
-        categories=categories
-    )
-
-    print(f"Classification: {result.result['classification']}")
-    print(f"Confidence: {result.result['confidence']:.2%}")
-```
-
-```javascript JavaScript
-const { UnsiloedClient } = require('unsiloed-sdk');
-
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
-
-const categories = [
-  { name: 'Invoice' },
-  { name: 'Receipt' },
-  { name: 'Contract' }
-];
-
-const result = await client.classify({
-  fileUrl: 'https://example.com/document.pdf',
-  categories: categories
-});
-
-console.log(`Classification job created: ${result.job_id}`);
-```
-
-```typescript TypeScript
-import { UnsiloedClient, Category } from 'unsiloed-sdk';
-
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
-
-const categories: Category[] = [
-  { name: 'Invoice' },
-  { name: 'Receipt' },
-  { name: 'Contract' }
-];
-
-const result = await client.classify({
-  fileUrl: 'https://example.com/document.pdf',
-  categories: categories
-});
-
-console.log(`Classification job created: ${result.job_id}`);
-```
-
-```bash cURL
-curl -X POST "https://prod.visionapi.unsiloed.ai/classify" \
-  -H "api-key: your-api-key" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d 'file_url=https://example.com/document.pdf' \
-  -d 'categories=[{"name":"Invoice"},{"name":"Receipt"},{"name":"Contract"}]'
-```
-
-</CodeGroup>
-
 ### Check Classification Job Status
 
 <CodeGroup>
@@ -209,36 +115,15 @@ with UnsiloedClient(api_key="your-api-key") as client:
     print(f"Status: {job.status}")
     print(f"Progress: {job.progress}")
 
-    if job.status == "Succeeded" and job.result:
+    if job.status == "completed" and job.result:
         result = job.result
         print(f"\nClassification: {result['classification']}")
         print(f"Confidence: {result['confidence']:.2%}")
+        print(f"Total Pages: {result.get('total_pages', 'N/A')}")
 
-        if 'details' in result:
-            print(f"Details: {result['details']}")
-```
-
-```javascript JavaScript
-const { UnsiloedClient } = require('unsiloed-sdk');
-
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
-
-const jobId = '660e8400-e29b-41d4-a716-446655440001';
-
-const job = await client.getClassifyResult(jobId);
-
-console.log(`Status: ${job.status}`);
-console.log(`Progress: ${job.progress}`);
-
-if (job.status === 'Succeeded' && job.result) {
-  const result = job.result;
-  console.log(`\nClassification: ${result.classification}`);
-  console.log(`Confidence: ${result.confidence.toFixed(2)}`);
-
-  if (result.details) {
-    console.log(`Details: ${JSON.stringify(result.details)}`);
-  }
-}
+        if 'page_results' in result:
+            for page_result in result['page_results']:
+                print(f"Page {page_result['page']}: {page_result['classification']}")
 ```
 
 ```typescript TypeScript
@@ -253,13 +138,16 @@ const job = await client.getClassifyResult(jobId);
 console.log(`Status: ${job.status}`);
 console.log(`Progress: ${job.progress}`);
 
-if (job.status === 'Succeeded' && job.result) {
+if (job.status === 'completed' && job.result) {
   const result = job.result;
   console.log(`\nClassification: ${result.classification}`);
   console.log(`Confidence: ${result.confidence.toFixed(2)}`);
+  console.log(`Total Pages: ${result.total_pages || 'N/A'}`);
 
-  if (result.details) {
-    console.log(`Details: ${JSON.stringify(result.details)}`);
+  if (result.page_results) {
+    result.page_results.forEach((pageResult: any) => {
+      console.log(`Page ${pageResult.page}: ${pageResult.classification}`);
+    });
   }
 }
 ```
@@ -272,9 +160,15 @@ curl -X GET "https://prod.visionapi.unsiloed.ai/classify/660e8400-e29b-41d4-a716
 # {
 #   "job_id": "660e8400-e29b-41d4-a716-446655440001",
 #   "status": "completed",
+#   "progress": "Classification completed",
+#   "error": null,
 #   "result": {
+#     "success": true,
 #     "classification": "Medical Record",
-#     "confidence": 0.95
+#     "confidence": 0.9977573126693524,
+#     "total_pages": 1,
+#     "processed_pages": 1,
+#     "page_results": [{"page": 1, "classification": "Medical Record", "confidence": 0.9977573126693524}]
 #   }
 # }
 ```
@@ -300,38 +194,10 @@ with UnsiloedClient(api_key="your-api-key") as client:
         file="document.pdf",
         categories=categories,
         poll_interval=5,  # Check every 5 seconds
-        max_wait_time=300  # Wait up to 5 minutes
     )
 
     print(f"Classification: {result.result['classification']}")
     print(f"Confidence: {result.result['confidence']:.2%}")
-```
-
-```javascript JavaScript
-const { UnsiloedClient } = require('unsiloed-sdk');
-
-const client = new UnsiloedClient({ apiKey: 'your-api-key' });
-
-const categories = [
-  { name: 'Invoice' },
-  { name: 'Receipt' },
-  { name: 'Contract' }
-];
-
-// Use classifyAndWait for automatic polling
-try {
-  const result = await client.classifyAndWait({
-    file: 'document.pdf',
-    categories: categories,
-    pollInterval: 5000,  // Check every 5 seconds
-    maxWaitTime: 300000  // Wait up to 5 minutes
-  });
-
-  console.log(`Classification: ${result.result.classification}`);
-  console.log(`Confidence: ${result.result.confidence}`);
-} catch (error) {
-  console.error(`Error: ${error.message}`);
-}
 ```
 
 ```typescript TypeScript
@@ -351,7 +217,6 @@ try {
     file: 'document.pdf',
     categories: categories,
     pollInterval: 5000,  // Check every 5 seconds
-    maxWaitTime: 300000  // Wait up to 5 minutes
   });
 
   console.log(`Classification: ${result.result.classification}`);
@@ -387,16 +252,16 @@ try {
   "result": {
     "success": true,
     "classification": "Medical Record",
-    "confidence": 0.95,
-    "details": {
-      "page_results": [
-        {
-          "page": 1,
-          "classification": "Medical Record",
-          "confidence": 0.95
-        }
-      ]
-    }
+    "confidence": 0.9977573126693524,
+    "total_pages": 1,
+    "processed_pages": 1,
+    "page_results": [
+      {
+        "page": 1,
+        "classification": "Medical Record",
+        "confidence": 0.9977573126693524
+      }
+    ]
   }
 }
 ```
