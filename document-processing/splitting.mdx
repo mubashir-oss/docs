@@ -164,7 +164,7 @@ async function checkSplitStatus(jobId: string, apiKey: string) {
 ```
 
 ```bash cURL
-curl -X GET "https://prod.visionapi.unsiloed.ai/splitter/550e8400-e29b-41d4-a716-446655440000" \
+curl -X GET "https://prod.visionapi.unsiloed.ai/splitter/${job_id}" \
   -H "api-key: your-api-key"
 
 # Response when completed:
