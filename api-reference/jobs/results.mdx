@@ -18,24 +18,38 @@ The response structure depends on the job type (extraction, parsing, classificat
 
 ### Extraction Job Results
 
-<ResponseField name="data" type="object">
-  The extracted data matching the provided JSON schema
+<ResponseField name="job_id" type="string">
+  Unique identifier for the extraction job
 </ResponseField>
 
-<ResponseField name="processing_time" type="number">
-  Total processing time in seconds
+<ResponseField name="status" type="string">
+  Current status of the job (e.g., "completed", "processing", "failed")
 </ResponseField>
 
-<ResponseField name="detections" type="array">
-  Array of detected elements with bounding boxes and confidence scores
+<ResponseField name="file_name" type="string | null">
+  Original filename of the uploaded document
 </ResponseField>
 
-<ResponseField name="citations" type="array">
-  Citation information for extracted data
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp when the job was created
 </ResponseField>
 
-<ResponseField name="visualization_paths" type="array">
-  Paths to visualization images (if requested)
+<ResponseField name="updated_at" type="string">
+  ISO 8601 timestamp when the job was last updated
+</ResponseField>
+
+<ResponseField name="metadata" type="object">
+  Job metadata containing:
+  - `order`: Array of extracted field names in order
+  - `page_count`: Number of pages in the document
+</ResponseField>
+
+<ResponseField name="result" type="object">
+  The extracted data matching the provided JSON schema. Each field contains:
+  - `score`: Confidence score (0-1) for the extraction
+  - `value`: The extracted value
+  - `bboxes`: Array of bounding box objects with `bbox` coordinates
+  - `page_no`: Page number where the value was found (1-indexed)
 </ResponseField>
 
 <RequestExample>
@@ -55,22 +69,9 @@ headers = {"api-key": "your-api-key"}
 response = requests.get(url, headers=headers)
 
 if response.status_code == 200:
-    result = response.json()
-    print("Extraction results:", result['data'])
-    print(f"Processing time: {result['processing_time']:.2f} seconds")
+  response = response.json()
     
-    if 'detections' in result:
-        print(f"Found {len(result['detections'])} detected elements")
-        
-    if 'citations' in result:
-        print(f"Found {len(result['citations'])} citations")
-        
-elif response.status_code == 400:
-    print("Job is still processing or failed")
-elif response.status_code == 404:
-    print("Job not found or results not available")
-else:
-    print("Error:", response.status_code, response.text)
+  print(json.dumps(response, indent=4))
 ```
 
 ```javascript JavaScript
@@ -81,24 +82,14 @@ const response = await fetch(`https://prod.visionapi.unsiloed.ai/extract/${jobId
   }
 });
 
+
 if (response.ok) {
   const result = await response.json();
-  console.log('Extraction results:', result.data);
-  console.log('Processing time:', result.processing_time, 'seconds');
-  
-  if (result.detections) {
-    console.log('Detected elements:', result.detections.length);
-  }
-  
-  if (result.citations) {
-    console.log('Citations found:', result.citations.length);
-  }
-} else if (response.status === 400) {
-  console.log('Job is still processing or failed');
-} else if (response.status === 404) {
-  console.log('Job not found or results not available');
+  console.log(result);
 } else {
-  console.error('Error:', response.status, await response.text());
+  console.error(
+    `Request failed with status ${response.status}: ${response.statusText}`
+  );
 }
 ```
 
@@ -108,7 +99,26 @@ if (response.ok) {
 
 ```json Extraction Results
 {
-  "data": {
+  "job_id": "36b2c5dc-942c-4b20-8451-39764246f9aa",
+  "status": "completed",
+  "file_name": "invoice.pdf",
+  "created_at": "2026-01-19T21:10:51.324693+00:00",
+  "updated_at": "2026-01-19T21:10:55.165642+00:00",
+  "metadata": {
+    "order": ["invoice_number", "company_name", "total_amount"],
+    "page_count": 1
+  },
+  "result": {
+    "invoice_number": {
+      "score": 0.7970692802977641,
+      "value": "25G1IZT000009999",
+      "bboxes": [
+        {
+          "bbox": [150, 80, 320, 110]
+        }
+      ],
+      "page_no": 1
+    },
     "company_name": {
       "score": 0.9945,
       "value": "Acme Corporation",
@@ -119,122 +129,26 @@ if (response.ok) {
       ],
       "page_no": 1
     },
-    "financial_data": {
-      "revenue": {
-        "score": 0.9876,
-        "value": "1250000",
-        "bboxes": [
-          {
-            "bbox": [150, 250, 300, 280]
-          }
-        ],
-        "page_no": 1
-      },
-      "profit": {
-        "score": 0.9654,
-        "value": "185000",
-        "bboxes": [
-          {
-            "bbox": [150, 290, 300, 320]
-          }
-        ],
-        "page_no": 1
-      }
-    },
-    "min_confidence_score": 0.9654
-  },
-  "processing_time": 15.7,
-  "detections": [
-    {
-      "class": "Title",
-      "confidence": 0.95,
-      "bbox": [72, 100, 400, 140],
-      "page": 1
-    },
-    {
-      "class": "Text",
-      "confidence": 0.89,
-      "bbox": [72, 150, 500, 200],
-      "page": 1
+    "total_amount": {
+      "score": 0.9876,
+      "value": "1250000",
+      "bboxes": [
+        {
+          "bbox": [150, 250, 300, 280]
+        }
+      ],
+      "page_no": 1
     }
-  ],
-  "citations": [
-    {
-      "field": "company_name",
-      "text": "Acme Corporation",
-      "page": 1,
-      "bbox": [72, 100, 400, 140]
-    }
-  ]
+  }
 }
 ```
 
-```json Parsing Results
+```json Processing
 {
-  "file_type": "pdf",
-  "strategy": "semantic",
-  "total_chunks": 12,
-  "avg_chunk_size": 847.3,
-  "chunks": [
-    {
-      "chunk_id": 1,
-      "text": "Executive Summary\n\nThis quarterly report presents...",
-      "page_number": 1,
-      "bbox": {
-        "x1": 72,
-        "y1": 100,
-        "x2": 540,
-        "y2": 300
-      },
-      "confidence": 0.95,
-      "element_types": ["Title", "Text"],
-      "word_count": 156,
-      "char_count": 892
-    }
-  ],
-  "processing_time": 8.2
-}
-```
-
-```json Classification Results
-{
-  "classification": "invoice",
-  "confidence": 0.94,
-  "page_results": [
-    {
-      "page": 1,
-      "classification": "invoice",
-      "confidence": 0.94,
-      "raw_result": "invoice"
-    }
-  ],
-  "total_pages": 1,
-  "processed_pages": 1,
-  "processing_time": 3.1
-}
-```
-
-```json Error - Job Still Processing
-{
-  "detail": "Job b2094b38-e432-44b6-a5d0-67bed07d5de1 is still processing"
-}
-```
-
-```json Error - Job Failed
-{
-  "detail": "Job b2094b38-e432-44b6-a5d0-67bed07d5de1 failed: PDF file corrupted"
-}
-```
-
-```json Error - Job Not Found
-{
-  "detail": "Job b2094b38-e432-44b6-a5d0-67bed07d5de1 not found"
-}
-```
-
-```json Error - Results Not Available
-{
-  "detail": "Result for job b2094b38-e432-44b6-a5d0-67bed07d5de1 not found"
+  "job_id": "36b2c5dc-942c-4b20-8451-39764246f9aa",
+  "status": "queued",
+  "message": "PDF citation processing started",
+  "quota_remaining": 91242
 }
 ```
 
@@ -285,9 +199,9 @@ def process_document_with_results(file_path, schema, api_key):
         status = job["status"]
         print(f"Job status: {status}")
         
-        if status == "COMPLETED":
+        if status == "COMPLETED" or status == "completed":
             break
-        elif status == "FAILED":
+        elif status == "FAILED" or status == "failed":
             raise Exception(f"Job failed: {job.get('error', 'Unknown error')}")
         
         time.sleep(5)  # Wait 5 seconds before checking again
@@ -321,14 +235,22 @@ schema = {
 }
 
 try:
-    results = process_document_with_results("invoice.pdf", schema, "your-api-key")
+    results = process_document_with_results("document.pdf", schema, "your-api-key")
     print("Extraction completed!")
-    print("Results:", results["data"])
+    print("Results:", results)
 except Exception as e:
     print(f"Error: {e}")
 ```
 
 ## Result Data Structure
+
+### Extracted Field Format
+
+Each extracted field in the `result` object contains:
+- `score`: A confidence score between 0 and 1 indicating extraction confidence
+- `value`: The extracted value as a string
+- `bboxes`: Array of bounding box objects indicating where the value was found
+- `page_no`: The page number where the value was located (1-indexed)
 
 ### Bounding Box Format
 
