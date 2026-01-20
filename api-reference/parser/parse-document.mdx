@@ -79,6 +79,242 @@ The Parse Document endpoint processes PDFs, images (PNG, JPEG, TIFF), and office
   JSON configuration object to customize how different segment types are processed. Allows you to control HTML/Markdown generation strategies, specify which field should populate the `content` field for each segment type, and configure the AI model for table processing. Example: `{"Table": {"html": "LLM", "markdown": "LLM", "content_source": "HTML", "model_id": "us_table_v2"}}`.
 </ParamField>
 
+
+## Configuration Best Practices
+
+<Note>
+**Click to expand each scenario below** to view detailed configuration settings, recommendations, and trade-offs for your specific use case.
+</Note>
+
+<AccordionGroup>
+  <Accordion title="High-Accuracy Processing" icon="bullseye">
+    Use this configuration when accuracy is critical and processing time is less important.
+
+    **Configuration:**
+    ```json
+    {
+      "use_high_resolution": true,
+      "segmentation_method": "smart_layout_detection",
+      "ocr_mode": "full_ocr",
+      "merge_tables": true,
+      "validate_table_segments": true,
+      "segment_analysis": {
+        "Table": {
+          "html": "LLM",
+          "markdown": "LLM",
+          "extended_context": true,
+          "crop_image": "All",
+          "model_id": "us_table_v2"
+        }
+      }
+    }
+    ```
+
+    **When to Use:**
+    - Legal documents requiring precise text extraction
+    - Financial statements with complex tables
+    - Archival documents with low-quality scans
+    - Documents where accuracy is more important than speed
+
+    **Trade-offs:**
+    - **Latency**: +2-3 seconds per page for high resolution
+    - **Latency**: +1-2 seconds per page for table validation
+  </Accordion>
+
+  <Accordion title="Fast Processing" icon="bolt">
+    Use this configuration when speed is prioritized over maximum accuracy.
+
+    **Configuration:**
+    ```json
+    {
+      "use_high_resolution": false,
+      "segmentation_method": "page_by_page",
+      "ocr_mode": "auto_ocr",
+      "merge_tables": false,
+      "validate_table_segments": false
+    }
+    ```
+
+    **When to Use:**
+    - High-volume document processing
+    - Real-time applications requiring quick results
+    - Documents with simple layouts
+    - Pre-screened high-quality digital documents
+
+    **Benefits:**
+    - Fastest processing time
+    - Lower cost per document
+    - Suitable for batch processing large volumes
+  </Accordion>
+
+  <Accordion title="Financial Documents (Tables + Charts)" icon="chart-line">
+    Extract only tables and charts from financial reports and statements.
+
+    **Configuration:**
+    ```json
+    {
+      "merge_tables": true,
+      "validate_table_segments": true,
+      "keep_segment_types": "table,picture",
+      "segmentation_method": "smart_layout_detection",
+      "ocr_mode": "auto_ocr",
+      "segment_analysis": {
+        "Table": {
+          "html": "LLM",
+          "markdown": "LLM",
+          "model_id": "us_table_v2"
+        }
+      }
+    }
+    ```
+
+    **When to Use:**
+    - Balance sheets and P&L statements
+    - Quarterly/annual financial reports
+    - Investment reports with charts
+    - Documents where only structured data matters
+
+    **Benefits:**
+    - Reduced response size (text content filtered out)
+    - Focus on data-rich content
+    - Merged multi-page tables for complete datasets
+  </Accordion>
+
+  <Accordion title="Data Extraction Only (Tables)" icon="table">
+    Extract only tabular data with minimal response size for maximum efficiency.
+
+    **Configuration:**
+    ```json
+    {
+      "merge_tables": true,
+      "validate_table_segments": true,
+      "keep_segment_types": "table",
+      "output_fields": {
+        "html": true,
+        "markdown": true,
+        "ocr": false,
+        "image": false,
+        "content": true,
+        "bbox": false,
+        "confidence": false
+      }
+    }
+    ```
+
+    **When to Use:**
+    - Extracting data from invoices
+    - Processing structured forms
+    - Database population from documents
+    - CSV/Excel export workflows
+
+    **Benefits:**
+    - Minimal response payload
+    - Faster data transfer
+    - Easy integration with data pipelines
+  </Accordion>
+
+  <Accordion title="Academic/Research Documents" icon="graduation-cap">
+    Extract content with structured citations from research papers and academic documents.
+
+    **Configuration:**
+    ```json
+    {
+      "use_high_resolution": true,
+      "segmentation_method": "smart_layout_detection",
+      "ocr_mode": "auto_ocr",
+      "xml_citation": true
+    }
+    ```
+
+    **When to Use:**
+    - Research papers with bibliographies
+    - Academic articles with citations
+    - Scientific documents
+    - Literature reviews
+
+    **Benefits:**
+    - Automatic citation extraction and linking
+    - Structured bibliography metadata
+    - In-text citation hyperlinks in markdown
+    - Preserves academic document structure
+
+    <Note>
+      Citation extraction is only available for PDF documents.
+    </Note>
+  </Accordion>
+
+  <Accordion title="Scanned Documents" icon="scanner">
+    Optimize for scanned documents and images with poor text quality.
+
+    **Configuration:**
+    ```json
+    {
+      "use_high_resolution": true,
+      "ocr_mode": "full_ocr",
+      "segmentation_method": "smart_layout_detection"
+    }
+    ```
+
+    **When to Use:**
+    - Scanned paper documents
+    - Low-quality photocopies
+    - Historical documents
+    - Image-based PDFs
+
+    **Benefits:**
+    - Maximum OCR coverage
+    - Better text extraction from poor quality sources
+    - Higher accuracy for challenging documents
+  </Accordion>
+
+  <Accordion title="Output Fields Optimization" icon="sliders">
+    Optimize response size and performance by selectively including only the fields you need.
+
+    **For Minimal Response Size:**
+    ```json
+    {
+      "output_fields": {
+        "html": false,
+        "markdown": false,
+        "ocr": false,
+        "image": false,
+        "llm": false,
+        "content": true,
+        "bbox": false,
+        "confidence": false,
+        "embed": true
+      }
+    }
+    ```
+
+    **For Text-Only Processing:**
+    ```json
+    {
+      "output_fields": {
+        "html": false,
+        "markdown": true,
+        "ocr": false,
+        "image": false,
+        "llm": false,
+        "content": true,
+        "bbox": true,
+        "confidence": false,
+        "embed": true
+      }
+    }
+    ```
+
+    **For Full Analysis (Default):**
+    
+    Omit `output_fields` or set all fields to `true` to include all available data.
+
+    **Benefits:**
+    - Reduced response size and bandwidth usage
+    - Faster processing and data transfer
+    - Cost optimization for high-volume processing
+  </Accordion>
+</AccordionGroup>
+
 ## Parameter Details
 
 ### File Input Options
@@ -850,138 +1086,6 @@ Bulleted and numbered list items. Processed with structure preservation.
 
 Each segment includes detailed metadata such as confidence scores, bounding boxes, OCR data, and formatted output in both HTML and Markdown with LLM enhancement.
 
-## Configuration Best Practices
-
-### For High-Accuracy Processing
-
-Use this configuration when accuracy is critical:
-
-```json
-{
-  "use_high_resolution": true,
-  "segmentation_method": "smart_layout_detection",
-  "ocr_mode": "full_ocr",
-  "merge_tables": true,
-  "validate_table_segments": true,
-  "segment_analysis": {
-    "Table": {
-      "html": "LLM",
-      "markdown": "LLM",
-      "extended_context": true,
-      "crop_image": "All",
-      "model_id": "us_table_v2"
-    }
-  }
-}
-```
-
-### For Fast Processing
-
-Use this configuration when speed is prioritized:
-
-```json
-{
-  "use_high_resolution": false,
-  "segmentation_method": "page_by_page",
-  "ocr_mode": "auto_ocr"
-}
-```
-
-### For Financial Documents (Tables + Charts)
-
-Extract only tables and charts from financial reports:
-
-```json
-{
-  "merge_tables": true,
-  "keep_segment_types": "table,picture",
-  "segmentation_method": "smart_layout_detection",
-  "segment_analysis": {
-    "Table": {
-      "html": "LLM",
-      "markdown": "LLM",
-      "model_id": "us_table_v2"
-    }
-  }
-}
-```
-
-### For Data Extraction Only (Tables)
-
-Extract only tabular data with minimal response size:
-
-```json
-{
-  "merge_tables": true,
-  "keep_segment_types": "table",
-  "output_fields": {
-    "html": true,
-    "markdown": false,
-    "ocr": false,
-    "image": false,
-    "content": true,
-    "bbox": false,
-    "confidence": false
-  }
-}
-```
-
-### For Academic Documents (With Citations)
-
-Extract content with structured citations from research papers:
-
-```json
-{
-  "use_high_resolution": true,
-  "segmentation_method": "smart_layout_detection",
-  "ocr_mode": "auto_ocr",
-  "xml_citation": true
-}
-```
-
-### Output Fields Optimization (Optional)
-
-Optimize response size and performance by selectively including only the fields you need:
-
-**For Minimal Response Size:**
-
-```json
-{
-  "output_fields": {
-    "html": false,
-    "markdown": false,
-    "ocr": false,
-    "image": false,
-    "llm": false,
-    "content": true,
-    "bbox": false,
-    "confidence": false,
-    "embed": true
-  }
-}
-```
-
-**For Text-Only Processing:**
-
-```json
-{
-  "output_fields": {
-    "html": false,
-    "markdown": true,
-    "ocr": false,
-    "image": false,
-    "llm": false,
-    "content": true,
-    "bbox": true,
-    "confidence": false,
-    "embed": true
-  }
-}
-```
-
-**For Full Analysis (Default):**
-
-Omit `output_fields` or set all fields to `true` to include all available data.
 
 ## Error Handling
 
