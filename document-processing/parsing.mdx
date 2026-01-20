@@ -48,28 +48,34 @@ The parsing system can identify and process the following element types through 
 - **Formula**: Mathematical equations and expressions
 
 ## Quick Start
-
+## Using Local files
 <CodeGroup>
 
 ```python Python
 from unsiloed_sdk import UnsiloedClient
+from unsiloed_sdk.exceptions import APIError
 
 with UnsiloedClient(api_key="your-api-key") as client:
-    # Parse and wait for completion automatically
-    result = client.parse_and_wait(
-        file="document.pdf",
-        merge_tables=True
-    )
+    try:
+        # Parse and wait for completion automatically
+        result = client.parse_and_wait(
+            file="document.pdf",
+            merge_tables=True
+        )
 
-    print(f"Total chunks: {result.total_chunks}")
-    print(f"Status: {result.status}")
+        print(f"Total chunks: {result.total_chunks}")
+        print(f"Status: {result.status}")
 
-    # Process chunks
-    for chunk in result.chunks:
-        for segment in chunk['segments']:
-            print(f"Type: {segment['segment_type']}")
-            content = segment.get('content') or ''
-            print(f"Content: {content[:100]}...")
+        # Process chunks
+        for chunk in result.chunks:
+            for segment in chunk['segments']:
+                print(f"Type: {segment['segment_type']}")
+                content = segment.get('content') or ''
+                print(f"Content: {content[:100]}...")
+    except APIError as e:
+        print(f"API Error: {e}")
+        print(f"Status code: {e.status_code}")
+        print(f"Response data: {e.response_data}")
 
 # Or start job and poll manually
 with UnsiloedClient(api_key="your-api-key") as client:
@@ -110,6 +116,84 @@ console.log(parseResult);
 curl -X POST "https://prod.visionapi.unsiloed.ai/parse" \
   -H "api-key: your-api-key" \
   -F "file=@document.pdf"
+
+# Response will include a job_id
+# {
+#   "job_id": "550e8400-e29b-41d4-a716-446655440000",
+#   "status": "processing"
+# }
+
+# Poll for results using the job_id
+curl -X GET "https://prod.visionapi.unsiloed.ai/parse/550e8400-e29b-41d4-a716-446655440000" \
+  -H "api-key: your-api-key"
+```
+
+</CodeGroup>
+
+## Using Presigned URLs
+
+Instead of uploading files directly, you can provide a presigned URL using the `url` parameter. This is ideal for documents already stored in cloud storage (S3, GCS, Azure Blob, etc.).
+
+<CodeGroup>
+
+```python Python
+from unsiloed_sdk import UnsiloedClient
+from unsiloed_sdk.exceptions import APIError
+
+# Using presigned URL instead of file upload
+document_url = "https://lyltzyvtloozzovxrupp.supabase.co/storage/v1/object/public/pdfs/0589f42e-0684-434c-999a-beedcf34c04a/Invoice_bc11de5d-e45a-46a8-892d-32f8794ab72d.pdf"
+
+with UnsiloedClient(api_key="your-api-key") as client:
+    try:
+        # Parse document from URL and wait for results
+        print("Parsing document from URL...")
+        
+        result = client.parse_and_wait(url=document_url)
+        
+        # Access the parsed content
+        print(f"\nTotal chunks: {result.total_chunks}")
+        
+        # Get the embed content
+        for chunk in result.chunks:
+            print(f"\n--- {chunk['embed'][:100]} ---")
+    except APIError as e:
+        print(f"API Error: {e}")
+        print(f"Status code: {e.status_code}")
+        print(f"Response data: {e.response_data}")
+```
+
+```typescript TypeScript
+import { UnsiloedClient } from 'unsiloed-sdk';
+
+const client = new UnsiloedClient({ apiKey: 'your-api-key' });
+
+// Using presigned URL instead of file upload
+const documentUrl = 'https://lyltzyvtloozzovxrupp.supabase.co/storage/v1/object/public/pdfs/0589f42e-0684-434c-999a-beedcf34c04a/Invoice_bc11de5d-e45a-46a8-892d-32f8794ab72d.pdf';
+
+try {
+  console.log('Parsing document from URL...');
+  
+  const result = await client.parseAndWait({
+    url: documentUrl,
+    pollInterval: 5000,
+  });
+  
+  console.log(`\nTotal chunks: ${result.total_chunks}`);
+  
+  // Get the embed content
+  result.chunks.forEach(chunk => {
+    console.log(`\n--- ${chunk.embed.substring(0, 100)} ---`);
+  });
+} catch (error) {
+  console.error('API Error:', error);
+}
+```
+
+```bash cURL
+# Use presigned URL instead of file upload
+curl -X POST "https://prod.visionapi.unsiloed.ai/parse" \
+  -H "api-key: your-api-key" \
+  -F "url=https://lyltzyvtloozzovxrupp.supabase.co/storage/v1/object/public/pdfs/0589f42e-0684-434c-999a-beedcf34c04a/Invoice_bc11de5d-e45a-46a8-892d-32f8794ab72d.pdf"
 
 # Response will include a job_id
 # {
